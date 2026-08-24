@@ -131,8 +131,26 @@ function moveNub(dx, dy) {
   nubEl.style.transform = `translate(-50%,-50%) translate(${dx}px,${dy}px)`;
 }
 
+// test hook: scripted stick input (Playwright drives the character with this)
+let driveOverride = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    if (window.__test) {
+      window.__test.drive = (x, z) => { driveOverride = x === null ? null : { x, z }; };
+      window.__test.press = (btn) => {
+        if (btn === 'punchDown') { state.pendingPunchDown = true; input.punchDown = true; }
+        if (btn === 'punchUp') { state.pendingPunchUp = true; input.punchDown = false; }
+        if (btn === 'jump') state.pendingJump = true;
+        if (btn === 'grab') state.pendingGrab = true;
+        if (btn === 'interact') state.pendingInteract = true;
+      };
+    }
+  });
+}
+
 // Called once per fixed step: fold pending edges + keyboard axes into `input`.
 export function pollInput(dt) {
+  if (driveOverride) { input.moveX = driveOverride.x; input.moveZ = driveOverride.z; }
   input.punchPressed = state.pendingPunchDown; state.pendingPunchDown = false;
   input.punchReleased = state.pendingPunchUp; state.pendingPunchUp = false;
   input.jumpPressed = state.pendingJump; state.pendingJump = false;

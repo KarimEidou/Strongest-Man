@@ -25,6 +25,10 @@ initHUD();
 initOverlays();
 initSettings();
 
+// system lists (systems register during boot below)
+const fixedSystems = [];
+const frameSystems = [];
+
 loadingProgress(0.05, 'sky…');
 await initSky(scene, renderer);
 
@@ -41,6 +45,23 @@ const city = buildCitySpec();
 buildStreets(scene);
 const buildingsReg = buildBuildings(scene, city.buildings);
 const propsReg = buildProps(scene, city);
+
+loadingProgress(0.85, 'player…');
+const { initCollide, cameraAllowed, debrisVsWorld } = await import('./physics/collide.js');
+const { buildClipBank } = await import('./anim/retarget.js');
+const { step: physicsStep, bodyStats, setWorldCollider } = await import('./physics/pworld.js');
+const { createPlayer } = await import('./player/player.js');
+
+initCollide(buildingsReg, propsReg);
+setWorldCollider(debrisVsWorld);
+buildClipBank();
+const player = createPlayer(scene, cam);
+cam.st.occlusionQuery = (look, eye, wanted) => cameraAllowed(look, eye, wanted);
+
+fixedSystems.push((dt) => player.fixedUpdate(dt));
+fixedSystems.push((dt) => physicsStep(dt));
+frameSystems.push((dt, alpha) => player.frameUpdate(dt, alpha));
+window.__bodyStats = bodyStats;
 
 loadingProgress(1, 'ready');
 window.__test.city = () => ({ buildings: city.buildings.length, cells: buildingsReg.cells.length, props: propsReg.all.length });
@@ -71,10 +92,6 @@ if (flags.autoplay) {
   setGameState('playing');
 }
 
-// --- system lists (filled in over later phases)
-const fixedSystems = [];
-const frameSystems = [];
-
 let simTime = 0;
 function fixed(dt) {
   if (game.state !== 'playing') return;
@@ -96,7 +113,10 @@ function frame(dt, alpha) {
 function render() {
   renderer.info.reset();
   renderer.render(scene, cam.camera);
-  perfFrame(renderer, lastDt);
+  perfFrame(renderer, lastDt, () => {
+    const s = window.__bodyStats ? window.__bodyStats() : { active: 0, sleeping: 0 };
+    return { activeBodies: s.active, sleeping: s.sleeping };
+  });
   window.__ready = true;
 }
 
