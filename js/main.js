@@ -25,17 +25,45 @@ initHUD();
 initOverlays();
 initSettings();
 
-loadingProgress(0.1, 'sky…');
+loadingProgress(0.05, 'sky…');
 await initSky(scene, renderer);
 
-// P1 placeholder ground — replaced by the city in P2
-const ground = new THREE.Mesh(
-  new THREE.CircleGeometry(240, 48).rotateX(-Math.PI / 2),
-  new THREE.MeshLambertMaterial({ color: PAL.road }),
-);
-scene.add(ground);
+loadingProgress(0.1, 'models…');
+const { loadModels } = await import('./engine/assets.js');
+await loadModels((f) => loadingProgress(0.1 + f * 0.5, 'models…'));
+
+loadingProgress(0.65, 'city…');
+const { buildCitySpec } = await import('./world/city.js');
+const { buildStreets } = await import('./world/streets.js');
+const { buildBuildings } = await import('./world/buildings.js');
+const { buildProps } = await import('./world/props.js');
+const city = buildCitySpec();
+buildStreets(scene);
+const buildingsReg = buildBuildings(scene, city.buildings);
+const propsReg = buildProps(scene, city);
 
 loadingProgress(1, 'ready');
+window.__test.city = () => ({ buildings: city.buildings.length, cells: buildingsReg.cells.length, props: propsReg.all.length });
+window.__test.showcase = (names) => {
+  const { staticGeometry } = window.__assets;
+  names.forEach((n, i) => {
+    const { geometry, material } = staticGeometry(n);
+    const m = new THREE.Mesh(geometry, material);
+    m.position.set(-20 + i * 8, 0.02, 0);
+    scene.add(m);
+  });
+  return names.length;
+};
+import('./engine/assets.js').then((m) => { window.__assets = m; });
+window.__test.lookFrom = (x, y, z, tx, ty, tz) => {
+  cam.st.target.set(tx, ty ?? 0, tz);
+  cam.st.smoothed.set(tx, ty ?? 0, tz);
+  const dx = x - tx, dz = z - tz;
+  cam.st.yaw = Math.atan2(dx, dz); cam.st.curYaw = cam.st.yaw;
+  const dist = Math.hypot(dx, dz);
+  cam.st.pitch = Math.atan2(y - (ty ?? 0) - 1.55, dist); cam.st.curPitch = cam.st.pitch;
+  cam.st.dist = Math.hypot(dx, y - (ty ?? 0), dz); cam.st.curDist = cam.st.dist;
+};
 
 if (flags.autoplay) {
   document.getElementById('title-screen').hidden = true;

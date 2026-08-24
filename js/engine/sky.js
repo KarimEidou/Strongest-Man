@@ -16,9 +16,9 @@ export async function initSky(scene, renderer) {
 
   scene.fog = new THREE.Fog(PAL.fog, FOG_NEAR, FOG_FAR);
 
-  const hemi = new THREE.HemisphereLight(PAL.skyLight, PAL.groundBounce, 0.95);
+  const hemi = new THREE.HemisphereLight(PAL.skyLight, PAL.groundBounce, 1.75);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(PAL.sun, 1.35);
+  const sun = new THREE.DirectionalLight(PAL.sun, 2.1);
   sun.position.set(-60, 46, -35); // low warm dusk sun
   scene.add(sun);
   return { sun, hemi };
