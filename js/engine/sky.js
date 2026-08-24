@@ -58,18 +58,25 @@ void main() {
   float sd = max(dot(d, uSunDir), 0.0);
   sky += uSunCol * (pow(sd, 900.0) * 7.0 + pow(sd, 14.0) * 0.38 + pow(sd, 3.0) * 0.11);
 
-  // clouds live on a plane above the camera; dividing by d.y is what gives the
-  // correct perspective flattening toward the horizon
-  // the plane sits ~1 unit up, so cp is ~1 overhead and grows without bound
-  // toward the horizon; the frequency has to make that span several cells
-  vec2 cp = d.xz / max(d.y, 0.045);
-  float c = smoothstep(uCover, uCover + 0.16, skFbm(cp * 1.15 + uWind));
-  #if CLOUD_LAYERS > 1
-    c = max(c, smoothstep(uCover + 0.10, uCover + 0.26, skFbm(cp * 0.42 + uWind * 0.45 + 31.7)) * 0.7);
-  #endif
-  float lit = 0.52 + 0.48 * pow(max(dot(normalize(vec3(cp.x, 42.0, cp.y)), uSunDir), 0.0), 2.0);
-  vec3 cloudCol = mix(uFog * 0.82, uSunCol, lit) * (1.0 - 0.42 * uNight);
-  sky = mix(sky, cloudCol, c * smoothstep(0.015, 0.16, d.y));
+  // Clouds live on a plane above the camera; dividing by d.y gives the correct
+  // perspective flattening toward the horizon. The plane sits ~1 unit up, so cp
+  // is ~1 overhead and grows without bound toward the horizon, and the frequency
+  // has to make that span several cells.
+  //
+  // Everything below the horizon band is masked out anyway, so gate the whole
+  // FBM on it — that is half the screen's worth of multi-octave noise skipped,
+  // and the branch is perfectly coherent (it is a horizontal split).
+  float band = smoothstep(0.015, 0.16, d.y);
+  if (band > 0.002) {
+    vec2 cp = d.xz / max(d.y, 0.045);
+    float c = smoothstep(uCover, uCover + 0.16, skFbm(cp * 1.15 + uWind));
+    #if CLOUD_LAYERS > 1
+      c = max(c, smoothstep(uCover + 0.10, uCover + 0.26, skFbm(cp * 0.42 + uWind * 0.45 + 31.7)) * 0.7);
+    #endif
+    float lit = 0.52 + 0.48 * pow(max(dot(normalize(vec3(cp.x, 42.0, cp.y)), uSunDir), 0.0), 2.0);
+    vec3 cloudCol = mix(uFog * 0.82, uSunCol, lit) * (1.0 - 0.42 * uNight);
+    sky = mix(sky, cloudCol, c * band);
+  }
 
   // fuse the bottom band into the scene fog
   sky = mix(sky, uFog, smoothstep(0.16, -0.03, d.y));

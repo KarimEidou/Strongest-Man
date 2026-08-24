@@ -57,7 +57,8 @@ await page.addInitScript(() => {
   };
 });
 
-await page.goto('http://127.0.0.1:8080/Strongest-Man/?autoplay=1&seed=7&nogroq=1', { waitUntil: 'load' });
+const QUALITY = process.env.QUALITY ? `&quality=${process.env.QUALITY}` : '';
+await page.goto(`http://127.0.0.1:8080/Strongest-Man/?autoplay=1&seed=7&nogroq=1${QUALITY}`, { waitUntil: 'load' });
 await page.waitForFunction('window.__ready === true', null, { timeout: 60000 });
 await page.waitForTimeout(4000);
 
