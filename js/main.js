@@ -83,6 +83,24 @@ frameSystems.push((dt) => combat.frameUpdate(dt));
 frameSystems.push((dt) => { debrisFrame(dt); particlesFrame(dt); blobFrame(); });
 window.__bodyStats = bodyStats;
 
+loadingProgress(0.96, 'people…');
+const { createNPCs } = await import('./ai/npc.js');
+const { createTraffic } = await import('./world/traffic.js');
+const { setCars } = await import('./physics/collide.js');
+const npcs = createNPCs(scene, city, player);
+const traffic = createTraffic(scene, propsReg, npcs.hooks, player, cam);
+setCars({ list: traffic.list });
+combat.st.hooks.npcs = npcs.hooks;
+combat.st.hooks.cars = traffic.hooks;
+
+fixedSystems.push((dt) => npcs.fixedUpdate(dt));
+fixedSystems.push((dt) => traffic.fixedUpdate(dt));
+frameSystems.push((dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); });
+fixedSystems.push((dt) => {
+  game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
+});
+window.__npcs = npcs;
+
 loadingProgress(1, 'ready');
 window.__test.city = () => ({ buildings: city.buildings.length, cells: buildingsReg.cells.length, props: propsReg.all.length });
 window.__test.showcase = (names) => {
