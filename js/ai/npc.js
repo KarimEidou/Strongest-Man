@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { MODELS } from '../engine/assets.js';
 import { createLocomotion } from '../anim/locomotion.js';
+import { createPoseLayer } from '../anim/poselayer.js';
 import { groundOffset, findBone } from '../anim/retarget.js';
 import { capsuleVsWorld, blockedAt } from '../physics/collide.js';
 import { pickGoal, routeTo } from './schedule.js';
@@ -77,7 +78,9 @@ export function createNPCs(scene, city, player) {
       footY: 0,
       stuckT: 0,
       speakT: 0,                // >0 while mid-sentence (dialogue/conversation.js)
-      poseLayer: null,          // lazily built when carried or talking
+      // built here, while the clone is still in bind pose — a layer created
+      // mid-animation would capture the wrong rest rotations
+      poseLayer: createPoseLayer(root),
     };
     npc.footY = groundOffset(root);
     npc.px = npc.x; npc.pz = npc.z;
@@ -99,7 +102,7 @@ export function createNPCs(scene, city, player) {
       if (n.state === 'dead') { updateDead(n, dt); continue; }
       const dx = n.x - p.x, dz = n.z - p.z;
       const d2 = dx * dx + dz * dz;
-      n.tier = d2 < 484 ? 0 : d2 < 3600 ? 1 : 2;
+      n.tier = n.state === 'talking' ? 0 : d2 < 484 ? 0 : d2 < 3600 ? 1 : 2;
 
       // staggered AI cadence per tier
       const interval = n.tier === 0 ? 1 : n.tier === 1 ? 3 : 12;
@@ -142,6 +145,12 @@ export function createNPCs(scene, city, player) {
             n.state = 'commute'; n.goal = null;
           }
         }
+        break;
+      }
+      case 'talking': {
+        // mid-conversation: they stand still and keep their eyes on you
+        n.targetSpeed = 0;
+        n.yaw = Math.atan2(sys.player.p.x - n.x, sys.player.p.z - n.z);
         break;
       }
       case 'chat': {
@@ -270,12 +279,30 @@ export function createNPCs(scene, city, player) {
       n.visYaw = dampAngle(n.visYaw, n.yaw, 12, dt);
       n.root.rotation.set(0, n.visYaw, 0);
 
+
       // tiered mixer updates keep 48 skinned meshes cheap
       n.mixerAcc += dt;
       const step = n.tier === 0 ? 0 : n.tier === 1 ? 0.066 : 0.15;
       if (n.mixerAcc >= step) {
         n.loco.update(n.mixerAcc, n.speed);
         n.mixerAcc = 0;
+        // Speaking is physical: the head nods and turns, the chest sways, a hand
+        // comes up on the stresses. Applied here, right after the mixer has
+        // written this frame's pose — an additive twist would otherwise compound
+        // on every frame the mixer skipped. Additive rather than an authored
+        // pose because the rigs do not share bind rotations.
+        if (n.speakT > 0) {
+          n.speakT -= dt;
+          n.speakPhase = (n.speakPhase || 0) + dt;
+          const st_ = n.speakPhase;
+          const amp = Math.min(1, n.speakT * 2.5);
+          n.poseLayer.twist('Head', Math.sin(st_ * 7.3) * 0.10 * amp, Math.sin(st_ * 3.1) * 0.13 * amp, 0);
+          n.poseLayer.twist('neck', Math.sin(st_ * 5.1) * 0.06 * amp, 0, 0);
+          n.poseLayer.twist('Spine02', Math.sin(st_ * 2.3) * 0.05 * amp, Math.sin(st_ * 1.7) * 0.06 * amp, 0);
+          const g = Math.max(0, Math.sin(st_ * 1.9)) * 0.5 * amp;
+          n.poseLayer.twist('RightArm', -g, 0, g * 0.4);
+          n.poseLayer.twist('RightForeArm', -g * 0.9, 0, 0);
+        }
       }
     }
   }
@@ -306,6 +333,24 @@ export function createNPCs(scene, city, player) {
     emit(EV.NPC_DIED, { npc: n, cause, x: n.x, z: n.z });
     emit(EV.SCREAM, { x: n.x, z: n.z, radius: 20 });
   }
+
+  // dialogue/talk.js drives these
+  sys.beginTalk = (n) => {
+    if (n.state === 'dead' || n.state === 'carried') return false;
+    n.prevState = n.state;
+    n.state = 'talking';
+    n.targetSpeed = 0;
+    n.speed = 0;
+    n.chatPartner = null;
+    return true;
+  };
+  sys.endTalk = (n) => {
+    if (n.state !== 'talking') return;
+    n.state = 'commute';
+    n.goal = null; n.path.length = 0; n.pathI = 0;
+    n.speakT = 0;
+  };
+  sys.speak = (n, seconds) => { n.speakT = seconds; n.speakPhase = 0; };
 
   const hooks = {
     onPunch(f, radius, impulse, charge) {

@@ -52,15 +52,25 @@ function noise(dur = 0.4, gain = 0.3, freq = 800, q = 0.6) {
   src.start(t); src.stop(t + dur);
 }
 
+export function unlockAudio() { try { ac(); } catch { /* no audio on this device */ } }
+
+// A collapse kills a lot of people at once; each death used to allocate its own
+// oscillator and gain node in the same step.
+let lastDeathThud = 0;
+
 export function initAudio() {
-  const unlock = () => { try { ac(); } catch { /* no audio */ } };
-  window.addEventListener('pointerdown', unlock, { once: true });
+  window.addEventListener('pointerdown', unlockAudio, { once: true });
 
   on(EV.CHUNK_DESTROYED, ({ count }) => { thud(70, 0.2, Math.min(0.25 + count * 0.03, 0.6)); noise(0.35, 0.25, 900); });
   on(EV.BUILDING_COLLAPSED, () => { thud(46, 1.1, 0.85); noise(1.6, 0.5, 400, 0.4); });
   on(EV.CAR_EXPLODED, () => { thud(60, 0.5, 0.7); noise(0.9, 0.55, 1400); });
   on(EV.HYDRANT_BURST, () => noise(1.2, 0.3, 2600, 1.2));
-  on(EV.NPC_DIED, () => thud(220, 0.1, 0.15));
+  on(EV.NPC_DIED, () => {
+    const t = performance.now();
+    if (t - lastDeathThud < 90) return;
+    lastDeathThud = t;
+    thud(220, 0.1, 0.15);
+  });
   on(EV.MONSTER_SPAWNED, () => { thud(38, 1.4, 0.6); });
   on(EV.MONSTER_REALIZED, () => { thud(180, 0.5, 0.4); thud(90, 0.7, 0.5); });
   on(EV.MONSTER_DIED, () => { thud(50, 0.9, 0.8); noise(1, 0.4, 700); });

@@ -46,6 +46,18 @@
   </div>
 
   <button id="btn-pause" aria-label="pause">II</button>
+
+  <!-- live conversation. Anchored top-left: on iOS the keyboard overlays the
+       viewport without resizing it, so a bottom-anchored panel would vanish. -->
+  <div id="chat" hidden>
+    <div id="chat-head"><span id="chat-who"></span><button id="chat-close" aria-label="end conversation">✕</button></div>
+    <div id="chat-log"></div>
+    <form id="chat-form" autocomplete="off">
+      <input id="chat-input" type="text" placeholder="Say something…" enterkeyhint="send" maxlength="200">
+      <button id="chat-send" type="submit">SEND</button>
+    </form>
+    <div id="chat-hint" class="hidden"></div>
+  </div>
   <div id="toast" class="hidden"></div>
 </div>
 
@@ -58,6 +70,7 @@
     <button id="btn-settings" class="mbtn ghost">SETTINGS</button>
   </div>
   <div id="title-tip">Add to Home Screen for fullscreen play</div>
+  <div id="title-version"></div>
 </div>
 
 <!-- settings -->

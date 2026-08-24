@@ -10,7 +10,9 @@ const FALLBACK_MODELS = ['llama-3.1-8b-instant', 'openai/gpt-oss-20b', 'llama-3.
 
 const bucket = { tokens: 5, cap: 5, refill: 0.25 };  // 15 req/min, half the cap
 let modelIdx = 0;
-let inFlight = false;
+let inFlight = false;        // background bark enrichment
+let chatInFlight = false;    // player-initiated conversation — its own slot, so a
+                             // bark in flight can never swallow the player's turn
 let disabledUntil = 0;
 let dayCount = 0, dayStamp = '';
 
@@ -43,6 +45,55 @@ export function cachedLine(key) {
 
 export function groqAvailable() {
   return !!settings.groqKey && !flags.nogroq && performance.now() > disabledUntil && dayCount < 4000;
+}
+
+// A conversation the player started is never dropped for rate-limit reasons the
+// way a background bark is: it still respects 429 back-off and the daily cap,
+// but it does not have to win the token bucket, and it waits longer.
+export function chatAvailable() {
+  return !!settings.groqKey && !flags.nogroq && performance.now() > disabledUntil && dayCount < 4000;
+}
+export function chatBusy() { return chatInFlight; }
+
+export async function chatTurn(messages, { maxTokens = 110, timeoutMs = 15000 } = {}) {
+  if (!chatAvailable() || chatInFlight) return null;
+  const today = new Date().toDateString();
+  if (dayStamp !== today) { dayStamp = today; dayCount = 0; }
+  chatInFlight = true;
+  dayCount++;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${settings.groqKey}` },
+      body: JSON.stringify({
+        model: FALLBACK_MODELS[modelIdx],
+        temperature: 0.85,
+        max_tokens: maxTokens,
+        messages,
+      }),
+    });
+    if (res.status === 429) {
+      const retry = parseFloat(res.headers.get('retry-after') || '20');
+      disabledUntil = performance.now() + retry * 1000;
+      return null;
+    }
+    if (res.status === 404 || res.status === 400) {
+      modelIdx = Math.min(modelIdx + 1, FALLBACK_MODELS.length - 1);
+      return null;
+    }
+    if (!res.ok) { disabledUntil = performance.now() + 30000; return null; }
+    const data = await res.json();
+    const line = data.choices?.[0]?.message?.content?.trim();
+    return line ? line.replace(/^["']|["']$/g, '').slice(0, 400) : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+    chatInFlight = false;
+  }
 }
 
 export function groqTick(dt) {

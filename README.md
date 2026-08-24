@@ -24,18 +24,32 @@ home indicator, and — after the first launch — works with no connection at a
 | PUNCH hold | Charge — a full charge levels a building |
 | GRAB | Grab cars, props, rubble, people, weakened monsters; press again to throw |
 | JUMP | Jump |
-| TALK | Talk to whoever is in front of you |
+| TALK | Start a conversation with whoever is in front of you — type and they answer. Press again to end it |
 
 Everything works simultaneously — move, look and punch at once.
 
 ## Live NPC dialogue (optional)
 
-NPCs are fully voiced by built-in dialogue. If you want them powered by a
-live LLM, paste a free [Groq](https://console.groq.com/keys) API key under
-**Settings**. The key is stored only in your phone's local storage and is sent
-only to `api.groq.com`. The client stays far inside Groq's free-tier limits
-(15 requests/min, capped daily) and every NPC line still appears instantly —
-model responses enrich future lines rather than delaying current ones.
+NPCs are fully voiced by built-in dialogue with no setup. Paste a free
+[Groq](https://console.groq.com/keys) API key under **Settings** and TALK
+becomes a real conversation: type anything and the person in front of you
+answers in character. They know who they are, whether they have actually *seen*
+what you can do, what the city thinks of you, which district you are standing in
+and what time it is — so the same person answers very differently before and
+after they watch you throw a taxi. They stop walking, turn to face you and
+gesture while they speak; a monster arriving or a building coming down ends the
+conversation the way it would in life.
+
+The key is stored only in your phone's local storage and is sent only to
+`api.groq.com`. Ambient street barks stay instant and canned — only the
+conversation waits on the model — and the client stays far inside Groq's free
+tier. With no key the panel still opens and answers from the built-in corpus.
+
+## Graphics
+
+**Settings → Graphics** picks a tier. **High** (the default) is everything:
+procedural surface detail, real sun shadows, a procedural sky with drifting
+clouds, and sun shafts. **Auto** measures the device on first boot.
 
 ## The game
 
@@ -65,6 +79,8 @@ tools/                # dev-only (node)
   check-rig.mjs       # verifies all rigs share one skeleton
   test/serve.mjs      # local server mirroring the Pages subpath
   test/shot.mjs       # Playwright screenshot/assert driver
+  test/final.mjs      # full end-to-end suite (waits on sim time, not wall clock)
+  test/bench.mjs      # frame-hitch benchmark: worst-frame, not average fps
 ```
 
 Local dev: `node tools/test/serve.mjs` → http://127.0.0.1:8080/Strongest-Man/

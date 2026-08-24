@@ -5,17 +5,19 @@
 import { on, EV } from '../core/events.js';
 import { cannedLine } from './lines.js';
 import { say, bubblesFrame } from './bubbles.js';
-import { cachedLine, requestLine, groqTick, groqAvailable } from './groq.js';
+import { cachedLine, requestLine, groqTick, groqAvailable, chatAvailable, chatBusy } from './groq.js';
+import { ask, endSession, speakDuration, historyOf } from './conversation.js';
 import { karmaBand } from '../ai/karma.js';
 import { neighbors } from '../ai/crowd.js';
-import { save } from '../core/state.js';
+import { save, game } from '../core/state.js';
+import { input } from '../core/input.js';
 import { rand, pick, randRange } from '../core/mathx.js';
 
 const scratch = [];
 
 export function initDialogue(npcSys, monsterSys, reputation, player, cam) {
   const head = (n) => () => (n.state === 'dead' && !n.body ? { x: n.x, y: n.y + 1.2, z: n.z } : { x: n.x, y: n.y + 1.95, z: n.z });
-  const mhead = (m) => () => ({ x: m.x, y: m.y + 3.2, z: m.z });
+  const mhead = (m) => () => ({ x: m.x, y: m.y + (m.targetH || 3.2) + 0.5, z: m.z });
 
   const lastBark = new Map(); // npc -> time
   let now = 0;
@@ -103,6 +105,8 @@ Line:`;
   function fixedUpdate(dt) {
     now += dt;
     groqTick(dt);
+    // walking away ends it
+    if (chat.npc && Math.hypot(chat.npc.x - player.p.x, chat.npc.z - player.p.z) > 7) closeChat();
     ambientT -= dt;
     if (ambientT > 0) return;
     ambientT = randRange(3.5, 6);
@@ -127,39 +131,111 @@ Line:`;
     }
   }
 
-  // ---- TALK button: the one place a short "…" wait is allowed
-  function onInteract() {
-    neighbors(player.p.x, player.p.z, 3.2, scratch);
-    const n = scratch.find((o) => o.state !== 'dead' && o.state !== 'carried');
-    if (!n) return false;
-    n.yaw = Math.atan2(player.p.x - n.x, player.p.z - n.z);
-    const att = reputation.attitude(n);
-    const situation = att === 'terror' ? 'talk_terror' : att === 'awe' ? 'talk_awe' : 'talk_neutral';
-    const band = karmaBand();
-    const key = `${situation}|${band}|${repBand(n)}|${n.archetype}`;
-    const cached = cachedLine(key);
-    if (cached) { say(head(n), cached, { key: `npc${n.id}` }); maybeAsk(key, situation, n); return true; }
-    if (groqAvailable()) {
-      say(head(n), '…', { life: 1.5, key: `npc${n.id}` });
-      let answered = false;
-      maybeAskDirect(key, situation, n, (line) => { answered = true; say(head(n), line, { key: `npc${n.id}` }); });
-      setTimeout(() => { if (!answered) say(head(n), cannedLine(situation, band) || cannedLine(situation, 'any'), { key: `npc${n.id}` }); }, 1200);
-    } else {
-      say(head(n), cannedLine(situation, band) || cannedLine(situation, 'any'), { key: `npc${n.id}` });
-    }
+  // ---- TALK: open a real conversation with whoever is in front of you
+  const chat = {
+    el: null, log: null, form: null, input: null, who: null, hint: null,
+    npc: null,
+  };
+
+  function bindChat() {
+    if (chat.el) return;
+    chat.el = document.getElementById('chat');
+    chat.log = document.getElementById('chat-log');
+    chat.form = document.getElementById('chat-form');
+    chat.input = document.getElementById('chat-input');
+    chat.who = document.getElementById('chat-who');
+    chat.hint = document.getElementById('chat-hint');
+    if (!chat.el) return;
+    chat.form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
+    // The world keeps running behind the panel, so the controls have to go quiet
+    // while a finger is in the text field or typing would also drive the man.
+    chat.input.addEventListener('focus', () => { input.textFocus = true; });
+    chat.input.addEventListener('blur', () => { input.textFocus = false; });
+    document.getElementById('chat-close').addEventListener('click', () => closeChat());
+  }
+
+  function line(cls, text) {
+    const d = document.createElement('div');
+    d.className = cls;
+    d.textContent = text;
+    chat.log.appendChild(d);
+    chat.log.scrollTop = chat.log.scrollHeight;
+    return d;
+  }
+
+  function openChat(n) {
+    bindChat();
+    if (!chat.el) return false;
+    chat.npc = n;
+    chat.log.textContent = '';
+    chat.who.textContent = (n.archetype || 'stranger').toUpperCase();
+    chat.el.hidden = false;
+    chat.hint.classList.toggle('hidden', chatAvailable());
+    if (!chatAvailable()) chat.hint.textContent = 'No API key set — replies come from built-in lines. Add a Groq key in Settings.';
+    for (const m of historyOf(n)) line(m.role === 'user' ? 'you' : 'them', m.content);
+    npcSys.sys.beginTalk?.(n);
+    cam.frameTwoShot(player.p, n);
+    player.p.talkingTo = n;
+    chat.input.focus();
     return true;
   }
 
-  function maybeAskDirect(key, situation, n, onArrive) {
-    // like maybeAsk but always fires and reports back
-    const saved = rand; // (no-op; direct request below)
-    const band = karmaBand();
-    const repLine = { legend: 'the strongest man alive', rumored: 'someone people whisper about', unknown: 'a nobody' }[repBand(n)];
-    const prompt = `Speaker: ${n.archetype}. Mood: candid.
-Context: The player stopped to talk to them on the street.
-The player is known here as: ${repLine}. Public opinion of the player: ${band}.
-Line:`;
-    requestLine(key, prompt, onArrive);
+  function closeChat(keepSession = true) {
+    if (!chat.npc) return;
+    const n = chat.npc;
+    chat.npc = null;
+    chat.el.hidden = true;
+    input.textFocus = false;
+    chat.input.blur();
+    npcSys.sys.endTalk?.(n);
+    if (!keepSession) endSession(n);
+    cam.clearFraming();
+    player.p.talkingTo = null;
+  }
+
+  async function submit() {
+    const n = chat.npc;
+    const text = chat.input.value.trim();
+    if (!n || !text || chatBusy()) return;
+    chat.input.value = '';
+    line('you', text);
+    const pending = line('them pending', '…');
+    const { text: reply } = await ask(n, text, {
+      timeOfDay: game.timeOfDay,
+      attitude: reputation.attitude(n),
+      recent: lastEvent,
+    });
+    if (chat.npc !== n) return;              // they died / you walked off
+    pending.className = 'them';
+    pending.textContent = reply;
+    chat.log.scrollTop = chat.log.scrollHeight;
+    // the physical half: they stop, face you, and visibly say it
+    npcSys.sys.speak?.(n, speakDuration(reply));
+    say(head(n), reply.length > 90 ? `${reply.slice(0, 88)}…` : reply, { life: speakDuration(reply) + 1.2, key: `npc${n.id}` });
+  }
+
+  function onInteract() {
+    if (chat.npc) { closeChat(); return true; }
+    neighbors(player.p.x, player.p.z, 3.6, scratch);
+    const n = scratch.find((o) => o.state !== 'dead' && o.state !== 'carried');
+    if (!n) return false;
+    n.yaw = Math.atan2(player.p.x - n.x, player.p.z - n.z);
+    return openChat(n);
+  }
+
+  // A conversation cannot survive the city coming apart around it.
+  let lastEvent = '';
+  on(EV.BUILDING_COLLAPSED, () => { lastEvent = 'a building came down in the street'; interrupt(); });
+  on(EV.MONSTER_SPAWNED, () => { lastEvent = 'a monster walked in out of the fog'; interrupt(); });
+  on(EV.CAR_EXPLODED, () => { lastEvent = 'a car went up like a bomb'; });
+  on(EV.MONSTER_DIED, () => { lastEvent = 'someone killed a monster with their bare hands'; });
+  on(EV.NPC_DIED, ({ npc }) => { if (chat.npc === npc) closeChat(false); });
+
+  function interrupt() {
+    if (!chat.npc) return;
+    const n = chat.npc;
+    closeChat();
+    bark(n, 'panic_scream', { cls: 'scream', force: true });
   }
 
   function frameUpdate(dt) {
@@ -167,5 +243,19 @@ Line:`;
   }
 
   window.__test.talk = onInteract;
+  window.__test.chatSay = async (text) => {
+    if (!chat.npc) return null;
+    chat.input.value = text;
+    await submit();
+    return { npc: chat.npc?.id ?? null, state: chat.npc?.state ?? null, log: chat.log.textContent };
+  };
+  window.__test.chatState = () => ({
+    open: !!chat.npc,
+    npcState: chat.npc?.state ?? null,
+    speakT: +(chat.npc?.speakT ?? 0).toFixed(2),
+    npcSpeed: +(chat.npc?.speed ?? 0).toFixed(2),
+    facing: chat.npc ? +Math.abs(((chat.npc.yaw - Math.atan2(player.p.x - chat.npc.x, player.p.z - chat.npc.z)) + Math.PI) % (Math.PI * 2) - Math.PI).toFixed(3) : null,
+    lines: chat.log ? chat.log.children.length : 0,
+  });
   return { fixedUpdate, frameUpdate, onInteract };
 }

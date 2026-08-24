@@ -2,13 +2,19 @@
 // orientation for installed web apps, so portrait shows a blocking overlay.
 import { game, setGameState, settings, persist } from '../core/state.js';
 import { openSettings } from './settings.js';
+import { VERSION } from '../core/version.js';
 
 const el = (id) => document.getElementById(id);
 
 export function initOverlays() {
   const title = el('title-screen'), pause = el('pause-screen'), rotate = el('rotate-overlay');
+  el('title-version').textContent = `v${VERSION}`;
 
   el('btn-play').addEventListener('click', () => {
+    // unlock audio on this real user gesture — initAudio's own listener is
+    // registered at the END of boot and a fast tap can beat it, which meant the
+    // 1.2s noise buffer got built mid-combat instead
+    import('../engine/audio.js').then((m) => m.unlockAudio?.()).catch(() => {});
     title.hidden = true;
     el('hud').hidden = false;
     setGameState('playing');

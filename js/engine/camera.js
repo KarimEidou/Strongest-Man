@@ -1,7 +1,7 @@
 // Third-person follow camera: swipe orbits (yaw/pitch), spring-damped follow,
 // camera pulls in when geometry blocks the view, trauma-based shake.
 import * as THREE from 'three';
-import { clamp, damp, dampAngle } from '../core/mathx.js';
+import { clamp, damp, dampAngle, shortAngle } from '../core/mathx.js';
 import { consumeLook } from '../core/input.js';
 
 const DIST = 6.2;
@@ -21,6 +21,9 @@ export function createCamera() {
     // occlusionQuery(from, to) -> allowed distance; installed by world in P3+
     occlusionQuery: null,
     pushIn: 0, // monster-realization dolly (0..1)
+    // two-shot framing during a conversation: {a, b} live objects with x/z
+    framing: null,
+    framingW: 0,
   };
 
   window.addEventListener('resize', () => {
@@ -34,6 +37,23 @@ export function createCamera() {
     const [ldx, ldy] = consumeLook();
     st.yaw -= ldx * 0.0038;
     st.pitch = clamp(st.pitch + ldy * 0.0030, MIN_PITCH, MAX_PITCH);
+
+    // Conversation two-shot: ease the camera round to a side-on view of the
+    // pair and pull in, then hand control back when the chat ends.
+    st.framingW = damp(st.framingW, st.framing ? 1 : 0, 3.2, dt);
+    if (st.framingW > 0.002 && st.framing) {
+      const { a, b } = st.framing;
+      const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+      st.target.set(mx, st.target.y, mz);
+      // perpendicular to the line between them, on whichever side the camera
+      // is already closest to, so it never swings through their faces
+      const axis = Math.atan2(b.x - a.x, b.z - a.z);
+      let want = axis + Math.PI / 2;
+      if (Math.abs(shortAngle(want - st.yaw)) > Math.PI / 2) want -= Math.PI;
+      st.yaw = dampAngle(st.yaw, want, 2.4 * st.framingW, dt);
+      st.pitch = damp(st.pitch, 0.16, 2.4 * st.framingW, dt);
+      st.dist = damp(st.dist, 4.4, 2.4 * st.framingW, dt);
+    }
     st.curYaw = dampAngle(st.curYaw, st.yaw, 22, dt);
     st.curPitch = damp(st.curPitch, st.pitch, 22, dt);
 
@@ -75,6 +95,14 @@ export function createCamera() {
   return {
     camera, st, frameUpdate,
     shake(amount) { st.trauma = Math.min(1, st.trauma + amount); },
+    frameTwoShot(a, b) {
+      if (!st.framing) st.framingPrevDist = st.dist;   // combat may own dist (carrying)
+      st.framing = { a, b };
+    },
+    clearFraming() {
+      if (st.framing) st.dist = st.framingPrevDist ?? DIST;
+      st.framing = null;
+    },
     realizePushIn() { st.pushIn = 1; },
     get yaw() { return st.curYaw; },
   };

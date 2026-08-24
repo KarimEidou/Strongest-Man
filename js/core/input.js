@@ -18,6 +18,10 @@ export const input = {
   grabPressed: false,
   interactPressed: false,
   anyTouch: false,
+  // true while a text field has focus (the conversation panel). The world keeps
+  // simulating; only the controls go quiet, so a typed sentence never also
+  // drives the character.
+  textFocus: false,
 };
 
 const state = {
@@ -40,11 +44,12 @@ export function bindButtons({ punch, jump, grab, interact }) {
     el.addEventListener('pointerup', release, opts);
     el.addEventListener('pointercancel', release, opts);
   };
-  press(punch, () => { state.pendingPunchDown = true; input.punchDown = true; },
+  const guarded = (fn) => () => { if (!input.textFocus) fn(); };
+  press(punch, guarded(() => { state.pendingPunchDown = true; input.punchDown = true; }),
     () => { state.pendingPunchUp = true; input.punchDown = false; });
-  press(jump, () => { state.pendingJump = true; });
-  press(grab, () => { state.pendingGrab = true; });
-  press(interact, () => { state.pendingInteract = true; });
+  press(jump, guarded(() => { state.pendingJump = true; }));
+  press(grab, guarded(() => { state.pendingGrab = true; }));
+  press(interact, () => { state.pendingInteract = true; });   // TALK closes the panel too
 }
 
 export function initInput(surface, stick, nub) {
@@ -52,7 +57,7 @@ export function initInput(surface, stick, nub) {
   const opts = { passive: false };
 
   surface.addEventListener('pointerdown', (e) => {
-    if (game.state !== 'playing') return;
+    if (game.state !== 'playing' || input.textFocus) return;
     e.preventDefault();
     input.anyTouch = true;
     const w = window.innerWidth;
@@ -99,7 +104,7 @@ export function initInput(surface, stick, nub) {
 
   // ---- desktop fallbacks for development/testing
   window.addEventListener('keydown', (e) => {
-    if (e.repeat) return;
+    if (e.repeat || input.textFocus) return;
     state.keys.add(e.code);
     if (e.code === 'KeyJ') { state.pendingPunchDown = true; input.punchDown = true; }
     if (e.code === 'KeyK') state.pendingJump = true;
@@ -107,6 +112,7 @@ export function initInput(surface, stick, nub) {
     if (e.code === 'KeyE') state.pendingInteract = true;
   });
   window.addEventListener('keyup', (e) => {
+    if (input.textFocus) { state.keys.clear(); return; }
     state.keys.delete(e.code);
     if (e.code === 'KeyJ') { state.pendingPunchUp = true; input.punchDown = false; }
   });
@@ -150,6 +156,16 @@ if (typeof window !== 'undefined') {
 
 // Called once per fixed step: fold pending edges + keyboard axes into `input`.
 export function pollInput(dt) {
+  if (input.textFocus) {
+    input.moveX = 0; input.moveZ = 0;
+    input.lookDX = 0; input.lookDY = 0;
+    input.punchPressed = input.punchReleased = false;
+    input.jumpPressed = input.grabPressed = input.interactPressed = false;
+    state.pendingPunchDown = state.pendingPunchUp = false;
+    state.pendingJump = state.pendingGrab = state.pendingInteract = false;
+    input.chargeTime = 0;
+    return;
+  }
   if (driveOverride) { input.moveX = driveOverride.x; input.moveZ = driveOverride.z; }
   input.punchPressed = state.pendingPunchDown; state.pendingPunchDown = false;
   input.punchReleased = state.pendingPunchUp; state.pendingPunchUp = false;
