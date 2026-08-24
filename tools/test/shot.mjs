@@ -35,6 +35,25 @@ const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
 
+// GROQSTUB=slow|429 fakes api.groq.com so client behavior is testable offline
+let groqCalls = 0;
+if (process.env.GROQSTUB) {
+  await page.route('**/api.groq.com/**', async (route) => {
+    groqCalls++;
+    if (process.env.GROQSTUB === '429') {
+      await route.fulfill({ status: 429, headers: { 'retry-after': '30' }, body: '{}' });
+      return;
+    }
+    await new Promise((res) => setTimeout(res, 3000));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ choices: [{ message: { content: 'Stubbed line from the model.' } }] }),
+    });
+  });
+  await page.addInitScript(() => { try { localStorage.setItem('sm_groq_key', 'gsk_test'); } catch {} });
+}
+
 await page.goto(`http://127.0.0.1:8080/Strongest-Man/${suffix}`, { waitUntil: 'load' });
 try {
   await page.waitForFunction('window.__ready === true', null, { timeout: 20000 });

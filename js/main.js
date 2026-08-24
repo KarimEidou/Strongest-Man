@@ -113,6 +113,17 @@ fixedSystems.push((dt) => monsters.fixedUpdate(dt));
 fixedSystems.push((dt) => director.fixedUpdate(dt));
 fixedSystems.push((dt) => { karma.fixedUpdate(dt); reputation.fixedUpdate(dt); });
 window.__reputation = reputation;
+
+const { initBubbles } = await import('./dialogue/bubbles.js');
+const { initDialogue } = await import('./dialogue/talk.js');
+initBubbles(cam.camera);
+const dialogue = initDialogue(npcs, monsters, reputation, player, cam);
+fixedSystems.push((dt) => {
+  dialogue.fixedUpdate(dt);
+  if (inputRef.interactPressed) dialogue.onInteract();
+});
+frameSystems.push((dt) => dialogue.frameUpdate(dt));
+const { input: inputRef } = await import('./core/input.js');
 frameSystems.push((dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha); });
 fixedSystems.push((dt) => {
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
