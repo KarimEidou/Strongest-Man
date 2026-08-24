@@ -1,0 +1,13 @@
+{
+  "name": "strongest-man-tools",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@gltf-transform/cli": "^4.1.0",
+    "@gltf-transform/core": "^4.1.0",
+    "@gltf-transform/extensions": "^4.1.0",
+    "@gltf-transform/functions": "^4.1.0",
+    "playwright-core": "^1.49.0",
+    "sharp": "^0.33.5"
+  }
+}
