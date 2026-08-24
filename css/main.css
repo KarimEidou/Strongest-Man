@@ -217,6 +217,11 @@ button { font: inherit; color: inherit; }
 .srow { display: block; margin: 14px 0; font-size: 14px; text-align: left; }
 .srow input[type=range] { width: 100%; margin-top: 6px; accent-color: var(--orange-bright); }
 .srow input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--orange-bright); float: right; }
+.srow select {
+  width: 100%; box-sizing: border-box; margin-top: 6px;
+  padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--blue-mid);
+  background: #091430; color: var(--ink); font-size: 14px;
+}
 .key-row input[type=password] {
   width: 100%; box-sizing: border-box; margin-top: 8px;
   padding: 10px; border-radius: 8px; border: 1.5px solid var(--blue-mid);

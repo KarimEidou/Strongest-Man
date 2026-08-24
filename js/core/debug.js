@@ -18,6 +18,10 @@ export const flags = {
   autoplay: false,
   nomonsters: false,
   prof: false,
+  quality: '',            // ?quality=low|medium|high forces a tier at boot
+  nogodrays: false,       // ?nogodrays=1 isolates the sun-shaft pass
+  noshadows: false,       // ?noshadows=1 isolates the shadow pass
+  nodetail: false,        // ?nodetail=1 isolates procedural surface detail
 };
 
 export function initDebug() {
@@ -28,6 +32,10 @@ export function initDebug() {
   flags.autoplay = q.has('autoplay');
   flags.nomonsters = q.has('nomonsters');
   flags.prof = q.has('prof');
+  flags.quality = q.get('quality') || '';
+  flags.nogodrays = q.has('nogodrays');
+  flags.noshadows = q.has('noshadows');
+  flags.nodetail = q.has('nodetail');
   seedWorld(flags.seed);
 
   window.__perf = {

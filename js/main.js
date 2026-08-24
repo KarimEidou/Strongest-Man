@@ -2,11 +2,12 @@
 // they appear in `fixedSystems`; render-frame systems in `frameSystems`.
 import * as THREE from 'three';
 import { initDebug, perfFrame, addSimTime, profile, flags } from './core/debug.js';
-import { loadState, game, setGameState } from './core/state.js';
+import { loadState, game, setGameState, settings, persist } from './core/state.js';
 import { createLoop } from './core/loop.js';
 import { pollInput } from './core/input.js';
 import { createRenderer } from './engine/renderer.js';
 import { initSky } from './engine/sky.js';
+import { applyQuality, probeTier, tierOf } from './engine/quality.js';
 import { createCamera } from './engine/camera.js';
 import { initHUD, hudFrame } from './ui/hud.js';
 import { initOverlays, loadingProgress } from './ui/overlays.js';
@@ -17,7 +18,7 @@ initDebug();
 loadState();
 
 const canvas = document.getElementById('gl');
-const { renderer } = createRenderer(canvas);
+const { renderer, resize: setDpr } = createRenderer(canvas);
 const scene = new THREE.Scene();
 const cam = createCamera();
 
@@ -30,7 +31,7 @@ const fixedSystems = [];
 const frameSystems = [];
 
 loadingProgress(0.05, 'sky…');
-await initSky(scene, renderer);
+const sky = await initSky(scene, renderer, tierOf((flags.quality || settings.quality) === 'auto' ? 'high' : (flags.quality || settings.quality)));
 
 loadingProgress(0.1, 'models…');
 const { loadModels } = await import('./engine/assets.js');
@@ -115,6 +116,18 @@ fixedSystems.push(profile('director', (dt) => director.fixedUpdate(dt)));
 fixedSystems.push(profile('karmaRep', (dt) => { karma.fixedUpdate(dt); reputation.fixedUpdate(dt); }));
 window.__reputation = reputation;
 
+loadingProgress(0.97, 'lighting…');
+const { initShadows, setCharacterCasting } = await import('./engine/shadows.js');
+const { initGodrays } = await import('./engine/godrays.js');
+const shadows = initShadows(renderer, scene, sky.sun, buildingsReg, traffic, tierOf(flags.quality || settings.quality));
+const godrays = initGodrays(renderer, cam.camera);
+const qualityCtx = {
+  renderer, scene, camera: cam.camera, sky, shadows, godrays,
+  resize: (dpr) => setDpr(dpr),
+  setCharacterShadows: (on) => { setCharacterCasting(player.p.root, on); monsters.sys.setCastShadows(on); },
+};
+window.__quality = (name) => applyQuality(name, qualityCtx);
+
 const { initBubbles } = await import('./dialogue/bubbles.js');
 const { initDialogue } = await import('./dialogue/talk.js');
 initBubbles(cam.camera);
@@ -134,12 +147,28 @@ frameSystems.push(profile('chars.frame', (dt, alpha) => { npcs.frameUpdate(dt, a
 fixedSystems.push((dt) => {
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
 });
+frameSystems.push(profile('sky.frame', (dt) => sky.frameUpdate(dt, game.timeOfDay, cam.camera)));
 window.__npcs = npcs;
 window.__trafficList = traffic.list;
 window.__trafficState = traffic.hooks.lightState;
 window.__cityBuildings = city.buildings;
 
-// Compile every deferred shader behind the loading screen — see engine/warmup.js
+// Pick a graphics tier (default: everything on) then compile every deferred
+// shader behind the loading screen — see engine/warmup.js
+const wantQuality = flags.quality || settings.quality;
+if (wantQuality === 'auto') {
+  const picked = await probeTier(renderer, scene, cam.camera);
+  settings.qualityResolved = picked;
+  persist();
+  applyQuality(picked, qualityCtx);
+} else {
+  applyQuality(wantQuality, qualityCtx);
+}
+
+if (flags.nogodrays) godrays.setTier({ godrays: 'off' });
+if (flags.noshadows) shadows.setTier({ shadows: false });
+if (flags.nodetail) (await import('./engine/materials.js')).worldUniforms.uWorld.value.z = 0;
+
 loadingProgress(0.98, 'shaders…');
 const { warmUp } = await import('./engine/warmup.js');
 const { bangMaterial } = await import('./ai/monster.js');
@@ -200,7 +229,16 @@ function frame(dt, alpha) {
 
 function render() {
   renderer.info.reset();
+  // Order matters: the god-ray mask is its own render(), and
+  // shadowMap.needsUpdate is consumed by whichever render() comes next — so the
+  // shadow update has to be flagged BETWEEN the mask and the main pass, or the
+  // mask would eat it and the main pass would use a stale shadow map.
+  const rays = godrays.prepare(cam.camera, sky.sunDir, sky.sample().sun);
+  if (rays) godrays.renderMask(scene);
+  shadows.beforeRender(player.p, cam.camera, sky.sunDir);
+  renderer.setRenderTarget(null);
   renderer.render(scene, cam.camera);
+  if (rays) godrays.composite();
   perfFrame(renderer, lastDt, () => {
     const s = window.__bodyStats ? window.__bodyStats() : { active: 0, sleeping: 0 };
     return { activeBodies: s.active, sleeping: s.sleeping };

@@ -10,11 +10,19 @@ let returnTo = 'title';
 export function initSettings() {
   const sens = el('set-sens'), sensVal = el('set-sens-val');
   const invy = el('set-invy'), audio = el('set-audio'), groq = el('set-groq');
+  const quality = el('set-quality');
 
   el('btn-settings-done').addEventListener('click', () => {
     settings.lookSensitivity = parseFloat(sens.value);
     settings.invertY = invy.checked;
     settings.audio = audio.checked;
+    if (quality.value !== settings.quality) {
+      settings.quality = quality.value;
+      // Shadow and tone-mapping state are three PROGRAM parameters, so this
+      // recompiles every material. The game is paused behind this panel, which
+      // is the only place that is acceptable.
+      window.__quality?.(quality.value === 'auto' ? (settings.qualityResolved || 'high') : quality.value);
+    }
     const v = groq.value.trim();
     if (v !== '•••saved•••') settings.groqKey = v;
     persist();
@@ -34,6 +42,7 @@ export function openSettings(from) {
   el('set-sens').value = settings.lookSensitivity;
   el('set-sens-val').textContent = `${settings.lookSensitivity.toFixed(2)}×`;
   el('set-invy').checked = settings.invertY;
+  el('set-quality').value = settings.quality;
   el('set-audio').checked = settings.audio;
   el('set-groq').value = settings.groqKey ? '•••saved•••' : '';
   el('groq-status').textContent = settings.groqKey

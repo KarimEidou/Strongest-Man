@@ -42,6 +42,7 @@ export function createNPCs(scene, city, player) {
         o.material = o.material.clone();
         o.material.color.lerp(tint, 0.22 + rand() * 0.18);
         o.frustumCulled = true;
+        o.receiveShadow = true;
       }
     });
     const h = randRange(0.92, 1.07);

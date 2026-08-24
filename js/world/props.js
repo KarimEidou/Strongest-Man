@@ -184,6 +184,7 @@ export function buildProps(scene, city) {
       : staticGeometry(type);
     const im = new THREE.InstancedMesh(geometry, material, Math.max(list.length, 1));
     im.frustumCulled = false;
+    im.receiveShadow = true;
     im.name = type;
     list.forEach((p, i) => {
       p.idx = i;

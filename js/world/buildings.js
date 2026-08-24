@@ -5,7 +5,7 @@
 // spine walls, furniture) are pre-built and lit by the aInterior shader term.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { makeWorldMaterial, tagGeometry, faceShade } from '../engine/materials.js';
+import { makeWorldMaterial, tagGeometry, faceShade, SURF } from '../engine/materials.js';
 import { PAL } from '../core/palette.js';
 import { FLOOR_H } from './city.js';
 import { rand, randRange } from '../core/mathx.js';
@@ -22,14 +22,14 @@ export const SIDES = ['north', 'east', 'south', 'west'];
 
 // ---- archetype geometries ---------------------------------------------------
 
-function boxTagged(w, h, d, color, interior = 0, shade = 1) {
+function boxTagged(w, h, d, color, interior = 0, shade = 1, surf = SURF.PLASTER) {
   const g = new THREE.BoxGeometry(w, h, d);
-  tagGeometry(g, color, interior, shade);
+  tagGeometry(g, color, interior, shade, surf);
   return g;
 }
 
-function wallGeo() {
-  const g = boxTagged(CELL_W - INSET * 2, CELL_H - INSET * 2, T - INSET * 2, 0xffffff);
+function wallGeo(surf = SURF.PLASTER) {
+  const g = boxTagged(CELL_W - INSET * 2, CELL_H - INSET * 2, T - INSET * 2, 0xffffff, 0, 1, surf);
   markInnerFaces(g);
   return faceShade(g);
 }
@@ -47,7 +47,7 @@ function windowGeo() {
   parts.push(boxTagged(sideW, gh, fd, 0xffffff).translate(-fw / 2 + sideW / 2, -fh / 2 + bottomH + gh / 2, 0));
   parts.push(boxTagged(sideW, gh, fd, 0xffffff).translate(fw / 2 - sideW / 2, -fh / 2 + bottomH + gh / 2, 0));
   // glass: slightly recessed, fixed dark-blue tint (doesn't take instance tint well but reads as glass)
-  const glass = boxTagged(gw, gh, fd - 0.12, 0x3f6fc4, 0, 1);
+  const glass = boxTagged(gw, gh, fd - 0.12, 0x3f6fc4, 0, 1, SURF.GLASS);
   glass.translate(0, -fh / 2 + bottomH + gh / 2, 0);
   parts.push(glass);
   const g = mergeGeometries(parts);
@@ -63,7 +63,7 @@ function doorGeo() {
   parts.push(boxTagged(sideW, fh, fd, 0xffffff).translate(-fw / 2 + sideW / 2, 0, 0));
   parts.push(boxTagged(sideW, fh, fd, 0xffffff).translate(fw / 2 - sideW / 2, 0, 0));
   parts.push(boxTagged(dw, topH, fd, 0xffffff).translate(0, fh / 2 - topH / 2, 0));
-  const door = boxTagged(dw, dh, fd - 0.14, 0x5a3a20, 0, 1);
+  const door = boxTagged(dw, dh, fd - 0.14, 0x5a3a20, 0, 1, SURF.WOOD);
   door.translate(0, -fh / 2 + dh / 2, 0);
   parts.push(door);
   const g = mergeGeometries(parts);
@@ -82,8 +82,8 @@ function markInnerFaces(g) {
 }
 
 // unit cube used (scaled per instance) for slabs / roofs / interior walls
-function unitGeo(color, interior) {
-  const g = boxTagged(1, 1, 1, color, interior);
+function unitGeo(color, interior, surf = SURF.CONCRETE) {
+  const g = boxTagged(1, 1, 1, color, interior, 1, surf);
   return g;
 }
 
@@ -101,7 +101,7 @@ export function buildBuildings(scene, specs) {
   };
 
   // count cells per mesh type first
-  const placements = { wall: [], window: [], door: [] };
+  const placements = { wall: [], wallBrick: [], window: [], door: [] };
   const slabPlace = [], iwallPlace = [], furnPlace = [];
 
   for (const s of specs) {
@@ -123,7 +123,8 @@ export function buildBuildings(scene, specs) {
       const n = sideCols[side];
       for (let col = 0; col < n; col++) {
         for (let floor = 0; floor < s.floors; floor++) {
-          let kind = 'wall';
+          const plain = s.material === 'brick' ? 'wallBrick' : 'wall';
+          let kind = plain;
           const storefront = floor === 0 && (s.type === 'shop' || s.type === 'diner') && side === s.front;
           if (floor === 0 && col === doorCol[side]) kind = 'door';
           else if (storefront) kind = 'window';
@@ -191,6 +192,7 @@ export function buildBuildings(scene, specs) {
   function makeInstanced(geo, list, name, colorFn, matrixFn) {
     const im = new THREE.InstancedMesh(geo, mat, Math.max(list.length, 1));
     im.frustumCulled = false;
+    im.receiveShadow = true;
     im.name = name;
     list.forEach((p, i) => {
       matrixFn(p, i);
@@ -216,12 +218,13 @@ export function buildBuildings(scene, specs) {
     M.compose(V.set(p.x, p.y, p.z), Q, S.set(1, 1, 1));
   };
 
-  reg.meshes.wall = makeInstanced(wallGeo(), placements.wall, 'walls', facadeColor, facadeMatrix);
+  reg.meshes.wall = makeInstanced(wallGeo(SURF.PLASTER), placements.wall, 'walls', facadeColor, facadeMatrix);
+  reg.meshes.wallBrick = makeInstanced(wallGeo(SURF.BRICK), placements.wallBrick, 'wallsBrick', facadeColor, facadeMatrix);
   reg.meshes.window = makeInstanced(windowGeo(), placements.window, 'windows', facadeColor, facadeMatrix);
   reg.meshes.door = makeInstanced(doorGeo(), placements.door, 'doors', facadeColor, facadeMatrix);
 
   reg.meshes.slab = makeInstanced(
-    faceShade(unitGeo(0xffffff, 1)), slabPlace, 'slabs',
+    faceShade(unitGeo(0xffffff, 1, SURF.CONCRETE)), slabPlace, 'slabs',
     (p, c) => { c.setHex(p.roof ? 0x424a63 : 0x6b6350); if (p.roof) c.multiplyScalar(1.0); },
     (p) => { Q.identity(); M.compose(V.set(p.x, p.y, p.z), Q, S.set(p.sx, p.sy, p.sz)); },
   );
@@ -232,12 +235,12 @@ export function buildBuildings(scene, specs) {
   const floorSlabPlace = slabPlace.filter((p) => !p.roof);
   scene.remove(reg.meshes.slab);
   reg.meshes.slab = makeInstanced(
-    faceShade(unitGeo(0xffffff, 1)), floorSlabPlace, 'floorSlabs',
+    faceShade(unitGeo(0xffffff, 1, SURF.CONCRETE)), floorSlabPlace, 'floorSlabs',
     (p, c) => c.setHex(0x7d735c),
     (p) => { Q.identity(); M.compose(V.set(p.x, p.y, p.z), Q, S.set(p.sx, p.sy, p.sz)); },
   );
   reg.meshes.roof = makeInstanced(
-    faceShade(unitGeo(0xffffff, 0)), roofPlace, 'roofs',
+    faceShade(unitGeo(0xffffff, 0, SURF.ROOF)), roofPlace, 'roofs',
     (p, c) => { c.setHex(specs[p.bId].tint); c.multiplyScalar(0.55); },
     (p) => { Q.identity(); M.compose(V.set(p.x, p.y + 0.1, p.z), Q, S.set(p.sx + 0.5, p.sy, p.sz + 0.5)); },
   );
@@ -248,7 +251,7 @@ export function buildBuildings(scene, specs) {
   for (const sl of reg.slabs) reg.buildings[sl.bId].slabIds.push(sl);
 
   reg.meshes.iwall = makeInstanced(
-    unitGeo(0xffffff, 1), iwallPlace, 'iwalls',
+    unitGeo(0xffffff, 1, SURF.PLASTER), iwallPlace, 'iwalls',
     (p, c) => c.setHex(0x8a8298),
     (p) => { Q.identity(); M.compose(V.set(p.x, p.y, p.z), Q, S.set(p.sx, p.sy, p.sz)); },
   );
@@ -286,8 +289,8 @@ export function buildBuildings(scene, specs) {
 
 function furnGeo() {
   // desk-ish box cluster (single archetype; color varies desk/shelf)
-  const top = tagGeometry(new THREE.BoxGeometry(1.5, 0.1, 0.8), 0xffffff, 1).translate(0, 0.35, 0);
-  const legs = tagGeometry(new THREE.BoxGeometry(1.3, 0.7, 0.6), 0xffffff, 1).translate(0, 0, 0);
+  const top = tagGeometry(new THREE.BoxGeometry(1.5, 0.1, 0.8), 0xffffff, 1, 1, SURF.WOOD).translate(0, 0.35, 0);
+  const legs = tagGeometry(new THREE.BoxGeometry(1.3, 0.7, 0.6), 0xffffff, 1, 1, SURF.WOOD).translate(0, 0, 0);
   return mergeGeometries([top, legs]);
 }
 

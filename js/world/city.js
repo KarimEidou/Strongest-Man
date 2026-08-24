@@ -39,6 +39,8 @@ export function buildCitySpec() {
         floors: type === 'shop' || type === 'diner' ? randInt(2, 3) : randInt(3, 8),
         type, front, district: b.district,
         tint: pick([0x2c5fd1, 0x2452b8, 0x3a6fe0, 0x9aa6c8, 0xb98a54, 0x8896bb, 0x33549e]),
+        // facade material: drives which wall archetype the block is built from
+        material: rand() < 0.42 ? 'brick' : 'plaster',
         alive: true,
       };
       placed.push(spec); buildings.push(spec);

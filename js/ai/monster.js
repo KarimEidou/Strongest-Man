@@ -45,6 +45,13 @@ export function bangMaterial() {
 export function createMonsters(scene, npcSys, player, cam) {
   const monsters = [];
   const sys = { monsters };
+  // characters cast from their real mesh at the top tier — a boxy proxy under
+  // the thing you are looking at is worse than no shadow at all
+  let charShadows = false;
+  sys.setCastShadows = (on) => {
+    charShadows = on;
+    for (const m of monsters) m.root.traverse((o) => { if (o.isMesh) o.castShadow = on; });
+  };
 
   // Per-kind material and rest-pose measurements, computed once. Every monster
   // of a kind gets the same constant brightening, so cloning the material per
@@ -73,7 +80,7 @@ export function createMonsters(scene, npcSys, player, cam) {
     const base = kindIdx === 0 ? 'monster_a' : 'monster_b';
     const info = kindInfo(kindIdx, base);
     const root = cloneSkeleton(MODELS[base].scene);
-    root.traverse((o) => { if (o.isMesh) { o.material = info.shared; o.frustumCulled = true; } });
+    root.traverse((o) => { if (o.isMesh) { o.material = info.shared; o.frustumCulled = true; o.receiveShadow = true; o.castShadow = charShadows; } });
     // the auto-rig ships human-scaled; monsters must tower
     root.scale.setScalar(info.scale);
     scene.add(root);

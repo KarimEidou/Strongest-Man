@@ -7,7 +7,8 @@ export const settings = {
   lookSensitivity: 1.0,   // 0.4 .. 2.0
   invertY: false,
   audio: true,
-  quality: 'high',        // 'high' | 'low' (drops DPR + debris density)
+  quality: 'high',        // 'high' | 'medium' | 'low' | 'auto' — see engine/quality.js
+  qualityResolved: '',    // what 'auto' measured on this device
   groqKey: '',            // stays on-device; never sent anywhere but api.groq.com
   seenIntro: false,
 };
@@ -18,7 +19,8 @@ export const save = {
 
 export const game = {
   state: 'title',         // title | playing | paused | settings
-  timeOfDay: 9 / 24,      // 0..1, game day = 24 real minutes
+  timeOfDay: 0.70,        // 0..1, game day = 24 real minutes; 0.70 is the low
+                          // warm dusk the palette was authored around
   slowmo: 1,              // global timescale (charged-punch hit-stop)
 };
 

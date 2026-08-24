@@ -2,7 +2,7 @@
 // Bodies write their instance matrix on move and once on sleep; despawn always
 // animates (shrink), never pops. Craters and decals live here too.
 import * as THREE from 'three';
-import { makeWorldMaterial, tagGeometry, faceShade } from '../engine/materials.js';
+import { makeWorldMaterial, tagGeometry, faceShade, SURF } from '../engine/materials.js';
 import { createBody, active as activeBodies, sleeping as sleepingBodies } from '../physics/pworld.js';
 import { addDent, removePile } from '../physics/heightfield.js';
 import { PAL } from '../core/palette.js';
@@ -11,13 +11,13 @@ const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler()
 const C = new THREE.Color();
 
 const POOLS = {
-  chunk: { cap: 520, geo: () => jitterBox(1, 1, 1, 0.22) },
-  glass: { cap: 160, geo: () => tagGeometry(new THREE.PlaneGeometry(1, 1).toNonIndexed(), 0x9fc4ff, 0, 1.1) },
-  brick: { cap: 260, geo: () => jitterBox(1, 0.6, 0.7, 0.15) },
-  part: { cap: 140, geo: () => jitterBox(1, 0.8, 0.9, 0.1) },
+  chunk: { cap: 520, geo: () => jitterBox(1, 1, 1, 0.22, SURF.CONCRETE) },
+  glass: { cap: 160, geo: () => tagGeometry(new THREE.PlaneGeometry(1, 1).toNonIndexed(), 0x9fc4ff, 0, 1.1, SURF.GLASS) },
+  brick: { cap: 260, geo: () => jitterBox(1, 0.6, 0.7, 0.15, SURF.BRICK) },
+  part: { cap: 140, geo: () => jitterBox(1, 0.8, 0.9, 0.1, SURF.METAL) },
 };
 
-function jitterBox(w, h, d, j) {
+function jitterBox(w, h, d, j, surf = SURF.CONCRETE) {
   const g = new THREE.BoxGeometry(w, h, d).toNonIndexed();
   const pos = g.getAttribute('position');
   // consistent corner jitter: displace each unique corner by a hash of its signs
@@ -28,7 +28,7 @@ function jitterBox(w, h, d, j) {
     pos.setXYZ(i, pos.getX(i) + f(1.3), pos.getY(i) + f(2.1), pos.getZ(i) + f(3.7));
   }
   g.computeVertexNormals();
-  tagGeometry(g, 0xffffff, 0, 1);
+  tagGeometry(g, 0xffffff, 0, 1, surf);
   return faceShade(g);
 }
 
@@ -41,6 +41,7 @@ export function initDebris(scene) {
   for (const [name, cfg] of Object.entries(POOLS)) {
     const im = new THREE.InstancedMesh(cfg.geo(), mat, cfg.cap);
     im.frustumCulled = false;
+    im.receiveShadow = true;
     im.name = `debris_${name}`;
     im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     const zero = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -178,6 +179,7 @@ function craterGeo() {
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   g.setAttribute('aInterior', new THREE.Float32BufferAttribute(interior, 1));
+  g.setAttribute('aSurface', new THREE.Float32BufferAttribute(interior.map(() => SURF.ASPHALT), 1));
   g.computeVertexNormals();
   return g;
 }
@@ -198,7 +200,7 @@ let decalMesh, decalNext = 0;
 const decalLife = new Float32Array(DECAL_CAP);
 function initDecals(scene) {
   const g = new THREE.CircleGeometry(1, 8).rotateX(-Math.PI / 2).toNonIndexed();
-  tagGeometry(g, PAL.blood, 0, 1);
+  tagGeometry(g, PAL.blood, 0, 1, SURF.PAINT);
   decalMesh = new THREE.InstancedMesh(g, makeWorldMaterial({ polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1, transparent: true, opacity: 0.85 }), DECAL_CAP);
   decalMesh.renderOrder = 2;
   decalMesh.frustumCulled = false;

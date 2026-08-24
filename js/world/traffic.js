@@ -66,6 +66,7 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
     const geo = carGeo(kind);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.frustumCulled = false;
+    mesh.receiveShadow = true;
     scene.add(mesh);
     const ci = i % CIRCUITS.length;
     const car = {

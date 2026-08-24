@@ -4,11 +4,11 @@
 // signal lenses are a separate live-colored layer).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { tagGeometry, faceShade } from '../engine/materials.js';
+import { tagGeometry, faceShade, SURF, setSurface } from '../engine/materials.js';
 import { PAL } from '../core/palette.js';
 
-const box = (w, h, d, c, shade = 1) => tagGeometry(new THREE.BoxGeometry(w, h, d).toNonIndexed(), c, 0, shade);
-const cyl = (rt, rb, h, seg, c, shade = 1) => tagGeometry(new THREE.CylinderGeometry(rt, rb, h, seg).toNonIndexed(), c, 0, shade);
+const box = (w, h, d, c, shade = 1, surf = SURF.METAL) => tagGeometry(new THREE.BoxGeometry(w, h, d).toNonIndexed(), c, 0, shade, surf);
+const cyl = (rt, rb, h, seg, c, shade = 1, surf = SURF.METAL) => tagGeometry(new THREE.CylinderGeometry(rt, rb, h, seg).toNonIndexed(), c, 0, shade, surf);
 
 // merge helper: uv layouts differ between primitives and custom prisms — the
 // shared material samples no textures, so drop uv everywhere before merging
@@ -34,7 +34,7 @@ function prism(wB, dB, wT, dT, h, c, opts = {}) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(tri, 3));
   g.computeVertexNormals();
-  return tagGeometry(g, c, 0, opts.shade ?? 1);
+  return tagGeometry(g, c, 0, opts.shade ?? 1, opts.surf ?? SURF.METAL);
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +99,7 @@ export function trafficLightGeo() {
 // separate tiny quad instanced per lens so intersections can switch colors
 export function trafficLensGeo() {
   const g = new THREE.PlaneGeometry(0.17, 0.17).toNonIndexed();
-  tagGeometry(g, 0xffffff, 0, 1.6);
+  tagGeometry(g, 0xffffff, 0, 1.6, SURF.GLASS);
   return g; // positioned per instance at head front (z 1.395)
 }
 
@@ -152,6 +152,7 @@ function canopyBall(r, squash) {
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   g.setAttribute('aInterior', new THREE.BufferAttribute(new Float32Array(pos.count).fill(0), 1));
+  g.setAttribute('aSurface', new THREE.BufferAttribute(new Float32Array(pos.count).fill(SURF.FOLIAGE), 1));
   return g;
 }
 
@@ -159,14 +160,14 @@ export function treeGeo() {
   const parts = [];
   parts.push(canopyBall(1.85, 0.94).translate(0, 3.85, 0));
   parts.push(canopyBall(0.85, 0.9).translate(0.75, 4.9, 0.35));       // asymmetric crown bump
-  parts.push(cyl(0.15, 0.23, 2.7, 5, 0x6b4a26).translate(0, 1.35, 0));
-  parts.push(box(0.1, 2.4, 0.08, 0x4a3118).translate(0.13, 1.3, 0.06)); // shade stripe
+  parts.push(cyl(0.15, 0.23, 2.7, 5, 0x6b4a26, 1, SURF.WOOD).translate(0, 1.35, 0));
+  parts.push(box(0.1, 2.4, 0.08, 0x4a3118, 1, SURF.WOOD).translate(0.13, 1.3, 0.06)); // shade stripe
   // root flares
-  parts.push(prism(0.5, 0.4, 0.16, 0.16, 0.4, 0x6b4a26).translate(0, 0, 0));
-  parts.push(prism(0.2, 0.34, 0.1, 0.12, 0.3, 0x4a3118).translate(0.22, 0, 0.12));
+  parts.push(prism(0.5, 0.4, 0.16, 0.16, 0.4, 0x6b4a26, { surf: SURF.WOOD }).translate(0, 0, 0));
+  parts.push(prism(0.2, 0.34, 0.1, 0.12, 0.3, 0x4a3118, { surf: SURF.WOOD }).translate(0.22, 0, 0.12));
   // branch stubs into the canopy
-  const b1 = cyl(0.045, 0.065, 0.9, 4, 0x6b4a26); b1.rotateZ(0.7); b1.translate(-0.42, 2.85, 0.05);
-  const b2 = cyl(0.04, 0.06, 0.8, 4, 0x4a3118); b2.rotateZ(-0.6); b2.rotateY(0.5); b2.translate(0.4, 2.95, -0.1);
+  const b1 = cyl(0.045, 0.065, 0.9, 4, 0x6b4a26, 1, SURF.WOOD); b1.rotateZ(0.7); b1.translate(-0.42, 2.85, 0.05);
+  const b2 = cyl(0.04, 0.06, 0.8, 4, 0x4a3118, 1, SURF.WOOD); b2.rotateZ(-0.6); b2.rotateY(0.5); b2.translate(0.4, 2.95, -0.1);
   parts.push(b1, b2);
   return mergeParts(parts); // canopy tones are authored — no faceShade pass
 }
@@ -184,7 +185,7 @@ export function kioskGeo() {
   parts.push(box(0.1, 1.9, 0.1, PAL.blueDeep).translate(1.08, 0.95, 0.73));
   parts.push(box(2.3, 0.12, 1.6, 0x0d1b3e).translate(0, 0.06, 0));       // plinth
   // signboard
-  parts.push(box(2.34, 0.34, 0.16, 0xf5f0e0, 1.05).translate(0, 2.12, 0));
+  parts.push(box(2.34, 0.34, 0.16, 0xf5f0e0, 1.05, SURF.PAINT).translate(0, 2.12, 0));
   parts.push(box(0.7, 0.14, 0.17, 0x0d1b3e).translate(0, 2.12, 0));      // abstract lettering band
   // awning: straight band + scallops along the front
   parts.push(box(2.4, 0.1, 0.34, PAL.orange).translate(0, 1.9, 0.72));
@@ -235,12 +236,12 @@ export function carGeo(kind = 'sedan') {
     rake.translate(0, cl + 0.75, front - 0.43);
     parts.push(rake);
     // windshield glass proud on the raked face
-    const ws = box(K.W * 0.86, 0.5, 0.06, K.glass);
+    const ws = box(K.W * 0.86, 0.5, 0.06, K.glass, 1, SURF.GLASS);
     ws.rotateX(-0.6);
     ws.translate(0, cl + 1.08, front - 0.22);
     parts.push(ws);
-    parts.push(box(0.06, 0.34, 0.5, K.glass).translate(K.W / 2, cl + 1.05, front - 0.75));   // cab side windows
-    parts.push(box(0.06, 0.34, 0.5, K.glass).translate(-K.W / 2, cl + 1.05, front - 0.75));
+    parts.push(box(0.06, 0.34, 0.5, K.glass, 1, SURF.GLASS).translate(K.W / 2, cl + 1.05, front - 0.75));   // cab side windows
+    parts.push(box(0.06, 0.34, 0.5, K.glass, 1, SURF.GLASS).translate(-K.W / 2, cl + 1.05, front - 0.75));
     parts.push(box(K.W + 0.02, 0.34, 2.9, K.dark).translate(0, cl + 0.17, -0.5));            // deep sill band
     parts.push(box(K.W + 0.02, 0.9, 0.05, K.dark).translate(0, cl + 0.62, -0.6));            // sliding-door seam
   } else {
@@ -254,7 +255,7 @@ export function carGeo(kind = 'sedan') {
     cab.translate(0, cl + K.bodyH, cabZ);
     parts.push(cab);
     // glass band wraps the cabin, a touch proud of its slopes
-    const glass = prism(K.W * 0.98, cabL * 0.9, K.W * 0.72, cabL * 0.42, K.cabinH * 0.62, K.glass, { zOff: -cabL * 0.05, shade: 1.12 });
+    const glass = prism(K.W * 0.98, cabL * 0.9, K.W * 0.72, cabL * 0.42, K.cabinH * 0.62, K.glass, { zOff: -cabL * 0.05, shade: 1.12, surf: SURF.GLASS });
     glass.translate(0, cl + K.bodyH + 0.07, cabZ);
     parts.push(glass);
     if (kind === 'taxi') {

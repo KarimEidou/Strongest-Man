@@ -4,7 +4,7 @@
 // the SAME mesh (no separate material or renderOrder → no flicker).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { makeWorldMaterial, tagGeometry } from '../engine/materials.js';
+import { makeWorldMaterial, tagGeometry, SURF } from '../engine/materials.js';
 import { PAL } from '../core/palette.js';
 import { ROAD, WALK, BLOCKS, MAP_EDGE } from './city.js';
 
@@ -12,22 +12,22 @@ const MARK_Y = 0.012;
 
 export function buildStreets(scene) {
   const parts = [];
-  const quad = (x0, z0, x1, z1, y, color, shade = 1) => {
+  const quad = (x0, z0, x1, z1, y, color, shade = 1, surf = SURF.ASPHALT) => {
     const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
     g.rotateX(-Math.PI / 2);
     g.translate((x0 + x1) / 2, y, (z0 + z1) / 2);
-    parts.push(tagGeometry(g, color, 0, shade));
+    parts.push(tagGeometry(g, color, 0, shade, surf));
   };
-  const slab = (x0, z0, x1, z1, h, color) => {
+  const slab = (x0, z0, x1, z1, h, color, surf = SURF.SIDEWALK) => {
     const g = new THREE.BoxGeometry(x1 - x0, h, z1 - z0);
     g.translate((x0 + x1) / 2, h / 2, (z0 + z1) / 2);
-    parts.push(tagGeometry(g, color));
+    parts.push(tagGeometry(g, color, 0, 1, surf));
   };
 
   const C = ROAD.centers, R = ROAD.half, E = MAP_EDGE;
 
   // ground apron: under everything, out past the fog line
-  quad(-240, -240, 240, 240, -0.03, 0x1c2438);
+  quad(-240, -240, 240, 240, -0.03, 0x1c2438, 1, SURF.CONCRETE);
 
   // asphalt: 9 intersection squares + connecting segments (no overlaps)
   for (const cx of C) for (const cz of C) quad(cx - R, cz - R, cx + R, cz + R, 0, PAL.road);
@@ -39,7 +39,7 @@ export function buildStreets(scene) {
   }
 
   // block ground (courtyards under buildings)
-  for (const b of BLOCKS) quad(b.x0, b.z0, b.x1, b.z1, 0.02, 0x39415c);
+  for (const b of BLOCKS) quad(b.x0, b.z0, b.x1, b.z1, 0.02, 0x39415c, 1, SURF.CONCRETE);
 
   // sidewalks: rings around each block (N/S full strips + E/W in between)
   for (const b of BLOCKS) {
@@ -59,14 +59,14 @@ export function buildStreets(scene) {
   for (const cz of C) {
     for (let i = 0; i < C.length - 1; i++) {
       for (let x = C[i] + R + 3; x < C[i + 1] - R - 3; x += 6) {
-        quad(x, cz - 0.18, x + 2.6, cz + 0.18, MARK_Y, PAL.roadLine, 0.9);
+        quad(x, cz - 0.18, x + 2.6, cz + 0.18, MARK_Y, PAL.roadLine, 0.9, SURF.PAINT);
       }
     }
   }
   for (const cx of C) {
     for (let i = 0; i < C.length - 1; i++) {
       for (let z = C[i] + R + 3; z < C[i + 1] - R - 3; z += 6) {
-        quad(cx - 0.18, z, cx + 0.18, z + 2.6, MARK_Y, PAL.roadLine, 0.9);
+        quad(cx - 0.18, z, cx + 0.18, z + 2.6, MARK_Y, PAL.roadLine, 0.9, SURF.PAINT);
       }
     }
   }
@@ -87,10 +87,10 @@ export function buildStreets(scene) {
       for (let t = -SPAN; t <= SPAN + 1e-6; t += PITCH) {
         if (dx !== 0) {
           quad(ax - STRIPE_LEN / 2, cz + t - STRIPE_W / 2,
-            ax + STRIPE_LEN / 2, cz + t + STRIPE_W / 2, MARK_Y, PAL.roadLine, 0.85);
+            ax + STRIPE_LEN / 2, cz + t + STRIPE_W / 2, MARK_Y, PAL.roadLine, 0.85, SURF.PAINT);
         } else {
           quad(cx + t - STRIPE_W / 2, az - STRIPE_LEN / 2,
-            cx + t + STRIPE_W / 2, az + STRIPE_LEN / 2, MARK_Y, PAL.roadLine, 0.85);
+            cx + t + STRIPE_W / 2, az + STRIPE_LEN / 2, MARK_Y, PAL.roadLine, 0.85, SURF.PAINT);
         }
       }
       // stop bar just outside the crossing, on the approaching lane only
@@ -98,16 +98,17 @@ export function buildStreets(scene) {
       const bz = cz + dz * (BAND + STRIPE_LEN / 2 + 0.5);
       if (dx !== 0) {
         const z0 = dx > 0 ? cz : cz - R, z1 = dx > 0 ? cz + R : cz;
-        quad(bx - 0.2, z0 + 0.2, bx + 0.2, z1 - 0.2, MARK_Y, PAL.roadLine, 0.8);
+        quad(bx - 0.2, z0 + 0.2, bx + 0.2, z1 - 0.2, MARK_Y, PAL.roadLine, 0.8, SURF.PAINT);
       } else {
         const x0 = dz > 0 ? cx - R : cx, x1 = dz > 0 ? cx : cx + R;
-        quad(x0 + 0.2, bz - 0.2, x1 - 0.2, bz + 0.2, MARK_Y, PAL.roadLine, 0.8);
+        quad(x0 + 0.2, bz - 0.2, x1 - 0.2, bz + 0.2, MARK_Y, PAL.roadLine, 0.8, SURF.PAINT);
       }
     }
   }
 
   const geo = mergeGeometries(parts);
   const mesh = new THREE.Mesh(geo, makeWorldMaterial());
+  mesh.receiveShadow = true;
   mesh.frustumCulled = false;
   mesh.name = 'streets';
   scene.add(mesh);

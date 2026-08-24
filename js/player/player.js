@@ -22,6 +22,7 @@ export function createPlayer(scene, cam) {
   root.scale.setScalar(PLAYER_SCALE);
   scene.add(root);
   const footY = groundOffset(root);
+  root.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
 
   const p = {
     x: 2.5, y: 0, z: 20, yaw: 0,
