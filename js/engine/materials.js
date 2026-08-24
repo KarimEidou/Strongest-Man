@@ -31,7 +31,17 @@ export const SURF = {
   FOLIAGE: 8,
   ROOF: 9,
   WOOD: 10,
+  // Emissive at night. They look like their day-time cousins (LAMP shades like
+  // METAL, WINDOW like GLASS) — the difference lives entirely in smNightGlow.
+  LAMP: 11,
+  WINDOW: 12,
 };
+
+// How many streetlamps light the ground at once. engine/citylights.js keeps the
+// nearest this many loaded, so the fragment loop is a fixed, small cost and the
+// ones that drop out are past their pool radius anyway.
+export const LAMP_SLOTS = 12;
+const POOL_R = 6.0;
 
 // Shared uniform objects: onBeforeCompile hands the SAME object to every
 // material, so engine/sky.js mutates one value and the whole world follows.
@@ -40,6 +50,9 @@ export const worldUniforms = {
   uSkyTint: { value: new THREE.Color(PAL.skyLight) },
   // x = time of day 0..1, y = night 0..1, z = detail strength, w = spare
   uWorld: { value: new THREE.Vector4(0.78, 0, 1, 0) },
+  // xyz = a streetlamp head, w = 1 when the slot is in use
+  uLamps: { value: Array.from({ length: LAMP_SLOTS }, () => new THREE.Vector4(0, 0, 0, 0)) },
+  uLampCol: { value: new THREE.Color(PAL.glassGlow) },
 };
 
 const NOISE_GLSL = `
@@ -67,6 +80,8 @@ vec2 smProj(vec3 p, vec3 n) {
 const SURFACE_GLSL = `
 vec3 smSurface(int id, vec3 wp, vec3 wn, float fade, out float sInt, out float sPow) {
   sInt = 0.0; sPow = 24.0;
+  if (id == 11) id = 7;                           // LAMP lens: brushed metal by day
+  if (id == 12) id = 6;                           // WINDOW: ordinary glass by day
   if (fade < 0.01) return vec3(1.0);
   vec2 uv = smProj(wp, wn);
   vec3 m = vec3(1.0);
@@ -122,12 +137,51 @@ vec3 smSurface(int id, vec3 wp, vec3 wn, float fade, out float sInt, out float s
 }
 `;
 
+// Night lighting, such as it is: the city has no point lights and no emissive
+// maps — there is exactly one HemisphereLight and one DirectionalLight in the
+// whole scene, and adding real lights would cost a program per light count and a
+// draw-call storm on the phone this is built for. So the lamps, the windows and
+// the pools of light they throw are all one additive term in the shared shader,
+// scaled by uWorld.y — the 0..1 night factor engine/sky.js has been writing
+// every frame since it was added, with nothing reading it until now.
+const NIGHT_GLSL = `
+uniform vec4 uLamps[${LAMP_SLOTS}];
+uniform vec3 uLampCol;
+
+float smLampPool(vec3 wp) {
+  float k = 0.0;
+  for (int i = 0; i < ${LAMP_SLOTS}; i++) {
+    if (uLamps[i].w < 0.5) continue;
+    // squared linear falloff: bright right under the head, gone by POOL_R.
+    // Smoothstep on the SQUARED distance was nearly flat across the whole pool
+    // and the overlaps stacked into one continuous orange carpet.
+    float f = max(0.0, 1.0 - length(wp.xz - uLamps[i].xz) / ${POOL_R.toFixed(1)});
+    k += f * f;
+  }
+  return min(k, 1.0);
+}
+
+vec3 smNightGlow(int id, vec3 wp, vec3 wn) {
+  if (id == 11) return uLampCol * 1.45;                    // the lens itself
+  if (id == 12) {                                          // windows: some rooms lit
+    float cell = smHash21(vec2(floor(wp.x / 2.0) * 3.7 + floor(wp.z / 2.0) * 11.3,
+                               floor(wp.y / 3.0)));
+    return uLampCol * step(0.44, cell) * (0.22 + cell * 0.38);
+  }
+  // the ground under the lamps — pools, not a wash, so the street still reads
+  if (id == 1 || id == 3 || id == 2) return uLampCol * smLampPool(wp) * 0.17 * max(wn.y, 0.0);
+  return vec3(0.0);
+}
+`;
+
 export function makeWorldMaterial(opts = {}) {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uInterior = worldUniforms.uInterior;
     shader.uniforms.uSkyTint = worldUniforms.uSkyTint;
     shader.uniforms.uWorld = worldUniforms.uWorld;
+    shader.uniforms.uLamps = worldUniforms.uLamps;
+    shader.uniforms.uLampCol = worldUniforms.uLampCol;
 
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>
@@ -164,7 +218,7 @@ varying float vInterior;
 varying float vSurface;
 varying vec3 vWPos;
 varying vec3 vWNormal;
-${NOISE_GLSL}${SURFACE_GLSL}`)
+${NOISE_GLSL}${SURFACE_GLSL}${NIGHT_GLSL}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 float smSpecInt = 0.0;
 float smSpecPow = 24.0;
@@ -191,11 +245,13 @@ reflectedLight.directSpecular *= smSpecInt;
 }`)
       .replace(
         '#include <opaque_fragment>',
-        'outgoingLight = mix( outgoingLight, diffuseColor.rgb * uInterior * 3.2, vInterior );\n#include <opaque_fragment>',
+        `outgoingLight = mix( outgoingLight, diffuseColor.rgb * uInterior * 3.2, vInterior );
+outgoingLight += smNightGlow( int( vSurface + 0.5 ), vWPos, normalize( vWNormal ) ) * uWorld.y;
+#include <opaque_fragment>`,
       );
   };
   // one program for every world material
-  mat.customProgramCacheKey = () => 'sm-world-v2';
+  mat.customProgramCacheKey = () => 'sm-world-v3';
   return mat;
 }
 

@@ -59,7 +59,7 @@ export function streetlampGeo() {
   const head = prism(0.34, 0.42, 0.52, 0.62, 0.2, 0x39456b);
   head.translate(0, 5.42, R + 0.52);
   parts.push(head);
-  parts.push(box(0.3, 0.045, 0.5, 0xffd9a0, 1.4).translate(0, 5.4, R + 0.52));
+  parts.push(box(0.3, 0.045, 0.5, 0xffd9a0, 1.4, SURF.LAMP).translate(0, 5.4, R + 0.52));   // lights up after dark
   return faceShade(mergeParts(parts));
 }
 
@@ -185,7 +185,7 @@ export function kioskGeo() {
   parts.push(box(0.1, 1.9, 0.1, PAL.blueDeep).translate(1.08, 0.95, 0.73));
   parts.push(box(2.3, 0.12, 1.6, 0x0d1b3e).translate(0, 0.06, 0));       // plinth
   // signboard
-  parts.push(box(2.34, 0.34, 0.16, 0xf5f0e0, 1.05, SURF.PAINT).translate(0, 2.12, 0));
+  parts.push(box(2.34, 0.34, 0.16, 0xf5f0e0, 1.05, SURF.LAMP).translate(0, 2.12, 0));   // lit signboard
   parts.push(box(0.7, 0.14, 0.17, 0x0d1b3e).translate(0, 2.12, 0));      // abstract lettering band
   // awning: straight band + scallops along the front
   parts.push(box(2.4, 0.1, 0.34, PAL.orange).translate(0, 1.9, 0.72));
@@ -216,6 +216,11 @@ export function kioskGeo() {
 // ---------------------------------------------------------------------------
 // CARS — sedan / taxi / van per the vehicle sheet. Fixed topology so the
 // crush/deform path stays safe; wrecks reuse the sedan shell.
+// Ground clearance: every kind is built up from a wheel-contact plane at y = 0,
+// so this is also the height of the chassis underside — the face a pair of hands
+// actually grips when the car goes overhead. Exported for that reason.
+export const CAR_CLEARANCE = 0.32;
+
 export function carGeo(kind = 'sedan') {
   const K = {
     sedan: { L: 4.4, W: 1.85, bodyH: 0.6, cabinH: 0.52, color: 0x2a63d4, lit: 0x3090f0, dark: 0x003090, glass: 0x2c4a7e },
@@ -224,7 +229,7 @@ export function carGeo(kind = 'sedan') {
     wreck: { L: 4.4, W: 1.85, bodyH: 0.6, cabinH: 0.5, color: 0x3a3f52, lit: 0x474d63, dark: 0x22242e, glass: 0x22242e },
   }[kind];
   const parts = [];
-  const cl = 0.32; // ground clearance
+  const cl = CAR_CLEARANCE;
   const front = K.L / 2; // +z is the nose
 
   if (kind === 'van') {

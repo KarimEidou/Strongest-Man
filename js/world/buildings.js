@@ -16,7 +16,9 @@ import { rand, randRange } from '../core/mathx.js';
 // exposes only finished box faces.
 const CELL_W = 2, CELL_H = FLOOR_H;
 const INSET = 0;
-const T = 0.3; // wall thickness
+const T = 0.3;             // wall thickness
+const IWALL_T = 0.16;      // interior wall thickness
+const IWALL_GAP = 1.6;     // walkable doorway left at each end of a spine wall
 
 export const SIDES = ['north', 'east', 'south', 'west'];
 
@@ -47,7 +49,7 @@ function windowGeo() {
   parts.push(boxTagged(sideW, gh, fd, 0xffffff).translate(-fw / 2 + sideW / 2, -fh / 2 + bottomH + gh / 2, 0));
   parts.push(boxTagged(sideW, gh, fd, 0xffffff).translate(fw / 2 - sideW / 2, -fh / 2 + bottomH + gh / 2, 0));
   // glass: slightly recessed, fixed dark-blue tint (doesn't take instance tint well but reads as glass)
-  const glass = boxTagged(gw, gh, fd - 0.12, 0x3f6fc4, 0, 1, SURF.GLASS);
+  const glass = boxTagged(gw, gh, fd - 0.12, 0x3f6fc4, 0, 1, SURF.WINDOW);
   glass.translate(0, -fh / 2 + bottomH + gh / 2, 0);
   parts.push(glass);
   const g = mergeGeometries(parts);
@@ -157,15 +159,22 @@ export function buildBuildings(scene, specs) {
         roof: f === s.floors,
       });
     }
-    // interior spine wall per floor (along long axis)
+    // Interior spine wall per floor (along the long axis), stopping IWALL_GAP
+    // short of each end so the two halves of the floor stay connected. It used to
+    // stop 0.6m short, which was fine while it was scenery; now that it collides
+    // (physics/collide.js) that gap is a doorway, and 0.6m minus the outer wall's
+    // half-thickness is narrower than the player capsule — it would have sealed
+    // whoever walked in into one half of the room.
     for (let f = 0; f < s.floors; f++) {
       const along = w >= d ? 'x' : 'z';
+      const span = (along === 'x' ? w : d) - IWALL_GAP * 2;
+      if (span < 1) continue;                       // too narrow to divide at all
       iwallPlace.push({
         bId: s.id, floor: f,
         x: (s.x0 + s.x1) / 2 + (along === 'z' ? (rand() - 0.5) * w * 0.3 : 0),
         y: f * CELL_H + CELL_H / 2,
         z: (s.z0 + s.z1) / 2 + (along === 'x' ? (rand() - 0.5) * d * 0.3 : 0),
-        sx: along === 'x' ? w - 1.2 : 0.16, sy: CELL_H - 0.3, sz: along === 'x' ? 0.16 : d - 1.2,
+        sx: along === 'x' ? span : IWALL_T, sy: CELL_H - 0.3, sz: along === 'x' ? IWALL_T : span,
       });
     }
     // furniture: a few boxes per floor near the front facade

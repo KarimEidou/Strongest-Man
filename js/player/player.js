@@ -133,9 +133,13 @@ export function createPlayer(scene, cam) {
 
   window.__test.teleport = (x, z) => { p.x = p.px = x; p.z = p.pz = z; p.y = p.py = groundHeight(x, z); };
   window.__test.faceTo = (x, z) => { p.yaw = p.visYaw = Math.atan2(x - p.x, z - p.z); };
+  // #3 regression probe: sprinting must actually reach the run clip. A one-shot
+  // that never retires pins every weight at 15% and the run never plays.
+  window.__test.locoWeights = () => p.loco.weights();
   window.__test.playerStats = () => ({
     x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2),
     ground: +groundHeight(p.x, p.z).toFixed(2), speed: +p.speed.toFixed(2), grounded: p.grounded,
+    charge: +p.charge.toFixed(3), carrySlow: p.carrySlow,
   });
   // #12 regression probe: world height must not change between animation states
   window.__test.playerHeight = () => {

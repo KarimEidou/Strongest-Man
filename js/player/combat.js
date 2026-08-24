@@ -6,10 +6,9 @@ import { input } from '../core/input.js';
 import { game } from '../core/state.js';
 import { emit, EV } from '../core/events.js';
 import { removeSphere, hitProp, nearestProp, craterAt, shockwave } from '../world/destruction.js';
-import { spawnDebris } from '../world/debris.js';
 import { burstDust, burstSparks } from '../engine/particles.js';
-import { wakeRadius, active as activeBodies, sleeping as sleepingBodies } from '../physics/pworld.js';
-import { groundHeight } from '../physics/heightfield.js';
+import { wakeRadius, createBody, active as activeBodies, sleeping as sleepingBodies } from '../physics/pworld.js';
+import { groundHeight, removePile } from '../physics/heightfield.js';
 import { punchSound } from '../engine/audio.js';
 import { PROP_TYPES } from '../world/props.js';
 import { setGrabLabel } from '../ui/hud.js';
@@ -23,19 +22,27 @@ const CHARGE_MIN = 0.16;    // hold time before charging starts
 // is what makes it read as picking something UP rather than the object snapping
 // into place, which is what it used to do.
 const REACH_T = 0.25, LIFT_T = 0.35, THROW_T = 0.20, RELEASE_AT = 0.11;
+// The anchor is where the load's CONTACT SURFACE meets the palms, and it is read
+// straight off the hand bones. It used to be a fixed body offset that the hands
+// were merely lerped toward, which is why a car floated: a car's origin is its
+// wheel plane, so putting the ORIGIN near the hands left the chassis 0.43m above
+// them. Each handle now declares `gripDrop` — the object-local height of the face
+// that should rest on the palms — and the anchor drops by that much.
+// These offsets are the posed hand positions in player space, used only as a
+// fallback when the hand bones are missing.
 const CARRY_OFFSET = {
-  carry_neck: new THREE.Vector3(0.42, 1.98, 0.55),   // high enough that their feet clear the floor
-  carry_overhead: new THREE.Vector3(0.00, 2.05, 0.10),   // chassis rests on the hands
+  carry_neck: new THREE.Vector3(-0.46, 1.53, 0.49),
+  carry_overhead: new THREE.Vector3(0.00, 1.88, 0.32),
 };
-// how much the carried thing tracks the animated hands vs a fixed body offset.
-// All hands and a car visibly wobbles with the run cycle; no hands and the grip
-// looks painted on.
-const HAND_MIX = { carry_neck: 0.55, carry_overhead: 0.35 };
+const GRIP_REACH = 0.07;   // wrist bone -> the middle of the closed fist
+const GRIP_SINK = 0.03;    // how far the palms press into the load
 const LIFT_ARC = { carry_neck: 0.35, carry_overhead: 0.80 };
 const CARRY_SLOW = { carry_neck: 0.82, carry_overhead: 0.62 };
 
 const EU = new THREE.Euler(0, 0, 0, 'YXZ');
-const _v = new THREE.Vector3(), _v2 = new THREE.Vector3();
+const TUMBLE = new THREE.Euler();
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
+const _q = new THREE.Quaternion();
 
 export function createCombat(playerSys, cam, scene) {
   const p = playerSys.p;
@@ -64,15 +71,23 @@ export function createCombat(playerSys, cam, scene) {
   }
 
   function fixedUpdate(dt) {
-    // charging state (input.chargeTime accrues while held)
-    p.charge = input.punchDown && input.chargeTime > CHARGE_MIN
-      ? clamp((input.chargeTime - CHARGE_MIN) / CHARGE_TIME, 0, 1)
-      : (input.punchDown ? 0 : p.charge);
-
-    if (input.punchReleased && !p.dead) {
+    // Charging state (input.chargeTime accrues while held). The charge has to
+    // survive the button going up so the release frame can spend it — but only
+    // that one frame. It used to be latched indefinitely whenever the button was
+    // up, so a release edge lost to the chat text field (see core/input.js) left
+    // p.charge pinned at 1 and the player at 45% speed for the rest of the
+    // session: full-stick sprint became 3.15 m/s, which the locomotion blend
+    // reads as a fast walk. That is the "run animation stopped working" report.
+    if (input.punchDown) {
+      p.charge = input.chargeTime > CHARGE_MIN
+        ? clamp((input.chargeTime - CHARGE_MIN) / CHARGE_TIME, 0, 1)
+        : 0;
+    } else if (input.punchReleased && !p.dead) {
       const charge = p.charge;
       p.charge = 0;
       swing(charge);
+    } else {
+      p.charge = 0;
     }
 
     if (input.grabPressed && !p.dead) {
@@ -186,26 +201,68 @@ export function createCombat(playerSys, cam, scene) {
     }
     const pr = nearestProp(f.x, f.z, 2.6, (x) => x.type !== 'prop_streetlamp' && x.type !== 'prop_trafficlight');
     if (pr) {
-      // the prop instance leaves the pool; a matching debris part rides in-hand
-      pr.alive = false;
-      window.__propsReg.hide(pr);
-      const cfg = PROP_TYPES[pr.type];
-      const colors = { prop_bench: 0xb98a54, prop_dumpster: 0x2c4f9e, prop_tree: 0xd89048, prop_kiosk: 0x2452b8, prop_hydrant: 0xd06a28, prop_sign: 0x3090f0 };
-      const b = spawnDebris('part', pr.x, (pr.y || 0) + cfg.h * 0.5, pr.z, 0, 0, 0, Math.max(cfg.r * 1.3, 0.6), colors[pr.type] || 0x888888, { mass: cfg.mass });
-      if (b) {
-        const i = activeBodies.indexOf(b);
-        if (i >= 0) activeBodies.splice(i, 1);
-        beginCarry({
-          kind: 'debris', body: b, size: b.userData.size,
-          blastR: Math.max(cfg.r * 1.6, 1.2),
-          origin: { x: pr.x, y: (pr.y || 0) + cfg.h * 0.5, z: pr.z, yaw: pr.yaw || 0 },
-        });
-      }
-      return;
+      const reg = window.__propsReg;
+      if (reg.detach(pr)) { beginCarry(propHandle(pr, reg)); return; }
     }
     // grabbed at nothing: a short reach that comes back empty
     c.phase = 'whiff'; c.t = 0.28;
     pose.set('reach', 0.6, 14);
+  }
+
+  // A grabbed prop is carried as ITSELF. Props have no standalone mesh — each is
+  // a slot in a per-type InstancedMesh — so this drives that slot's matrix rather
+  // than hiding the prop and spawning a debris box in its place, which is what
+  // turned every hydrant, tree and bench into a grey cube. Same record, same
+  // instance, same state, all the way through the throw and back to rest.
+  function propHandle(pr, reg) {
+    const cfg = PROP_TYPES[pr.type];
+    const scale = pr.s || 1;
+    const height = cfg.h * scale, radius = cfg.r * scale;
+    // bulky things go overhead; poles and trunks are carried like a club, gripped
+    // near the base so a 6m tree points at the sky instead of through the pavement
+    const overhead = !cfg.tall && (height > 1.1 || radius > 0.7);
+    const half = height * 0.5;
+
+    // body centre -> the prop's own base origin, tumbled about its middle
+    const writeBody = (b) => {
+      _q.setFromEuler(TUMBLE.set(b.rx, b.ry, b.rz));
+      _v3.set(0, -half, 0).applyQuaternion(_q).add(_v2.set(b.x, b.y, b.z));
+      reg.setMatrix(pr, _v3, _q, scale);
+    };
+
+    return {
+      kind: 'prop', prop: pr,
+      style: overhead ? 'carry_overhead' : 'carry_neck',
+      // props are base-origin: overhead they sit ON the palms; one-handed the fist
+      // closes around their middle, or just above the base for anything long
+      gripDrop: overhead ? 0 : Math.min(half, 0.6),
+      origin: { x: pr.x, y: pr.y || 0, z: pr.z, yaw: pr.yaw || 0 },
+      alive: () => true,
+      place: (x, y, z, quat) => reg.setMatrix(pr, _v3.set(x, y, z), quat, scale),
+      release: () => reg.reattach(pr, pr.x, pr.z),
+      launch: (from, vx, vy, vz) => {
+        const body = createBody({
+          kind: 'thrown',
+          x: from.x, y: from.y + half, z: from.z,
+          vx, vy, vz,
+          wx: (Math.random() - 0.5) * 7, wy: (Math.random() - 0.5) * 7, wz: (Math.random() - 0.5) * 7,
+          half, mass: cfg.mass,
+          onMove: writeBody,
+          onSleep: (b) => {
+            // it is a prop again, not rubble: leave the body world entirely so it
+            // cannot be re-grabbed as generic debris or raise the rubble pile
+            const si = sleepingBodies.indexOf(b);
+            if (si >= 0) sleepingBodies.splice(si, 1);
+            const ai = activeBodies.indexOf(b);
+            if (ai >= 0) activeBodies.splice(ai, 1);
+            if (b.pileCell >= 0) { removePile(b.pileCell, b.pileAmount); b.pileCell = -1; }
+            if (b.dead) reg.hide(pr);            // fell out of the world
+            else reg.reattach(pr, b.x, b.z, b.ry);
+          },
+        });
+        armProjectile(body, Math.max(radius * 1.6, 1.2));
+      },
+    };
   }
 
   function beginCarry(handle) {
@@ -213,6 +270,13 @@ export function createCombat(playerSys, cam, scene) {
     st.carried = handle;
     c.style = handle.style
       || (handle.kind === 'debris' && handle.size > 0.85 ? 'carry_overhead' : 'carry_neck');
+    if (handle.gripDrop === undefined) {
+      // debris geometry is centre-origin, so its underside is half a size BELOW
+      // the origin; a negative gripDrop lifts it back onto the palms
+      handle.gripDrop = handle.kind === 'debris' && c.style === 'carry_overhead'
+        ? -(handle.size || 0) * 0.5
+        : 0;
+    }
     const o = handle.origin || { x: p.x, y: p.y + 1, z: p.z, yaw: p.yaw };
     c.from.set(o.x, o.y, o.z);
     EU.set(0, o.yaw || 0, 0);
@@ -295,28 +359,38 @@ export function createCombat(playerSys, cam, scene) {
     setGrabLabel('GRAB');
   }
 
-  // Where the carried thing sits this frame. Read off the hand bones so it
-  // tracks the actual animated pose, blended toward a fixed body offset so a
-  // 1.5-tonne car does not swing with the arm cycle.
+  // Where the carried thing sits this frame: the palms, dropped by the load's own
+  // gripDrop so its contact face — not its origin — is what meets the hands.
   function updateAnchor(dt) {
     const c = st.carry;
-    c.anchor.copy(CARRY_OFFSET[c.style]).applyMatrix4(p.root.matrixWorld);
+    let onHands = false;
 
-    const mix = HAND_MIX[c.style];
     if (c.style === 'carry_neck') {
-      const h = p.bones.rHand;
-      if (h) {
-        h.updateWorldMatrix(true, false);
-        _v.setFromMatrixPosition(h.matrixWorld);
-        c.anchor.lerp(_v, mix);
+      // one-handed: the throat goes IN the fist, so reach past the wrist joint
+      // along the forearm rather than sitting on the bone origin
+      const hand = p.bones.rHand;
+      if (hand) {
+        hand.updateWorldMatrix(true, false);
+        c.anchor.setFromMatrixPosition(hand.matrixWorld);
+        const fore = p.bones.rFore;
+        if (fore) {
+          fore.updateWorldMatrix(true, false);
+          _v2.setFromMatrixPosition(fore.matrixWorld);
+          _v.copy(c.anchor).sub(_v2);
+          if (_v.lengthSq() > 1e-6) c.anchor.addScaledVector(_v.normalize(), GRIP_REACH);
+        }
+        onHands = true;
       }
     } else if (p.bones.lHand && p.bones.rHand) {
       p.bones.lHand.updateWorldMatrix(true, false);
       p.bones.rHand.updateWorldMatrix(true, false);
       _v.setFromMatrixPosition(p.bones.lHand.matrixWorld);
       _v2.setFromMatrixPosition(p.bones.rHand.matrixWorld);
-      c.anchor.lerp(_v.add(_v2).multiplyScalar(0.5), mix);
+      c.anchor.copy(_v).add(_v2).multiplyScalar(0.5);
+      onHands = true;
     }
+    if (!onHands) c.anchor.copy(CARRY_OFFSET[c.style]).applyMatrix4(p.root.matrixWorld);
+    c.anchor.y -= (st.carried?.gripDrop || 0) + GRIP_SINK;
 
     // stride-locked sway: the load answers to the footfalls
     c.strideT += (p.speed * dt) / 1.6;
@@ -411,9 +485,45 @@ export function createCombat(playerSys, cam, scene) {
   window.__test.carry = () => ({
     phase: st.carry.phase,
     style: st.carry.style,
+    kind: st.carried?.kind ?? null,
+    prop: st.carried?.prop ? { type: st.carried.prop.type, idx: st.carried.prop.idx } : null,
     label: document.getElementById('btn-grab')?.textContent,
     pos: [+st.carry.pos.x.toFixed(2), +st.carry.pos.y.toFixed(2), +st.carry.pos.z.toFixed(2)],
   });
+
+  // Regression probe for the grip: where the palms are, and where the load's
+  // contact face ended up. `gap` must stay within a few cm of -GRIP_SINK — a car
+  // used to sit 0.43m above the hands.
+  window.__test.carryContact = () => {
+    const h = st.carried;
+    if (!h || !p.bones.lHand || !p.bones.rHand) return null;
+    p.bones.lHand.updateWorldMatrix(true, false);
+    p.bones.rHand.updateWorldMatrix(true, false);
+    _v.setFromMatrixPosition(p.bones.lHand.matrixWorld);
+    _v2.setFromMatrixPosition(p.bones.rHand.matrixWorld);
+    const handY = st.carry.style === 'carry_neck' ? _v2.y : (_v.y + _v2.y) * 0.5;
+    const contactY = st.carry.pos.y + (h.gripDrop || 0);
+    const out = {
+      kind: h.kind, style: st.carry.style,
+      handY: +handY.toFixed(3),
+      contactY: +contactY.toFixed(3),
+      gap: +(contactY - handY).toFixed(3),
+    };
+    // a person is held BY THE THROAT: measure the actual neck bone against the fist
+    const npc = h.npc || h.person || null;
+    if (npc?.root) {
+      let neck = null;
+      npc.root.traverse((o) => { if (!neck && o.isBone && (o.name === 'neck' || o.name === 'Neck')) neck = o; });
+      if (neck) {
+        neck.updateWorldMatrix(true, false);
+        _v3.setFromMatrixPosition(neck.matrixWorld);
+        out.neck = [+_v3.x.toFixed(3), +_v3.y.toFixed(3), +_v3.z.toFixed(3)];
+        out.fist = [+_v2.x.toFixed(3), +_v2.y.toFixed(3), +_v2.z.toFixed(3)];
+        out.throatDist = +_v3.distanceTo(_v2).toFixed(3);
+      }
+    }
+    return out;
+  };
 
   return { fixedUpdate, frameUpdate, st };
 }

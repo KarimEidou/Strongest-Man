@@ -105,6 +105,12 @@ Line:`;
   function fixedUpdate(dt) {
     now += dt;
     groqTick(dt);
+    // Anything that takes them out of the conversation ends it: fleeing a
+    // monster, being grabbed, hiding indoors, dying. Only closeChat() clears
+    // input.textFocus, so without this the panel — and the input lock with it —
+    // could outlive the conversation indefinitely whenever the NPC panicked but
+    // stayed inside the walk-away radius.
+    if (chat.npc && chat.npc.state !== 'talking') interrupt();
     // walking away ends it
     if (chat.npc && Math.hypot(chat.npc.x - player.p.x, chat.npc.z - player.p.z) > 7) closeChat();
     ambientT -= dt;

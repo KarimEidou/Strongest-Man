@@ -11,9 +11,12 @@ import * as THREE from 'three';
 import { PAL, SKY_KEYS } from '../core/palette.js';
 import { worldUniforms } from './materials.js';
 
+const LIGHT_MIN_Y = 0.20;   // below this elevation the key light stops following the sun down
 export const FOG_NEAR = 90;
 export const FOG_FAR = 210;
 const SKY_R = 290;              // inside the camera's 300 far plane
+const INTERIOR_DIM = new THREE.Color(PAL.interiorDim);
+const INTERIOR_LIT = new THREE.Color(PAL.interiorLit);
 
 const VERT = `
 varying vec3 vDir;
@@ -151,6 +154,9 @@ export async function initSky(scene, renderer, tier = {}) {
   scene.add(sun.target);
 
   const sunDir = new THREE.Vector3(-0.6, 0.35, -0.35).normalize();
+  // Where the KEY LIGHT comes from, which is not always where the sun is: see
+  // the clamp in frameUpdate. The dome and the god rays use the true sunDir.
+  const lightDir = new THREE.Vector3().copy(sunDir);
   const wind = new THREE.Vector2();
 
   function frameUpdate(dt, timeOfDay, camera) {
@@ -162,6 +168,23 @@ export async function initSky(scene, renderer, tier = {}) {
     const cosE = Math.sqrt(Math.max(0, 1 - sinE * sinE));
     const azim = (timeOfDay - 0.70) * Math.PI * 2 - 2.10;
     sunDir.set(Math.sin(azim) * cosE, Math.max(sinE, -0.35), Math.cos(azim) * cosE).normalize();
+
+    // The sun spends half the day below the horizon, and a light UNDER the map
+    // lights the undersides of everything and projects every shadow UPWARD onto
+    // the facades — which is how a player standing at street level ended up with
+    // his shadow on a building's second floor. So the key light is the sun lifted
+    // back above the horizon, swinging further overhead the deeper the night
+    // goes, which keeps the night shadow — dim, at sunI 0.55 — under its object.
+    // Lifted rather than switched off: DirectionalLight.castShadow is a shader
+    // program parameter, and toggling it recompiles every material in the city
+    // mid-play (see engine/quality.js). The clamp only engages below LIGHT_MIN_Y,
+    // so the authored t = 0.70 dusk (elevation 0.278) is untouched.
+    lightDir.copy(sunDir);
+    if (lightDir.y < LIGHT_MIN_Y) {
+      const k = Math.min(1, (LIGHT_MIN_Y - lightDir.y) / (LIGHT_MIN_Y + 0.62));
+      lightDir.y = LIGHT_MIN_Y + k * 0.45;
+      lightDir.normalize();
+    }
 
     wind.x += dt * 0.010;
     wind.y += dt * 0.006;
@@ -184,6 +207,11 @@ export async function initSky(scene, renderer, tier = {}) {
 
     // the shared world material tints its fresnel rim with the sky
     worldUniforms.uSkyTint.value.copy(s.hemiSky);
+    // Interiors are a flat tint rather than lit geometry (see the aInterior
+    // override in engine/materials.js), so this is the only place "the lights are
+    // on inside" can come from — without it every room stayed the same cold blue
+    // around the clock.
+    worldUniforms.uInterior.value.copy(INTERIOR_DIM).lerp(INTERIOR_LIT, s.night);
     worldUniforms.uWorld.value.x = timeOfDay;
     worldUniforms.uWorld.value.y = s.night;
 
@@ -196,5 +224,5 @@ export async function initSky(scene, renderer, tier = {}) {
     material.needsUpdate = true;
   }
 
-  return { sun, hemi, sunDir, dome, frameUpdate, setTier, sample: () => sample };
+  return { sun, hemi, sunDir, lightDir, dome, frameUpdate, setTier, sample: () => sample };
 }

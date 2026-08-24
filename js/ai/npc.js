@@ -24,7 +24,7 @@ import { flags } from '../core/debug.js';
 const COUNT = 48;
 const ARCHETYPES = ['worker', 'vendor', 'kid'];
 const scratch = [];
-const GRABV = new THREE.Vector3();
+const GRABV = new THREE.Vector3(), GRABV2 = new THREE.Vector3();
 const NPC_R = 0.3;          // capsule radius used against the static world
 const WHISKER = 1.8;        // how far ahead they look for something to walk round
 const WHISKER_ANG = 0.61;   // ±35°
@@ -269,6 +269,17 @@ export function createNPCs(scene, city, player) {
           n.root.quaternion.copy(n.carryQuat);
         }
         n.loco.update(dt, 2.6);
+        // Land the THROAT on the fist, not the root at a guessed distance below
+        // it. carryY was derived from a neck height measured once at grab time,
+        // but the neck's offset from the root moves every frame — the legs are
+        // still cycling — and the carry tilt swings it sideways too, which left
+        // the hand a good 20cm off the collar. Correcting against the live bone,
+        // after the mixer has written this frame, is exact and self-healing.
+        if (n.neckBone && n.carryTarget) {
+          n.root.updateWorldMatrix(false, true);
+          n.neckBone.getWorldPosition(GRABV);
+          n.root.position.add(GRABV2.copy(n.carryTarget).sub(GRABV));
+        }
         continue;
       }
       n.root.position.set(
@@ -284,7 +295,8 @@ export function createNPCs(scene, city, player) {
       n.mixerAcc += dt;
       const step = n.tier === 0 ? 0 : n.tier === 1 ? 0.066 : 0.15;
       if (n.mixerAcc >= step) {
-        n.loco.update(n.mixerAcc, n.speed);
+        const acc = n.mixerAcc;
+        n.loco.update(acc, n.speed);
         n.mixerAcc = 0;
         // Speaking is physical: the head nods and turns, the chest sways, a hand
         // comes up on the stresses. Applied here, right after the mixer has
@@ -292,7 +304,10 @@ export function createNPCs(scene, city, player) {
         // on every frame the mixer skipped. Additive rather than an authored
         // pose because the rigs do not share bind rotations.
         if (n.speakT > 0) {
-          n.speakT -= dt;
+          // this block runs on the MIXER's cadence, not the frame's, so it has to
+          // spend the accumulated time — subtracting one frame's dt per LOD step
+          // stretched a 6s line to a minute for anyone who walked away
+          n.speakT -= acc;
           n.speakPhase = (n.speakPhase || 0) + dt;
           const st_ = n.speakPhase;
           const amp = Math.min(1, n.speakT * 2.5);
@@ -342,13 +357,23 @@ export function createNPCs(scene, city, player) {
     n.targetSpeed = 0;
     n.speed = 0;
     n.chatPartner = null;
+    n.speakT = 0;
+    // start the conversation from a known animation state: no half-finished
+    // one-shot bleeding through the standing-and-listening pose
+    n.loco.reset();
     return true;
   };
   sys.endTalk = (n) => {
-    if (n.state !== 'talking') return;
+    // Unconditional cleanup. An NPC leaves 'talking' on its own all the time —
+    // panic, hiding, being grabbed, dying — and the old early-return then skipped
+    // every line below, stranding speakT so the speaking gesture kept playing on
+    // top of whatever they were doing next, for tens of seconds at low LOD.
+    n.speakT = 0;
+    n.speakPhase = 0;
+    n.prevState = null;
+    if (n.state !== 'talking') return;   // don't clobber panic/hide/dead
     n.state = 'commute';
     n.goal = null; n.path.length = 0; n.pathI = 0;
-    n.speakT = 0;
   };
   sys.speak = (n, seconds) => { n.speakT = seconds; n.speakPhase = 0; };
 
@@ -389,12 +414,15 @@ export function createNPCs(scene, city, player) {
         n.root.updateWorldMatrix(true, true);
         neckDrop = neck.getWorldPosition(GRABV).y - n.root.position.y;
       }
+      n.neckBone = neck || null;
+      n.carryTarget = n.carryTarget || new THREE.Vector3();
       emit(EV.SCREAM, { x: n.x, z: n.z, radius: 14 });
       return {
         kind: 'entity', npc: n, style: 'carry_neck',
         origin: { x: n.x, y: n.y + n.footY, z: n.z, yaw: n.visYaw },
         alive: () => n.state === 'carried',
         place: (x, y, z, quat) => {
+          n.carryTarget.set(x, y, z);
           n.x = n.px = x; n.z = n.pz = z;
           n.carryY = y - neckDrop;      // held BY THE NECK, so the collar is the anchor
           n.carryQuat = quat;

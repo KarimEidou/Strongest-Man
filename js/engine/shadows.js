@@ -12,16 +12,20 @@
 // silhouette under the character you are looking at is worse than no shadow.
 // The 48 townsfolk keep their blob shadows.
 import * as THREE from 'three';
+import { FLOOR_H } from '../world/city.js';
 
 export const LAYER_SHADOW = 2;
 export const LAYER_OCCLUDER = 3;
 
 const CAP = 64;
-const RANGE = 90;               // only cast from things this close to the player
+// The roof instance sits 0.10m proud of floors * FLOOR_H (see world/buildings.js),
+// so the proxy has to reach that high or roofs self-shadow against their own box.
+const ROOF_PROUD = 0.1;
 
 const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3();
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 const centre = new THREE.Vector3(), fwd = new THREE.Vector3(), lightPos = new THREE.Vector3();
+const byDistance = (a, b) => a.d2 - b.d2;
 const fLight = new THREE.Vector3(), rLight = new THREE.Vector3(), uLight = new THREE.Vector3();
 
 export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier) {
@@ -105,28 +109,48 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier) {
     renderer.shadowMap.needsUpdate = true;
   }
 
-  // One box per nearby building and car. Rebuilt on the shadow cadence, not
-  // every frame — ~40 iterations, nothing.
+  // One box per building and car, NEAREST FIRST. The old version packed the
+  // registry in order and appended cars last, behind a RANGE test that could
+  // never fire (RANGE 90 vs a 71.5m map): the first seed to push past CAP would
+  // have silently dropped every car shadow, and past 64 whole buildings would
+  // stop occluding. Sorting by distance makes the cap degrade gracefully.
+  // Preallocated, because this runs on the shadow cadence and must not allocate.
+  const cand = Array.from({ length: 192 }, () => ({ b: null, c: null, cx: 0, cz: 0, d2: Infinity }));
+
   function repack(playerPos) {
-    let i = 0;
+    let n = 0;
     for (const b of buildingsReg.buildings) {
-      if (i >= CAP) break;
+      if (n >= cand.length) break;
       if (b.collapsed) continue;
       const s = b.spec;
       const cx = (s.x0 + s.x1) / 2, cz = (s.z0 + s.z1) / 2;
-      if (Math.abs(cx - playerPos.x) > RANGE || Math.abs(cz - playerPos.z) > RANGE) continue;
-      const h = s.floors * 3;
-      Q.identity();
-      M.compose(V.set(cx, h / 2, cz), Q, S.set(s.x1 - s.x0, h, s.z1 - s.z0));
-      proxy.setMatrixAt(i++, M);
+      const dx = cx - playerPos.x, dz = cz - playerPos.z;
+      const e = cand[n++];
+      e.b = b; e.c = null; e.cx = cx; e.cz = cz; e.d2 = dx * dx + dz * dz;
     }
     for (const c of traffic.list) {
-      if (i >= CAP) break;
+      if (n >= cand.length) break;
       if (c.mode === 'held' || c.mode === 'flying') continue;
-      if (Math.abs(c.x - playerPos.x) > RANGE || Math.abs(c.z - playerPos.z) > RANGE) continue;
-      Q.setFromAxisAngle(V.set(0, 1, 0), c.yaw);
-      M.compose(V.set(c.x, 0.75, c.z), Q, S.set(c.hw * 2, 1.5, c.hl * 2));
-      proxy.setMatrixAt(i++, M);
+      const dx = c.x - playerPos.x, dz = c.z - playerPos.z;
+      const e = cand[n++];
+      e.b = null; e.c = c; e.d2 = dx * dx + dz * dz;
+    }
+    for (let k = n; k < cand.length; k++) { cand[k].b = null; cand[k].c = null; cand[k].d2 = Infinity; }
+    cand.sort(byDistance);
+
+    let i = 0;
+    for (; i < CAP && i < n; i++) {
+      const e = cand[i];
+      if (e.b) {
+        const s = e.b.spec;
+        const h = s.floors * FLOOR_H + ROOF_PROUD;
+        Q.identity();
+        M.compose(V.set(e.cx, h / 2, e.cz), Q, S.set(s.x1 - s.x0, h, s.z1 - s.z0));
+      } else {
+        Q.setFromAxisAngle(V.set(0, 1, 0), e.c.yaw);
+        M.compose(V.set(e.c.x, 0.75, e.c.z), Q, S.set(e.c.hw * 2, 1.5, e.c.hl * 2));
+      }
+      proxy.setMatrixAt(i, M);
     }
     for (; i < CAP; i++) proxy.setMatrixAt(i, ZERO);
     proxy.instanceMatrix.needsUpdate = true;

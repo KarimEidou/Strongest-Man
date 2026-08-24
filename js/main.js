@@ -128,6 +128,10 @@ const qualityCtx = {
 };
 window.__quality = (name) => applyQuality(name, qualityCtx);
 
+const { initCityLights } = await import('./engine/citylights.js');
+const cityLights = initCityLights(propsReg);
+frameSystems.push(profile('citylights', () => cityLights.frameUpdate(cam.camera)));
+
 const { initBubbles } = await import('./dialogue/bubbles.js');
 const { initDialogue } = await import('./dialogue/talk.js');
 initBubbles(cam.camera);
@@ -144,6 +148,7 @@ const { initOutfit } = await import('./player/outfit.js');
 initAudio();
 initOutfit(player);
 frameSystems.push(profile('chars.frame', (dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha); }));
+if (flags.time >= 0) game.timeOfDay = flags.time;
 fixedSystems.push((dt) => {
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
 });
@@ -152,6 +157,16 @@ window.__npcs = npcs;
 window.__trafficList = traffic.list;
 window.__trafficState = traffic.hooks.lightState;
 window.__cityBuildings = city.buildings;
+// night is otherwise seven minutes of play away, which no test is going to wait for
+window.__test.setTimeOfDay = (t) => { game.timeOfDay = ((t % 1) + 1) % 1; return game.timeOfDay; };
+window.__test.timeOfDay = () => game.timeOfDay;
+// #5 regression probe: the key light must never dip below the horizon, or every
+// shadow in the city gets projected upward onto the facades
+window.__test.sun = () => ({
+  sunY: +sky.sunDir.y.toFixed(4),
+  lightY: +sky.lightDir.y.toFixed(4),
+  intensity: +sky.sun.intensity.toFixed(3),
+});
 
 // Pick a graphics tier (default: everything on) then compile every deferred
 // shader behind the loading screen — see engine/warmup.js
@@ -235,7 +250,7 @@ function render() {
   // mask would eat it and the main pass would use a stale shadow map.
   const rays = godrays.prepare(cam.camera, sky.sunDir, sky.sample().sun);
   if (rays) godrays.renderMask(scene);
-  shadows.beforeRender(player.p, cam.camera, sky.sunDir);
+  shadows.beforeRender(player.p, cam.camera, sky.lightDir);
   renderer.setRenderTarget(null);
   renderer.render(scene, cam.camera);
   if (rays) godrays.composite();

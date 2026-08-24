@@ -4,7 +4,7 @@
 // splash damage, and can be grabbed and thrown.
 import * as THREE from 'three';
 import { makeWorldMaterial } from '../engine/materials.js';
-import { carGeo, trafficLensGeo } from './procprops.js';
+import { carGeo, trafficLensGeo, CAR_CLEARANCE } from './procprops.js';
 import { neighbors } from '../ai/crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { removeSphere, craterAt } from './destruction.js';
@@ -417,6 +417,9 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       car.speed = 0;
       return {
         kind: 'entity', car, style: 'carry_overhead',
+        // a car's origin is its wheel-contact plane, so the palms have to meet the
+        // chassis underside — otherwise the whole body rides a clearance above them
+        gripDrop: CAR_CLEARANCE,
         // world pose at the moment of the grab, so the lift can ease from it
         origin: { x: car.x, y: car.y, z: car.z, yaw: car.yaw },
         // combat drives position + orientation; see anim/poselayer.js

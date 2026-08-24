@@ -2,7 +2,7 @@
 //   window.__ready  — true once the first frame rendered
 //   window.__perf   — fps / frame + sim cost / draw calls / triangles / bodies (1 Hz)
 //   window.__test   — scripted hooks (teleport, punchAt, spawnMonster, ...)
-// URL params: ?seed=N (world seed), ?nogroq=1, ?fastday=1, ?autoplay=1
+// URL params: ?seed=N (world seed), ?nogroq=1, ?fastday=1, ?time=0..1, ?autoplay=1
 //
 // `ms` is the average frame interval; `maxMs`/`p99Ms` are the WORST frames in
 // the window — a game that averages 60 fps and stalls for 300ms when a building
@@ -15,6 +15,7 @@ export const flags = {
   seed: 1337,
   nogroq: false,
   fastday: false,
+  time: -1,               // ?time=0..1 starts the clock at that time of day
   autoplay: false,
   nomonsters: false,
   prof: false,
@@ -29,6 +30,7 @@ export function initDebug() {
   if (q.has('seed')) flags.seed = parseInt(q.get('seed'), 10) || 1337;
   flags.nogroq = q.has('nogroq');
   flags.fastday = q.has('fastday');
+  flags.time = q.has('time') ? Math.min(1, Math.max(0, parseFloat(q.get('time')) || 0)) : -1;
   flags.autoplay = q.has('autoplay');
   flags.nomonsters = q.has('nomonsters');
   flags.prof = q.has('prof');

@@ -20,7 +20,7 @@ const PROC_GEO = {
   prop_kiosk: kioskGeo,
 };
 
-const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3();
+const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), V2 = new THREE.Vector3(), S = new THREE.Vector3();
 
 // Per-type config. `r` is the physical collision radius (the pole, the trunk);
 // `clear` is the VISUAL footprint used to keep props from growing through each
@@ -202,8 +202,10 @@ export function buildProps(scene, city) {
   }
 
   const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
-  // physics/collide.js installs onRetire so a dead prop leaves the spatial grid
+  // physics/collide.js installs onRetire/onRestore so a prop leaving or rejoining
+  // the world is added to / removed from the spatial grid
   reg.onRetire = null;
+  reg.onRestore = null;
   reg.hide = (p) => {
     const t = reg.types[p.type];
     t.mesh.setMatrixAt(p.idx, ZERO);
@@ -212,6 +214,37 @@ export function buildProps(scene, city) {
   };
   // props that stay visible but stop colliding (a felled lamp lies where it fell)
   reg.retire = (p) => reg.onRetire?.(p);
+
+  // Drive one live instance's matrix — used by the carry system and by the
+  // tip-over animation in world/destruction.js. Same compose as the build pass
+  // above, so a prop in your hands is the instance that was standing there: no
+  // stand-in mesh, no second copy, no state to keep in sync.
+  reg.setMatrix = (p, pos, quat, scale) => {
+    const t = reg.types[p.type];
+    if (!t) return;
+    const k = scale ?? (p.s || 1);
+    M.compose(pos, quat, S.set(k, k, k));
+    t.mesh.setMatrixAt(p.idx, M);
+    t.mesh.instanceMatrix.needsUpdate = true;
+  };
+  // Picked up: stops colliding and stops being placeable, but keeps its slot and
+  // stays drawn — whoever detached it now owns the matrix.
+  reg.detach = (p) => {
+    if (!p.alive) return false;
+    p.alive = false;
+    reg.onRetire?.(p);
+    return true;
+  };
+  // Comes back to rest somewhere: upright at (x, z), sitting on the ground there.
+  reg.reattach = (p, x, z, yaw) => {
+    p.x = x; p.z = z;
+    p.y = baseHeight(x, z);
+    if (yaw !== undefined) p.yaw = yaw;
+    Q.setFromAxisAngle(V.set(0, 1, 0), p.yaw);
+    reg.setMatrix(p, V2.set(p.x, p.y, p.z), Q);
+    p.alive = true;
+    reg.onRestore?.(p);
+  };
   reg.dropped = dropped;
 
   // #1 regression probe: nothing may stand on the road or inside another prop

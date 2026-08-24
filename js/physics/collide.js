@@ -13,8 +13,8 @@ const T = 0.3;              // wall thickness (matches buildings.js)
 const DOOR_HALF = 0.65;     // walkable opening half-width on door cells
 
 let B = null, P = null, CARS = null;
-let buildGrid = null, propGrid = null;
-const nearB = [], nearP = [];
+let buildGrid = null, propGrid = null, iwallGrid = null;
+const nearB = [], nearP = [], nearI = [];
 
 export function initCollide(buildingsReg, propsReg) {
   B = buildingsReg; P = propsReg;
@@ -24,9 +24,19 @@ export function initCollide(buildingsReg, propsReg) {
     const s = b.spec;
     buildGrid.insertBox(b, s.x0, s.z0, s.x1, s.z1, T + 1.2);
   }
+  // Interior spine walls. The four-band test below only knows about a building's
+  // OUTER shell, so once you were through the door nothing inside collided and you
+  // walked straight through the room divider and out the far wall. These are
+  // axis-aligned boxes with their own grid, one per floor per building.
+  iwallGrid = createGrid();
+  for (const w of B.iwalls) {
+    iwallGrid.insertBox(w, w.x - w.sx / 2, w.z - w.sz / 2, w.x + w.sx / 2, w.z + w.sz / 2, 1.0);
+  }
   for (const p of P.all) propGrid.insertPoint(p, p.x, p.z, PROP_TYPES[p.type].r + 1.2);
-  // props leave the world through propsReg.hide(); keep the buckets honest
+  // props leave the world through propsReg.hide()/detach() and come back through
+  // reattach(); keep the buckets honest either way
   P.onRetire = (p) => propGrid.remove(p);
+  P.onRestore = (p) => propGrid.insertPoint(p, p.x, p.z, PROP_TYPES[p.type].r + 1.2);
 }
 
 export function setCars(carsReg) { CARS = carsReg; }
@@ -91,6 +101,22 @@ export function capsuleVsWorld(x, z, y, r, opts) {
           x = x < s.x1 ? s.x1 - (r + T / 2) : s.x1 + (r + T / 2);
         }
       }
+    }
+  }
+
+  if (iwallGrid) {
+    iwallGrid.query(x, z, r, nearI);
+    const floor = Math.floor(y / FLOOR_H);
+    for (const iw of nearI) {
+      if (iw.gone || iw.floor !== floor) continue;
+      if (B.buildings[iw.bId]?.collapsed) continue;
+      const hx = iw.sx / 2 + r, hz = iw.sz / 2 + r;
+      const dx = x - iw.x, dz = z - iw.z;
+      if (Math.abs(dx) >= hx || Math.abs(dz) >= hz) continue;
+      // out along whichever face is nearer — these walls are long and thin, so
+      // that is almost always the thin one
+      if (hx - Math.abs(dx) < hz - Math.abs(dz)) x = iw.x + Math.sign(dx || 1) * hx;
+      else z = iw.z + Math.sign(dz || 1) * hz;
     }
   }
 

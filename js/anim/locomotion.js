@@ -31,6 +31,13 @@ export function createLocomotion(root, opts = {}) {
   let oneshot = null;
   let oneshotDone = null;
 
+  // A LoopOnce action ends by setting `enabled = false` — it only PAUSES when
+  // clampWhenFinished is on. Watching for `paused` alone therefore never retired
+  // an unclamped one-shot (every punch and every throw), and a one-shot that is
+  // never retired pins all locomotion weights at 15% below, permanently, so
+  // sprinting can no longer reach the run clip. The mixer's own event is exact.
+  mixer.addEventListener('finished', (e) => { if (e.action === oneshot) finishOneshot(); });
+
   function update(dt, speed) {
     // pick surrounding pair, crossfade by position between breakpoints
     let lo = actions[0], hi = actions[actions.length - 1];
@@ -51,7 +58,8 @@ export function createLocomotion(root, opts = {}) {
       if (a.native) a.action.setEffectiveTimeScale(clamp(speed / a.native, 0.75, 1.5));
     }
     mixer.update(dt);
-    if (oneshot && oneshot.paused) finishOneshot();
+    // belt-and-braces: the 'finished' listener above is the real retirement path
+    if (oneshot && (oneshot.paused || !oneshot.enabled)) finishOneshot();
   }
 
   function playOneshot(name, { timeScale = 1, clamp: clampEnd = false, fade = 0.09, onDone } = {}) {
@@ -78,8 +86,24 @@ export function createLocomotion(root, opts = {}) {
     cb?.();
   }
 
+  // Drop any one-shot and snap the blend back to rest, for callers that need a
+  // known-good animation state after something ended abnormally.
+  function reset() {
+    if (oneshot) oneshot.stop();
+    oneshot = null; oneshotDone = null;
+    for (const a of actions) a.action.setEffectiveWeight(a.speed === 0 ? 1 : 0);
+  }
+
+  // diagnostics: a stuck one-shot shows up here as every weight pinned near 0.15
+  function weights() {
+    const out = {};
+    for (const a of actions) out[a.name] = +a.action.getEffectiveWeight().toFixed(3);
+    out.oneshot = !!oneshot;
+    return out;
+  }
+
   return {
-    mixer, update, playOneshot,
+    mixer, update, playOneshot, reset, weights,
     get busy() { return !!oneshot; },
     cancelOneshot: finishOneshot,
     hipsY,

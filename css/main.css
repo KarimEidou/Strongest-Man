@@ -130,13 +130,26 @@ button { font: inherit; color: inherit; }
 }
 .abtn {
   pointer-events: auto;
+  /* border-box + padding:0 or the UA's 1px 6px eats 12px of an already small
+     circle — which is what pushed THROW out over the ring. */
+  box-sizing: border-box;
   width: 64px; height: 64px;
+  padding: 0;
   border-radius: 50%;
   border: 2px solid rgba(234,242,255,0.5);
   background: rgba(13,27,62,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 1px;
+  --ls: 1px;
+  letter-spacing: var(--ls);
+  /* letter-spacing also emits a gap AFTER the last glyph, so the centred line
+     box puts the ink half a gap to the left. Shift it back. */
+  text-indent: calc(var(--ls) / 2);
   position: relative;
   touch-action: none;
 }

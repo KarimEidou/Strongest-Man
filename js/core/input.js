@@ -112,9 +112,11 @@ export function initInput(surface, stick, nub) {
     if (e.code === 'KeyE') state.pendingInteract = true;
   });
   window.addEventListener('keyup', (e) => {
+    // A RELEASE is processed even while typing. Returning first used to strand
+    // input.punchDown at true, which latched the charge slow-down for good.
+    if (e.code === 'KeyJ') { state.pendingPunchUp = true; input.punchDown = false; }
     if (input.textFocus) { state.keys.clear(); return; }
     state.keys.delete(e.code);
-    if (e.code === 'KeyJ') { state.pendingPunchUp = true; input.punchDown = false; }
   });
   surface.addEventListener('mousedown', (e) => { if (e.button === 0 && !e.isPrimary === false) state.mouseLook = true; });
   window.addEventListener('mouseup', () => { state.mouseLook = false; });
@@ -163,6 +165,10 @@ export function pollInput(dt) {
     input.jumpPressed = input.grabPressed = input.interactPressed = false;
     state.pendingPunchDown = state.pendingPunchUp = false;
     state.pendingJump = state.pendingGrab = state.pendingInteract = false;
+    // Typing cancels a held charge outright: no finger is on the button any
+    // more, so leaving punchDown set would keep accruing chargeTime the instant
+    // focus is released — and pin the player to 45% speed with it.
+    input.punchDown = false;
     input.chargeTime = 0;
     return;
   }
