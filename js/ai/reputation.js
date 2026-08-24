@@ -80,6 +80,12 @@ export function initReputation(npcSys, monsterSys, player, city) {
     // district aggregates; newcomers absorb local lore
     if (districtT >= 10) {
       districtT = 0;
+      districtPass();
+    }
+  }
+
+  function districtPass() {
+    {
       const sums = [0, 0, 0, 0], counts = [1, 1, 1, 1];
       for (const n of npcSys.npcs) {
         const d = (n.x >= 0 ? 1 : 0) + (n.z >= 0 ? 2 : 0);
@@ -125,6 +131,7 @@ export function initReputation(npcSys, monsterSys, player, city) {
     return know >= 55 ? 'whisper' : 'curious';
   }
 
+  window.__test.districtPass = districtPass;
   window.__test.setKarma = (v) => { save.karma = v; return karmaBand(); };
   window.__test.setKnowledgeAll = (v) => { for (const n of npcSys.npcs) { n.knowledge = v; n.knowSource = 'seen'; } return v; };
   window.__test.repStats = () => ({
