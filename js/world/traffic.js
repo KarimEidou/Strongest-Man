@@ -278,7 +278,8 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       }
     },
     tryGrab(p) {
-      let best = null, bd = 9;
+      let best = null, bd = 20; // cars are big — generous grab reach
+
       for (const car of list) {
         if (car.mode === 'held') continue;
         const dx = car.x - (p.x + Math.sin(p.yaw) * 1.8), dz = car.z - (p.z + Math.cos(p.yaw) * 1.8);

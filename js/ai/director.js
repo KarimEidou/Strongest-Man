@@ -3,6 +3,7 @@
 // budget is under pressure.
 import { emit, on, EV } from '../core/events.js';
 import { rand, randRange, pick } from '../core/mathx.js';
+import { flags } from '../core/debug.js';
 
 const EDGES = [
   [0, -86], [0, 86], [-86, 0], [86, 0],
@@ -14,6 +15,7 @@ export function createDirector(monsterSys) {
   let tick = 0;
 
   function fixedUpdate(dt) {
+    if (flags.nomonsters) return;
     tick += dt;
     if (tick < 1) return;
     nextEvent -= tick;

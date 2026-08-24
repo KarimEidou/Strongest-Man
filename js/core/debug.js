@@ -10,6 +10,7 @@ export const flags = {
   nogroq: false,
   fastday: false,
   autoplay: false,
+  nomonsters: false,
 };
 
 export function initDebug() {
@@ -18,6 +19,7 @@ export function initDebug() {
   flags.nogroq = q.has('nogroq');
   flags.fastday = q.has('fastday');
   flags.autoplay = q.has('autoplay');
+  flags.nomonsters = q.has('nomonsters');
   seedWorld(flags.seed);
 
   window.__perf = { fps: 0, ms: 0, drawCalls: 0, triangles: 0, activeBodies: 0, npcs: 0, sleeping: 0 };
