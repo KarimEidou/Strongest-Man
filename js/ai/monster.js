@@ -89,6 +89,9 @@ export function createMonsters(scene, npcSys, player, cam) {
       m.stateT -= dt; m.swingT -= dt; m.wreckT -= dt;
       const pd = Math.hypot(player.p.x - m.x, player.p.z - m.z);
 
+      // witnessing a feat is the other way a monster learns what he is
+      if (m.knowledge >= 50 && !m.realized && m.state !== 'realize' && pd < 30) realize(m);
+
       switch (m.state) {
         case 'arrive': {
           m.targetSpeed = m.cruise;
@@ -222,7 +225,8 @@ export function createMonsters(scene, npcSys, player, cam) {
   }
 
   function realize(m) {
-    if (m.state === 'realize' || m.dead) return;
+    if (m.state === 'realize' || m.dead || m.realized) return;
+    m.realized = true;
     m.state = 'realize';
     m.stateT = 1.1;
     m.bang.visible = true;

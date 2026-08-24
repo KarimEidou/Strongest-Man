@@ -101,10 +101,18 @@ const monsters = createMonsters(scene, npcs, player, cam);
 const director = createDirector(monsters);
 combat.st.hooks.monsters = monsters.hooks;
 
+const { initKarma } = await import('./ai/karma.js');
+const { initReputation } = await import('./ai/reputation.js');
+const karma = initKarma();
+const reputation = initReputation(npcs, monsters, player, city);
+karma.fire();
+
 fixedSystems.push((dt) => npcs.fixedUpdate(dt));
 fixedSystems.push((dt) => traffic.fixedUpdate(dt));
 fixedSystems.push((dt) => monsters.fixedUpdate(dt));
 fixedSystems.push((dt) => director.fixedUpdate(dt));
+fixedSystems.push((dt) => { karma.fixedUpdate(dt); reputation.fixedUpdate(dt); });
+window.__reputation = reputation;
 frameSystems.push((dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha); });
 fixedSystems.push((dt) => {
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;

@@ -98,6 +98,7 @@ export function createNPCs(scene, city, player) {
 
   function think(n, t, dt) {
     n.stateT -= dt;
+    if (n.state === 'commute' || n.state === 'at_poi' || n.state === 'chat') sys.playerReact?.(n);
     switch (n.state) {
       case 'commute': {
         if (!n.goal || n.pathI >= n.path.length) {

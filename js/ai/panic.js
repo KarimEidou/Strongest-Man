@@ -167,8 +167,14 @@ export function installPanic(npcSys, buildingsReg, city) {
     }
   };
 
+  // other systems (reputation terror, monsters) can panic someone directly
+  sys.forcePanic = (n, x, z) => {
+    if (n.state === 'dead' || n.state === 'carried' || n.state === 'hide' || n.state === 'panic') return;
+    n.threatX = x; n.threatZ = z;
+    toPanic(n);
+  };
+
   // panicked direct movement must respect walls (they leave the lattice)
-  const origMove = null;
   sys.panicCollide = (n, dt) => {
     if (n.state === 'panic' || n.state === 'tumbled') {
       const [cx, cz] = capsuleVsWorld(n.x, n.z, n.y + 0.9, 0.3);
