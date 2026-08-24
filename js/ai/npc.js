@@ -6,6 +6,8 @@ import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { MODELS } from '../engine/assets.js';
 import { createLocomotion } from '../anim/locomotion.js';
+import { groundOffset, findBone } from '../anim/retarget.js';
+import { capsuleVsWorld, blockedAt } from '../physics/collide.js';
 import { pickGoal, routeTo } from './schedule.js';
 import { rebuildHash, neighbors } from './crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
@@ -21,6 +23,10 @@ import { flags } from '../core/debug.js';
 const COUNT = 48;
 const ARCHETYPES = ['worker', 'vendor', 'kid'];
 const scratch = [];
+const GRABV = new THREE.Vector3();
+const NPC_R = 0.3;          // capsule radius used against the static world
+const WHISKER = 1.8;        // how far ahead they look for something to walk round
+const WHISKER_ANG = 0.61;   // ±35°
 
 export function createNPCs(scene, city, player) {
   const npcs = [];
@@ -67,11 +73,16 @@ export function createNPCs(scene, city, player) {
       body: null,               // physics body while launched
       dead: false,
       blob: null,
+      footY: 0,
+      stuckT: 0,
+      speakT: 0,                // >0 while mid-sentence (dialogue/conversation.js)
+      poseLayer: null,          // lazily built when carried or talking
     };
+    npc.footY = groundOffset(root);
     npc.px = npc.x; npc.pz = npc.z;
     npc.home = pick(city.pois.filter((p) => p.type === 'apartment')) || pick(city.pois);
     npc.district = npc.home.district;
-    npc.blob = addBlob(() => ({ x: npc.x, z: npc.z, y: npc.y, r: 0.62, on: true }));
+    npc.blob = addBlob(npc, 0.62);
     npcs.push(npc);
   }
 
@@ -150,6 +161,9 @@ export function createNPCs(scene, city, player) {
   }
 
   function move(n, dt) {
+    // someone is holding them; player/combat.js owns the transform entirely
+    if (n.state === 'carried') { n.px = n.x; n.pz = n.z; return; }
+
     // path following
     if (n.targetSpeed > 0 && n.pathI < n.path.length) {
       const node = n.path[n.pathI];
@@ -161,6 +175,11 @@ export function createNPCs(scene, city, player) {
     n.speed = damp(n.speed, n.targetSpeed, 6, dt);
 
     if (n.speed > 0.02) {
+      // Whiskers: look ahead and turn, so they route AROUND a bench or a corner
+      // instead of grinding along it until the pushout shoves them clear.
+      // Staggered by LOD tier — distant crowds do not need this every step.
+      if ((tickI + n.id) % (n.tier === 2 ? 4 : 1) === 0) steerAround(n);
+
       let vx = Math.sin(n.yaw) * n.speed, vz = Math.cos(n.yaw) * n.speed;
       // separation
       neighbors(n.x, n.z, 1.3, scratch);
@@ -173,18 +192,47 @@ export function createNPCs(scene, city, player) {
       }
       n.px = n.x; n.pz = n.z;
       n.x += vx * dt; n.z += vz * dt;
-      sys.panicCollide?.(n, dt);
+
+      // Unconditional now. This used to run only for panicking NPCs, which is
+      // why everyone else strolled straight through the buildings.
+      const [cx, cz] = capsuleVsWorld(n.x, n.z, n.y + 0.9, NPC_R);
+      n.x = cx; n.z = cz;
+
+      // wedged against something the whiskers could not solve? ask for a new route
+      const moved = Math.abs(n.x - n.px) + Math.abs(n.z - n.pz);
+      if (n.targetSpeed > 0.1 && moved < 0.012) {
+        n.stuckT += dt;
+        if (n.stuckT > 1.2) {
+          n.stuckT = 0;
+          n.yaw += (n.id & 1 ? 1 : -1) * (0.8 + rand() * 0.9);
+          n.goal = null; n.path.length = 0; n.pathI = 0;
+        }
+      } else n.stuckT = 0;
     } else {
       n.px = n.x; n.pz = n.z;
+      n.stuckT = 0;
     }
     n.y = groundHeight(n.x, n.z);
+  }
+
+  function steerAround(n) {
+    const y = n.y + 0.9;
+    const fx = Math.sin(n.yaw), fz = Math.cos(n.yaw);
+    if (!blockedAt(n.x + fx * WHISKER, n.z + fz * WHISKER, y, NPC_R)) return;
+    const lYaw = n.yaw + WHISKER_ANG, rYaw = n.yaw - WHISKER_ANG;
+    const lFree = !blockedAt(n.x + Math.sin(lYaw) * WHISKER, n.z + Math.cos(lYaw) * WHISKER, y, NPC_R);
+    const rFree = !blockedAt(n.x + Math.sin(rYaw) * WHISKER, n.z + Math.cos(rYaw) * WHISKER, y, NPC_R);
+    if (lFree && !rFree) n.yaw = lYaw;
+    else if (rFree && !lFree) n.yaw = rYaw;
+    else if (lFree && rFree) n.yaw = (n.id & 1) ? lYaw : rYaw;
+    else n.yaw += (n.id & 1 ? 1 : -1) * 1.4;   // boxed in: turn hard and try again
   }
 
   function updateDead(n, dt) {
     if (n.body) {
       // launched: mesh follows the physics root, tumbling
       n.x = n.body.x; n.z = n.body.z; n.y = n.body.y - 0.35;
-      n.root.position.set(n.x, Math.max(n.y, groundHeight(n.x, n.z)), n.z);
+      n.root.position.set(n.x, Math.max(n.y, groundHeight(n.x, n.z)) + n.footY, n.z);
       n.root.rotation.set(n.body.rx * 0.5, n.body.ry, n.body.rz * 0.5);
       if (n.body.asleep) {
         // settle lying down, stop tracking
@@ -203,9 +251,19 @@ export function createNPCs(scene, city, player) {
         n.loco.update(dt, 0);         // let die clip finish/clamp
         continue;
       }
+      if (n.state === 'carried') {
+        // player/combat.js owns the transform; the legs keep cycling, which
+        // held a metre off the ground reads as kicking
+        if (n.carryQuat) {
+          n.root.position.set(n.x, n.carryY, n.z);
+          n.root.quaternion.copy(n.carryQuat);
+        }
+        n.loco.update(dt, 2.6);
+        continue;
+      }
       n.root.position.set(
         n.px + (n.x - n.px) * alpha,
-        n.y,
+        n.y + n.footY,
         n.pz + (n.z - n.pz) * alpha,
       );
       n.visYaw = dampAngle(n.visYaw, n.yaw, 12, dt);
@@ -272,14 +330,37 @@ export function createNPCs(scene, city, player) {
     },
     tryGrab(p) {
       neighbors(p.x + Math.sin(p.yaw) * 1.4, p.z + Math.cos(p.yaw) * 1.4, 1.6, scratch);
-      const n = scratch.find((o) => o.state !== 'dead');
+      const n = scratch.find((o) => o.state !== 'dead' && o.state !== 'carried');
       if (!n) return null;
       n.state = 'carried';
       n.targetSpeed = 0;
+      n.carryQuat = null;
+      // Measure this body's neck: heights vary 0.92–1.07 per NPC, and the whole
+      // point is that the fist lands on the collar, not somewhere near it.
+      let neckDrop = 1.45 * (n.root.scale.y || 1);
+      const neck = findBone(n.root, 'neck') || findBone(n.root, 'Head');
+      if (neck) {
+        n.root.updateWorldMatrix(true, true);
+        neckDrop = neck.getWorldPosition(GRABV).y - n.root.position.y;
+      }
+      emit(EV.SCREAM, { x: n.x, z: n.z, radius: 14 });
       return {
-        kind: 'entity', npc: n,
-        follow: (f) => { n.x = n.px = f.x; n.z = n.pz = f.z; n.y = f.y; },
+        kind: 'entity', npc: n, style: 'carry_neck',
+        origin: { x: n.x, y: n.y + n.footY, z: n.z, yaw: n.visYaw },
+        alive: () => n.state === 'carried',
+        place: (x, y, z, quat) => {
+          n.x = n.px = x; n.z = n.pz = z;
+          n.carryY = y - neckDrop;      // held BY THE NECK, so the collar is the anchor
+          n.carryQuat = quat;
+        },
+        release: () => {
+          if (n.state !== 'carried') return;
+          n.carryQuat = null;
+          n.state = 'panic'; n.stateT = 8; n.panicLevel = 1;
+          n.y = groundHeight(n.x, n.z);
+        },
         launch: (from, vx, vy, vz) => {
+          n.carryQuat = null;
           n.x = from.x; n.z = from.z; n.y = from.y;
           kill(n, 'thrown', 26, vx / 26, vz / 26);
           if (n.body) { n.body.vx = vx; n.body.vy = vy + 4; n.body.vz = vz; }
@@ -288,6 +369,19 @@ export function createNPCs(scene, city, player) {
     },
   };
 
+  // #5 regression probe: how many townsfolk are standing inside a building
+  window.__test.npcsInsideBuildings = () => {
+    let inside = 0;
+    for (const n of npcs) {
+      if (n.state === 'dead' || n.state === 'hide' || n.state === 'carried') continue;
+      for (const s of city.buildings) {
+        const b = window.__buildingsReg?.buildings[s.id];
+        if (b?.collapsed) continue;
+        if (n.x > s.x0 + 0.2 && n.x < s.x1 - 0.2 && n.z > s.z0 + 0.2 && n.z < s.z1 - 0.2) { inside++; break; }
+      }
+    }
+    return inside;
+  };
   window.__test.npcStats = () => {
     const alive = npcs.filter((n) => n.state !== 'dead').length;
     const states = {};

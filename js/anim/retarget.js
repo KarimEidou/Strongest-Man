@@ -2,6 +2,7 @@
 // skeleton (verified at generation time by tools/check-rig.mjs), so clips
 // apply to any character directly — tracks resolve by bone name. We only:
 //  - strip the Hips.position X/Z channels (the controller owns translation),
+//  - strip every .scale track (see normalizeClip),
 //  - scale the Hips Y bob when a clip plays on a different-height skeleton.
 import * as THREE from 'three';
 import { MODELS } from '../engine/assets.js';
@@ -14,7 +15,7 @@ export function buildClipBank() {
     const anims = MODELS[model]?.animations || [];
     if (!anims.length) return;
     const clip = anims[0].clone();
-    stripRootXZ(clip);
+    normalizeClip(clip);
     CLIPS[name] = clip;
   };
   take('player', 'idle');
@@ -38,7 +39,15 @@ export function buildClipBank() {
   if (hips) refHipsY = hips.position.y || 1;
 }
 
-function stripRootXZ(clip) {
+// Every exported clip carries a .scale track for all 24 bones. In all of them
+// but one those tracks are identity — but the player's idle animates
+// Hips.scale = 1.1765, and Hips is the skeleton root, so the whole character was
+// 17% larger standing still than running and visibly shrank the moment he moved
+// (and stood with his feet ~17cm through the pavement). Dropping the scale
+// channels outright gives one constant, correctly-grounded size in every state;
+// overall build is PLAYER_SCALE in player/player.js if it ever wants tuning.
+function normalizeClip(clip) {
+  clip.tracks = clip.tracks.filter((t) => !t.name.endsWith('.scale'));
   for (const track of clip.tracks) {
     if (track.name.endsWith('Hips.position')) {
       const v = track.values;
@@ -68,4 +77,15 @@ export function findBone(root, name) {
   let found = null;
   root.traverse((o) => { if (!found && o.isBone && o.name === name) found = o; });
   return found;
+}
+
+// Distance from a character root's origin down to the soles of its bind pose.
+// Rig origins are not reliably at the feet, and planting a root at ground height
+// without this is exactly why the monsters hovered.
+const _box = new THREE.Box3();
+export function groundOffset(root) {
+  root.updateWorldMatrix(true, true);
+  _box.setFromObject(root);
+  if (!isFinite(_box.min.y)) return 0;
+  return root.position.y - _box.min.y;
 }

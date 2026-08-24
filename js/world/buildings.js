@@ -110,6 +110,7 @@ export function buildBuildings(scene, specs) {
     const b = {
       spec: s, sideCols,
       idx: new Map(),          // `${side}:${col}:${floor}` -> cell record
+      byFloor: [],             // floor -> cell records (removeSphere's Y reject)
       aliveCount: 0, groundAlive: 0, groundTotal: 0,
       slabIds: [], furnIds: [], iwallIds: [],
       collapsed: false,
@@ -138,6 +139,7 @@ export function buildBuildings(scene, specs) {
           positionCell(s, side, col, cell);
           placements[kind].push(cell);
           b.idx.set(`${side}:${col}:${floor}`, cell);
+          (b.byFloor[floor] || (b.byFloor[floor] = [])).push(cell);
           reg.cells.push(cell);
           b.aliveCount++;
           if (floor === 0) { b.groundTotal++; b.groundAlive++; }

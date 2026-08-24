@@ -71,15 +71,37 @@ export function buildStreets(scene) {
     }
   }
 
-  // crosswalk stripes at every road entry of the 4-way intersections
+  // Crosswalks: a proper zebra. Each stripe is a long rectangle running ALONG
+  // the direction of travel and they march across the full road width — the old
+  // loop drew 0.7×0.7 squares on both axes, which read as a row of little cubes.
+  const STRIPE_LEN = 2.6;     // along the direction cars travel
+  const STRIPE_W = 0.45;      // across it
+  const PITCH = 0.9;          // stripe centre to stripe centre
+  const BAND = R + 1.5;       // crosswalk centre, measured out from the junction
+  const SPAN = R - 0.45;      // half the painted width, inset off the kerb
+
   for (const cx of C) for (const cz of C) {
-    // entries: ±x and ±z arms (skip arms that leave the map)
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const ax = cx + dx * (R + 1.2), az = cz + dz * (R + 1.2);
+      const ax = cx + dx * BAND, az = cz + dz * BAND;
       if (Math.abs(ax) > E || Math.abs(az) > E) continue;
-      for (let s = -3.4; s <= 3.4; s += 1.15) {
-        if (dx !== 0) quad(ax - 0.75 * dx - 0.35, cz + s - 0.35, ax - 0.75 * dx + 0.35, cz + s + 0.35, MARK_Y, PAL.roadLine, 0.85);
-        else quad(cx + s - 0.35, az - 0.75 * dz - 0.35, cx + s + 0.35, az - 0.75 * dz + 0.35, MARK_Y, PAL.roadLine, 0.85);
+      for (let t = -SPAN; t <= SPAN + 1e-6; t += PITCH) {
+        if (dx !== 0) {
+          quad(ax - STRIPE_LEN / 2, cz + t - STRIPE_W / 2,
+            ax + STRIPE_LEN / 2, cz + t + STRIPE_W / 2, MARK_Y, PAL.roadLine, 0.85);
+        } else {
+          quad(cx + t - STRIPE_W / 2, az - STRIPE_LEN / 2,
+            cx + t + STRIPE_W / 2, az + STRIPE_LEN / 2, MARK_Y, PAL.roadLine, 0.85);
+        }
+      }
+      // stop bar just outside the crossing, on the approaching lane only
+      const bx = cx + dx * (BAND + STRIPE_LEN / 2 + 0.5);
+      const bz = cz + dz * (BAND + STRIPE_LEN / 2 + 0.5);
+      if (dx !== 0) {
+        const z0 = dx > 0 ? cz : cz - R, z1 = dx > 0 ? cz + R : cz;
+        quad(bx - 0.2, z0 + 0.2, bx + 0.2, z1 - 0.2, MARK_Y, PAL.roadLine, 0.8);
+      } else {
+        const x0 = dz > 0 ? cx - R : cx, x1 = dz > 0 ? cx : cx + R;
+        quad(x0 + 0.2, bz - 0.2, x1 - 0.2, bz + 0.2, MARK_Y, PAL.roadLine, 0.8);
       }
     }
   }

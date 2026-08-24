@@ -40,6 +40,19 @@ export function hudFrame() {
   punchBtn.style.setProperty('--charge', input.punchDown ? c.toFixed(3) : 0);
 }
 
+// The grab button is a toggle in disguise: it throws whatever you are holding.
+// Module-local guard means combat can call this every frame for free.
+let grabMode = 'GRAB';
+export function setGrabLabel(mode) {
+  if (mode === grabMode) return;
+  grabMode = mode;
+  const b = el('btn-grab');
+  if (!b) return;
+  b.textContent = mode;
+  b.classList.toggle('armed', mode === 'THROW');
+  b.setAttribute('aria-label', mode === 'THROW' ? 'throw' : 'grab');
+}
+
 export function repHint(text) {
   const h = el('rep-hint');
   h.textContent = text;

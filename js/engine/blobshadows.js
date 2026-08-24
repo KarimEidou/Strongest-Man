@@ -6,7 +6,11 @@ import { groundHeight } from '../physics/heightfield.js';
 
 const CAP = 96;
 let mesh;
-const followers = []; // {get: () => ({x, z, r, on}), idx}
+// Followers hold a REFERENCE to the entity, not a getter. The old
+// `addBlob(() => ({x, z, y, r}))` form allocated a fresh object per follower per
+// frame — 96 objects × 60fps — which showed up as a GC saw-tooth. Reading the
+// entity's live fields costs nothing and removes the one-frame lag too.
+const followers = []; // {src, r, idx}
 const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3();
 
 export function initBlobShadows(scene) {
@@ -30,10 +34,13 @@ export function initBlobShadows(scene) {
   scene.add(mesh);
 }
 
-export function addBlob(get) {
+// src: any object with live .x/.y/.z. Set src.blobOn = false to hide the blob
+// (used for dead monsters and, at higher quality tiers, for characters that get
+// a real shadow instead).
+export function addBlob(src, r) {
   const idx = followers.length;
   if (idx >= CAP) return null;
-  const f = { get, idx };
+  const f = { src, r, idx };
   followers.push(f);
   return f;
 }
@@ -41,12 +48,13 @@ export function addBlob(get) {
 export function blobFrame() {
   Q.identity();
   for (const f of followers) {
-    const s = f.get();
-    if (!s || s.on === false) { M.makeScale(0, 0, 0); }
+    const s = f.src;
+    if (!s || s.blobOn === false) { M.makeScale(0, 0, 0); }
     else {
       const gy = groundHeight(s.x, s.z);
       const fade = Math.max(0.3, 1 - Math.max(0, (s.y ?? gy) - gy) * 0.18);
-      M.compose(V.set(s.x, gy + 0.015, s.z), Q, S.set(s.r * fade, 1, s.r * fade));
+      const rr = f.r * fade;
+      M.compose(V.set(s.x, gy + 0.015, s.z), Q, S.set(rr, 1, rr));
     }
     mesh.setMatrixAt(f.idx, M);
   }

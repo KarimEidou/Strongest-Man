@@ -14,6 +14,13 @@ export function createLoop({ fixed, frame, render }) {
   let skip = false;
   let frameTimes = [];
   let lastPerfCheck = 0;
+  // Half-rate exists to drop a 120Hz ProMotion display to 60, never to drop 60
+  // to 30 — at 30 the sim keeps stepping at 60 and it reads as stutter, not as
+  // a smooth lower framerate. So measure the display first and only allow it on
+  // a genuinely high-refresh panel.
+  let refreshHz = 0;
+  let refreshFrames = 0, refreshT0 = 0;
+  let overBudget = 0;
 
   function tick(tMs) {
     if (!running) return;
@@ -37,14 +44,30 @@ export function createLoop({ fixed, frame, render }) {
     frame(dt, alpha);
     render();
 
-    // adaptive half-rate: if real frame cost creeps past ~11ms for 2s, render
-    // at 60 instead of 120; sim rate never changes.
+    // display refresh probe (first ~60 frames)
+    if (refreshHz === 0) {
+      if (refreshT0 === 0) refreshT0 = tMs;
+      else if (++refreshFrames >= 60) refreshHz = refreshFrames / ((tMs - refreshT0) / 1000);
+    }
+
+    // Adaptive half-rate, high-refresh displays only. Judged on the p90 of the
+    // window rather than the mean, so one GC spike can't latch it on forever,
+    // and it needs two bad checks in a row to trip but only one good one to
+    // recover.
     const cost = performance.now() - tMs;
     frameTimes.push(cost);
     if (tMs - lastPerfCheck > 2000) {
-      const avg = frameTimes.reduce((a, b) => a + b, 0) / Math.max(frameTimes.length, 1);
-      if (!halfRate && avg > 11) halfRate = true;
-      else if (halfRate && avg < 6) halfRate = false;
+      frameTimes.sort((a, b) => a - b);
+      const p90 = frameTimes[Math.min(frameTimes.length - 1, Math.floor(frameTimes.length * 0.9))] || 0;
+      const allowed = refreshHz > 90;
+      if (allowed && !halfRate && p90 > 11) {
+        if (++overBudget >= 2) halfRate = true;
+      } else if (halfRate && p90 < 6) {
+        halfRate = false; overBudget = 0;
+      } else {
+        overBudget = 0;
+      }
+      if (!allowed) halfRate = false;
       frameTimes = [];
       lastPerfCheck = tMs;
     }
@@ -54,6 +77,7 @@ export function createLoop({ fixed, frame, render }) {
   return {
     stop() { running = false; },
     get halfRate() { return halfRate; },
+    get refreshHz() { return refreshHz; },
   };
 }
 

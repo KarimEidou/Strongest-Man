@@ -13,6 +13,7 @@ import { removeSphere } from '../world/destruction.js';
 import { burstBlood, burstDust } from '../engine/particles.js';
 import { addBlob } from '../engine/blobshadows.js';
 import { addBloodDecal } from '../world/debris.js';
+import { flashVignette } from '../ui/hud.js';
 import { emit, on, EV } from '../core/events.js';
 import { save } from '../core/state.js';
 import { rand, randRange, damp, dampAngle, clamp } from '../core/mathx.js';
@@ -20,19 +21,61 @@ import { rand, randRange, damp, dampAngle, clamp } from '../core/mathx.js';
 const scratch = [];
 const MAX_HP = 12;
 
+// One canvas + texture + material for every monster's realization "!". Building
+// these per spawn meant a fresh SpriteMaterial whose shader program compiled the
+// first time a monster realized — a visible stall at the exact dramatic beat.
+// Shared here, and warmed at boot by main.js.
+let bangMat = null;
+export function bangMaterial() {
+  if (bangMat) return bangMat;
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.font = '900 54px -apple-system, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#f0a860';
+  ctx.strokeStyle = '#0d1b3e';
+  ctx.lineWidth = 8;
+  ctx.strokeText('!', 32, 52);
+  ctx.fillText('!', 32, 52);
+  bangMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false });
+  return bangMat;
+}
+
 export function createMonsters(scene, npcSys, player, cam) {
   const monsters = [];
   const sys = { monsters };
 
-  function spawn(kindIdx = 0, sx, sz) {
-    const base = kindIdx === 0 ? 'monster_a' : 'monster_b';
-    const root = cloneSkeleton(MODELS[base].scene);
-    root.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.color.multiplyScalar(1.18); o.frustumCulled = true; } });
-    // the auto-rig ships human-scaled; monsters must tower
-    const bbox = new THREE.Box3().setFromObject(root);
+  // Per-kind material and rest-pose measurements, computed once. Every monster
+  // of a kind gets the same constant brightening, so cloning the material per
+  // spawn only bought a shader-program lookup and a spawn-time stall.
+  const kindCache = [];
+  function kindInfo(kindIdx, base) {
+    let k = kindCache[kindIdx];
+    if (k) return k;
+    const src = MODELS[base].scene;
+    const bbox = new THREE.Box3().setFromObject(src);
     const height = Math.max(bbox.max.y - bbox.min.y, 0.1);
     const targetH = kindIdx === 0 ? 3.4 : 2.7;
-    root.scale.setScalar(targetH / height);
+    const scale = targetH / height;
+    let mat = null;
+    src.traverse((o) => { if (o.isMesh && !mat) mat = o.material; });
+    const shared = mat.clone();
+    shared.color.multiplyScalar(1.18);
+    // feet-to-origin offset: the rig's origin is not necessarily its sole, and
+    // planting the root at ground height without this is why monsters hovered
+    k = { scale, shared, targetH, footY: -bbox.min.y * scale };
+    kindCache[kindIdx] = k;
+    return k;
+  }
+
+  function spawn(kindIdx = 0, sx, sz) {
+    const base = kindIdx === 0 ? 'monster_a' : 'monster_b';
+    const info = kindInfo(kindIdx, base);
+    const root = cloneSkeleton(MODELS[base].scene);
+    root.traverse((o) => { if (o.isMesh) { o.material = info.shared; o.frustumCulled = true; } });
+    // the auto-rig ships human-scaled; monsters must tower
+    root.scale.setScalar(info.scale);
     scene.add(root);
 
     const mixer = new THREE.AnimationMixer(root);
@@ -52,31 +95,23 @@ export function createMonsters(scene, npcSys, player, cam) {
       stateT: 0, swingT: 0, wreckT: 0,
       target: null, heldNpc: null,
       walk, dead: false,
-      bang: makeBang(root, hipsY),   // the "!" realization sprite
+      footY: info.footY, targetH: info.targetH,
+      bang: makeBang(root, info),   // the "!" realization sprite
       body: null,
       scale: kindIdx === 0 ? 1.0 : 1.0,
       kindIdx,
     };
-    m.blob = addBlob(() => ({ x: m.x, z: m.z, y: m.y, r: 1.5, on: !m.dead || !!m.body }));
+    m.blob = addBlob(m, 1.5);
     monsters.push(m);
     emit(EV.MONSTER_SPAWNED, { monster: m });
     return m;
   }
 
-  function makeBang(root, hipsY) {
-    const c = document.createElement('canvas');
-    c.width = 64; c.height = 64;
-    const ctx = c.getContext('2d');
-    ctx.font = '900 54px -apple-system, Arial';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#f0a860';
-    ctx.strokeStyle = '#0d1b3e';
-    ctx.lineWidth = 8;
-    ctx.strokeText('!', 32, 52);
-    ctx.fillText('!', 32, 52);
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
-    sprite.scale.set(1.1, 1.1, 1);
-    sprite.position.y = hipsY * 2.4;
+  function makeBang(root, info) {
+    const sprite = new THREE.Sprite(bangMaterial());
+    const inv = 1 / info.scale;                    // root is scaled; undo it
+    sprite.scale.set(1.1 * inv, 1.1 * inv, 1);
+    sprite.position.y = (info.targetH + 0.75) * inv;
     sprite.visible = false;
     sprite.renderOrder = 5;
     root.add(sprite);
@@ -130,7 +165,7 @@ export function createMonsters(scene, npcSys, player, cam) {
           if (t) {
             t.x = t.px = m.x + Math.sin(m.yaw) * 1.4;
             t.z = t.pz = m.z + Math.cos(m.yaw) * 1.4;
-            t.y = m.y + m.hipsY * 1.3;
+            t.y = m.y + m.targetH * 0.55;   // held at the monster's chest
             // head-dip "eating" read
             m.root.rotation.x = Math.sin(m.stateT * 12) * 0.08;
           }
@@ -149,7 +184,7 @@ export function createMonsters(scene, npcSys, player, cam) {
             m.swingT = 1.2;
             // the hit lands... and does nothing. every first hit teaches them.
             cam.shake(0.15);
-            import('../ui/hud.js').then(({ flashVignette }) => flashVignette(0.5));
+            flashVignette(0.5);
             burstDust(player.p.x, player.p.y + 1.2, player.p.z, 4, 0x9a92a8, 2);
             m.knowledge = Math.max(m.knowledge, 55);
             realize(m);
@@ -215,11 +250,13 @@ export function createMonsters(scene, npcSys, player, cam) {
   function enterRampage(m) { m.state = 'rampage'; m.target = null; m.stateT = 999; }
 
   function pickVictim(m) {
-    neighbors(m.x, m.z, 60, scratch);
+    // A 60m hash query spans 17×17 cells; with only 48 townsfolk a direct scan
+    // is both cheaper and exact.
     let best = null, bd = Infinity;
-    for (const n of scratch) {
+    for (const n of npcSys.npcs) {
       if (n.state === 'dead' || n.state === 'carried' || n.state === 'hide') continue;
-      const d = Math.hypot(n.x - m.x, n.z - m.z);
+      const dx = n.x - m.x, dz = n.z - m.z;
+      const d = dx * dx + dz * dz;
       if (d < bd) { bd = d; best = n; }
     }
     return best;
@@ -276,9 +313,9 @@ export function createMonsters(scene, npcSys, player, cam) {
     m.mixer.update(dt);
     if (m.body) {
       m.x = m.body.x; m.z = m.body.z;
-      m.root.position.set(m.x, Math.max(m.body.y - 0.8, groundHeight(m.x, m.z)), m.z);
+      m.root.position.set(m.x, Math.max(m.body.y - 0.8, groundHeight(m.x, m.z) + m.footY), m.z);
       m.root.rotation.y = m.body.ry;
-      if (m.body.asleep) { m.body = null; m.deadT = 0; }
+      if (m.body.asleep) { m.body = null; m.deadT = 0; m.blobOn = false; }
     } else {
       m.deadT = (m.deadT || 0) + dt;
       if (m.deadT > 14) {
@@ -298,9 +335,16 @@ export function createMonsters(scene, npcSys, player, cam) {
   function frameUpdate(dt, alpha) {
     for (const m of monsters) {
       if (m.dead) continue;
+      if (m.carryQuat) {
+        m.root.position.set(m.x, m.carryY, m.z);
+        m.root.quaternion.copy(m.carryQuat);
+        m.walk.setEffectiveTimeScale(1.6);   // still thrashing
+        m.mixer.update(dt);
+        continue;
+      }
       m.root.position.set(
         m.px + (m.x - m.px) * alpha,
-        m.y,
+        m.y + m.footY,
         m.pz + (m.z - m.pz) * alpha,
       );
       m.visYaw = dampAngle(m.visYaw, m.yaw, 10, dt);
@@ -332,9 +376,21 @@ export function createMonsters(scene, npcSys, player, cam) {
       m.state = 'grabbed';
       m.targetSpeed = 0;
       return {
-        kind: 'entity', monster: m,
-        follow: (f) => { m.x = m.px = f.x; m.z = m.pz = f.z; m.y = f.y + 0.6; },
+        kind: 'entity', monster: m, style: 'carry_neck',
+        origin: { x: m.x, y: m.y + m.footY, z: m.z, yaw: m.visYaw },
+        alive: () => m.state === 'grabbed' && !m.dead,
+        place: (x, y, z, quat) => {
+          m.x = m.px = x; m.z = m.pz = z;
+          m.carryY = y - m.targetH * 0.82;   // by the scruff of the neck
+          m.carryQuat = quat;
+        },
+        release: () => {
+          if (m.dead) return;
+          m.carryQuat = null;
+          m.state = 'flee'; m.stateT = 20;
+        },
         launch: (from, vx, vy, vz) => {
+          m.carryQuat = null;
           m.x = from.x; m.z = from.z;
           die(m, vx / 30, vz / 30, 30);
           if (m.body) { m.body.vx = vx; m.body.vy = vy + 6; m.body.vz = vz; }

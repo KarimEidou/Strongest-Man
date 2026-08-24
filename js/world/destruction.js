@@ -7,6 +7,7 @@ import { FLOOR_H } from './city.js';
 import { spawnDebris, addCrater } from './debris.js';
 import { burstDust, burstSparks, burstBlood, startWaterJet, shockwave } from '../engine/particles.js';
 import { wakeRadius } from '../physics/pworld.js';
+import { queryProps } from '../physics/collide.js';
 import { PROP_TYPES } from './props.js';
 import { rand } from '../core/mathx.js';
 
@@ -16,6 +17,8 @@ const lampFalls = [];       // animated streetlight tip-overs
 let simT = 0;
 
 const V = new THREE.Vector3(), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3();
+const TINT = new THREE.Color();
+const Q2 = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
 
 export function initDestruction(scene, buildingsReg, propsReg, cam) {
   sceneRef = scene; B = buildingsReg; P = propsReg; camRef = cam;
@@ -31,13 +34,23 @@ export function removeSphere(x, y, z, r, { impulse = 8, fragMult = 1, byPlayer =
     if (b.collapsed || !b.aliveCount) continue;
     const s = b.spec;
     if (x < s.x0 - r || x > s.x1 + r || z < s.z0 - r || z > s.z1 + r) continue;
-    for (const [, cell] of b.idx) {
-      if (!cell.alive) continue;
-      const dx = cell.x - x, dy = cell.y - y, dz = cell.z - z;
-      if (dx * dx + dy * dy + dz * dz > r * r) continue;
-      destroyCellWithDebris(b, cell, x, y, z, impulse, fragMult);
-      destroyed++;
-      touched.add(b);
+    // Y reject: a punch at street level used to walk every cell of an 8-storey
+    // tower. Thrown bodies call this every step while fast, and so does every
+    // walking monster, so the saving is per-step, not per-punch.
+    const f0 = Math.max(0, Math.floor((y - r) / FLOOR_H));
+    const f1 = Math.min(s.floors - 1, Math.floor((y + r) / FLOOR_H));
+    for (let f = f0; f <= f1; f++) {
+      const cells = b.byFloor[f];
+      if (!cells) continue;
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        if (!cell.alive) continue;
+        const dx = cell.x - x, dy = cell.y - y, dz = cell.z - z;
+        if (dx * dx + dy * dy + dz * dz > r * r) continue;
+        destroyCellWithDebris(b, cell, x, y, z, impulse, fragMult);
+        destroyed++;
+        touched.add(b);
+      }
     }
   }
   for (const b of touched) {
@@ -53,7 +66,7 @@ export function removeSphere(x, y, z, r, { impulse = 8, fragMult = 1, byPlayer =
 
 function destroyCellWithDebris(b, cell, sx, sy, sz, impulse, fragMult) {
   if (!B.destroyCell(cell)) return;
-  const tint = new THREE.Color(b.spec.tint).multiplyScalar(cell.floor === 0 ? 0.8 : 0.95);
+  const tint = TINT.setHex(b.spec.tint).multiplyScalar(cell.floor === 0 ? 0.8 : 0.95);
   const frags = Math.max(1, Math.round((1 + rand() * 1.5) * fragMult));
   for (let i = 0; i < frags; i++) {
     const dx = cell.x - sx, dy = cell.y - sy, dz = cell.z - sz;
@@ -127,20 +140,25 @@ function queueCollapse(b, what, delay) {
 // ---- per-step processing ---------------------------------------------------
 
 export function queueInfo() {
-  return { len: collapseQueue.length, simT: +simT.toFixed(2), next: collapseQueue[0] ? +(collapseQueue[0].due - simT).toFixed(2) : null };
+  return { len: collapseQueue.length, mound: moundQueue.length, simT: +simT.toFixed(2), next: collapseQueue[0] ? +(collapseQueue[0].due - simT).toFixed(2) : null };
 }
+
+const MAX_COLLAPSE_PER_STEP = 40;
 
 export function destructionFixed(dt) {
   simT += dt;
-  let processed = 0;
-  for (let i = 0; i < collapseQueue.length && processed < 40; i++) {
+  drainMound();
+  // Collapsing a tall building queues several hundred entries at once. Splicing
+  // each processed entry out of the middle made every step O(queue × processed);
+  // one compacting pass keeps it O(queue).
+  let processed = 0, write = 0;
+  for (let i = 0; i < collapseQueue.length; i++) {
     const q = collapseQueue[i];
-    if (q.due > simT) continue;
-    collapseQueue.splice(i, 1); i--;
+    if (q.due > simT || processed >= MAX_COLLAPSE_PER_STEP) { collapseQueue[write++] = q; continue; }
     processed++;
     if (q.cell) {
       if (!q.cell.alive) continue;
-      const tint = new THREE.Color(q.b.spec.tint);
+      const tint = TINT.setHex(q.b.spec.tint);
       B.destroyCell(q.cell);
       // collapsing cells: sparse falling fragments (the permanent mound is
       // built on completion — transient debris only sells the motion)
@@ -183,6 +201,7 @@ export function destructionFixed(dt) {
       emit(EV.BUILDING_COLLAPSED, { building: s.id, byPlayer: q.byPlayer, occupied: s.occupied || 0, x: cx, z: cz });
     }
   }
+  collapseQueue.length = write;
 
   // animated streetlight tip-overs
   for (let i = lampFalls.length - 1; i >= 0; i--) {
@@ -195,8 +214,8 @@ export function destructionFixed(dt) {
     const ang = L.target * (ease + wobble);
     const t = P.types[L.p.type];
     Q.setFromAxisAngle(V.set(L.axX, 0, L.axZ), ang);
-    const rotY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), L.p.yaw);
-    Q.multiply(rotY);
+    Q2.setFromAxisAngle(UP, L.p.yaw);
+    Q.multiply(Q2);
     M.compose(V.set(L.p.x, L.p.y, L.p.z), Q, S.set(1, 1, 1));
     t.mesh.setMatrixAt(L.p.idx, M);
     t.mesh.instanceMatrix.needsUpdate = true;
@@ -204,23 +223,38 @@ export function destructionFixed(dt) {
   }
 }
 
-// a permanent mound of pre-slept chunks over a collapsed footprint: instant
-// heightfield pile, zero active bodies, walkable rubble that stays forever
+// A permanent mound of pre-slept chunks over a collapsed footprint: instant
+// heightfield pile, zero active bodies, walkable rubble that stays forever.
+// The chunks are pre-rolled here but SPAWNED a few per step — dropping 46 bodies
+// into one fixed step was a spike on the very frame the building landed.
 import { forceSleep } from '../physics/pworld.js';
+const moundQueue = [];
+const MOUND_PER_STEP = 6;
+
 function buildRubbleMound(s) {
   const w = s.x1 - s.x0, d = s.z1 - s.z0;
   const cx = (s.x0 + s.x1) / 2, cz = (s.z0 + s.z1) / 2;
   const n = Math.min(46, Math.round((w * d) / 6));
   const tint = new THREE.Color(s.tint);
+  const c = new THREE.Color();
   for (let i = 0; i < n; i++) {
     // denser + taller toward the centre
     const a = rand() * Math.PI * 2;
     const rr = Math.sqrt(rand());
-    const x = cx + Math.cos(a) * rr * w * 0.48;
-    const z = cz + Math.sin(a) * rr * d * 0.48;
-    const size = 0.6 + rand() * 0.9 * (1.3 - rr);
-    const c = tint.clone().multiplyScalar(0.55 + rand() * 0.4);
-    const body = spawnDebris('chunk', x, 3 + rand() * 2, z, 0, 0, 0, size, c.getHex());
+    moundQueue.push({
+      x: cx + Math.cos(a) * rr * w * 0.48,
+      z: cz + Math.sin(a) * rr * d * 0.48,
+      y: 3 + rand() * 2,
+      size: 0.6 + rand() * 0.9 * (1.3 - rr),
+      color: c.copy(tint).multiplyScalar(0.55 + rand() * 0.4).getHex(),
+    });
+  }
+}
+
+function drainMound() {
+  for (let i = 0; i < MOUND_PER_STEP && moundQueue.length; i++) {
+    const m = moundQueue.shift();
+    const body = spawnDebris('chunk', m.x, m.y, m.z, 0, 0, 0, m.size, m.color);
     if (body) forceSleep(body);
   }
 }
@@ -246,6 +280,7 @@ export function hitProp(p, dirX, dirZ, power) {
       // rotation axis ⊥ push direction
       axX: -dirZ / len, axZ: dirX / len,
     });
+    P.retire(p);   // a felled lamp keeps its mesh but stops blocking walkers
     burstSparks(p.x, 4, p.z, 8);
     emit(EV.PROP_DESTROYED, { type: p.type });
   } else {
@@ -264,9 +299,10 @@ export function hitProp(p, dirX, dirZ, power) {
   return true;
 }
 
+const propScratch = [];
 export function nearestProp(x, z, r, filter) {
   let best = null, bd = r * r;
-  for (const p of P.all) {
+  for (const p of queryProps(x, z, r, propScratch)) {
     if (!p.alive) continue;
     if (filter && !filter(p)) continue;
     const dx = p.x - x, dz = p.z - z;

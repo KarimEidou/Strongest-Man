@@ -3,7 +3,8 @@
 import * as THREE from 'three';
 import { MODELS } from '../engine/assets.js';
 import { createLocomotion } from '../anim/locomotion.js';
-import { findBone } from '../anim/retarget.js';
+import { createPoseLayer } from '../anim/poselayer.js';
+import { findBone, groundOffset } from '../anim/retarget.js';
 import { input } from '../core/input.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { capsuleVsWorld } from '../physics/collide.js';
@@ -12,10 +13,15 @@ import { damp, dampAngle, clamp } from '../core/mathx.js';
 const R = 0.38;              // capsule radius
 const WALK = 2.3, JOG = 4.3, SPRINT = 7.0;
 const JUMP_V = 9.0;
+// One number for overall build. Clip scale tracks are stripped in
+// anim/retarget.js so nothing else can change his size at runtime.
+export const PLAYER_SCALE = 1.0;
 
 export function createPlayer(scene, cam) {
   const root = MODELS.player.scene;
+  root.scale.setScalar(PLAYER_SCALE);
   scene.add(root);
+  const footY = groundOffset(root);
 
   const p = {
     x: 2.5, y: 0, z: 20, yaw: 0,
@@ -25,15 +31,21 @@ export function createPlayer(scene, cam) {
     speed: 0,
     root,
     loco: createLocomotion(root),
+    // built here, before any mixer update, so it captures the true bind pose
+    poseLayer: createPoseLayer(root),
     bones: {
       hips: findBone(root, 'Hips'),
-      spine2: findBone(root, 'Spine2') || findBone(root, 'Spine1') || findBone(root, 'Spine'),
+      spine2: findBone(root, 'Spine02') || findBone(root, 'Spine01') || findBone(root, 'Spine'),
       head: findBone(root, 'Head'),
       lFore: findBone(root, 'LeftForeArm'),
       rFore: findBone(root, 'RightForeArm'),
       lArm: findBone(root, 'LeftArm'),
       rArm: findBone(root, 'RightArm'),
+      lHand: findBone(root, 'LeftHand'),
+      rHand: findBone(root, 'RightHand'),
     },
+    footY,
+    carrySlow: 1,
     charge: 0,            // 0..1 punch charge (combat writes; outfit/anim read)
     tearStage: 0,
     dead: false,
@@ -48,10 +60,10 @@ export function createPlayer(scene, cam) {
     if (mag > 0.02) {
       target = mag < 0.45 ? WALK * (mag / 0.45) : mag < 0.92 ? WALK + (JOG - WALK) * ((mag - 0.45) / 0.47) : SPRINT;
       const camYaw = cam.yaw;
-      const dirX = Math.sin(camYaw) * -mz + Math.cos(camYaw) * mx;
-      const dirZ = Math.cos(camYaw) * -mz - Math.sin(camYaw) * mx;
+      const dirX = Math.sin(camYaw) * mz + Math.cos(camYaw) * mx;
+      const dirZ = Math.cos(camYaw) * mz - Math.sin(camYaw) * mx;
       const len = Math.hypot(dirX, dirZ) || 1;
-      const chargeSlow = p.charge > 0.05 ? 0.45 : 1;
+      const chargeSlow = (p.charge > 0.05 ? 0.45 : 1) * p.carrySlow;
       p.vx = (dirX / len) * target * chargeSlow;
       p.vz = (dirZ / len) * target * chargeSlow;
       p.yaw = Math.atan2(dirX, dirZ);
@@ -93,7 +105,7 @@ export function createPlayer(scene, cam) {
     // interpolate visual transform between fixed steps
     root.position.set(
       p.px + (p.x - p.px) * alpha,
-      p.py + (p.y - p.py) * alpha,
+      p.py + (p.y - p.py) * alpha + p.footY,
       p.pz + (p.z - p.pz) * alpha,
     );
     p.visYaw = dampAngle(p.visYaw, p.yaw, 16, dt);
@@ -115,7 +127,7 @@ export function createPlayer(scene, cam) {
     }
 
     // feed the camera (suspended while a test drives it)
-    if (!cam.st.freeCam) cam.st.target.set(root.position.x, root.position.y, root.position.z);
+    if (!cam.st.freeCam) cam.st.target.set(root.position.x, root.position.y - p.footY, root.position.z);
   }
 
   window.__test.teleport = (x, z) => { p.x = p.px = x; p.z = p.pz = z; p.y = p.py = groundHeight(x, z); };
@@ -123,6 +135,11 @@ export function createPlayer(scene, cam) {
     x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2),
     ground: +groundHeight(p.x, p.z).toFixed(2), speed: +p.speed.toFixed(2), grounded: p.grounded,
   });
+  // #12 regression probe: world height must not change between animation states
+  window.__test.playerHeight = () => {
+    const b = new THREE.Box3().setFromObject(root);
+    return +(b.max.y - b.min.y).toFixed(4);
+  };
 
   return { ...pAccessors(p), p, fixedUpdate, frameUpdate };
 }

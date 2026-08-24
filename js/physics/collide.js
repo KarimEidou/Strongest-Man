@@ -1,15 +1,46 @@
 // Static-world collision queries: capsules vs building wall cells (only ALIVE
 // cells collide — collision automatically matches the destruction state),
 // static props, and map bounds. Also the camera occlusion probe.
+//
+// Buildings and props live in uniform grids (physics/spatialgrid.js) so a query
+// touches a handful of candidates instead of the whole city. Cars are few and
+// move every step, so they stay a linear scan.
 import { MAP_EDGE, FLOOR_H } from '../world/city.js';
 import { PROP_TYPES } from '../world/props.js';
+import { createGrid } from './spatialgrid.js';
 
 const T = 0.3;              // wall thickness (matches buildings.js)
 const DOOR_HALF = 0.65;     // walkable opening half-width on door cells
 
 let B = null, P = null, CARS = null;
-export function initCollide(buildingsReg, propsReg) { B = buildingsReg; P = propsReg; }
+let buildGrid = null, propGrid = null;
+const nearB = [], nearP = [];
+
+export function initCollide(buildingsReg, propsReg) {
+  B = buildingsReg; P = propsReg;
+  buildGrid = createGrid();
+  propGrid = createGrid();
+  for (const b of B.buildings) {
+    const s = b.spec;
+    buildGrid.insertBox(b, s.x0, s.z0, s.x1, s.z1, T + 1.2);
+  }
+  for (const p of P.all) propGrid.insertPoint(p, p.x, p.z, PROP_TYPES[p.type].r + 1.2);
+  // props leave the world through propsReg.hide(); keep the buckets honest
+  P.onRetire = (p) => propGrid.remove(p);
+}
+
 export function setCars(carsReg) { CARS = carsReg; }
+
+// Props near a point — shared by combat's grab probe and destruction's
+// nearestProp so neither has to walk the full prop list.
+export function queryProps(x, z, r, out) {
+  if (!propGrid) { out.length = 0; return out; }
+  return propGrid.query(x, z, r, out);
+}
+
+export function gridStats() {
+  return { buildings: buildGrid?.stats(), props: propGrid?.stats() };
+}
 
 // returns true if the wall cell at this world position is solid
 function wallSolid(b, side, along, y, forWalking) {
@@ -27,14 +58,18 @@ function wallSolid(b, side, along, y, forWalking) {
 }
 
 // capsule pushout; mutates and returns [x, z]
-export function capsuleVsWorld(x, z, y, r) {
+export function capsuleVsWorld(x, z, y, r, opts) {
+  const skipProps = opts === false || opts?.props === false;
+  const skipCars = opts === false || opts?.cars === false;
+
   // map bounds
   const lim = MAP_EDGE + 14;
   if (x < -lim) x = -lim; else if (x > lim) x = lim;
   if (z < -lim) z = -lim; else if (z > lim) z = lim;
 
-  if (B) {
-    for (const b of B.buildings) {
+  if (buildGrid) {
+    buildGrid.query(x, z, r + T, nearB);
+    for (const b of nearB) {
       if (b.collapsed) continue;
       const s = b.spec;
       if (x < s.x0 - r - T || x > s.x1 + r + T || z < s.z0 - r - T || z > s.z1 + r + T) continue;
@@ -59,8 +94,9 @@ export function capsuleVsWorld(x, z, y, r) {
     }
   }
 
-  if (P) {
-    for (const p of P.all) {
+  if (propGrid && !skipProps) {
+    propGrid.query(x, z, r + 1.5, nearP);
+    for (const p of nearP) {
       if (!p.alive) continue;
       const pr = PROP_TYPES[p.type].r;
       const dx = x - p.x, dz = z - p.z;
@@ -72,7 +108,7 @@ export function capsuleVsWorld(x, z, y, r) {
     }
   }
 
-  if (CARS) {
+  if (CARS && !skipCars) {
     for (const c of CARS.list) {
       if (!c.alive) continue;
       // oriented box → transform into car space (yaw only)
@@ -93,6 +129,39 @@ export function capsuleVsWorld(x, z, y, r) {
   return [x, z];
 }
 
+// Is this spot blocked for a walker? Used by NPC whisker steering, which wants
+// to know *whether* something is in the way without paying for a pushout.
+export function blockedAt(x, z, y, r) {
+  if (buildGrid) {
+    buildGrid.query(x, z, r + T, nearB);
+    for (const b of nearB) {
+      if (b.collapsed) continue;
+      const s = b.spec;
+      if (x < s.x0 - r - T || x > s.x1 + r + T || z < s.z0 - r - T || z > s.z1 + r + T) continue;
+      if (x > s.x0 - r && x < s.x1 + r) {
+        if (Math.abs(z - s.z0) < r + T / 2 && wallSolid(b, 'north', x - s.x0, y, true)) return true;
+        if (Math.abs(z - s.z1) < r + T / 2 && wallSolid(b, 'south', x - s.x0, y, true)) return true;
+      }
+      if (z > s.z0 - r && z < s.z1 + r) {
+        if (Math.abs(x - s.x0) < r + T / 2 && wallSolid(b, 'west', z - s.z0, y, true)) return true;
+        if (Math.abs(x - s.x1) < r + T / 2 && wallSolid(b, 'east', z - s.z0, y, true)) return true;
+      }
+      // inside the footprint entirely (walked in through a hole)
+      if (x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) return true;
+    }
+  }
+  if (propGrid) {
+    propGrid.query(x, z, r + 1.5, nearP);
+    for (const p of nearP) {
+      if (!p.alive) continue;
+      const min = PROP_TYPES[p.type].r + r;
+      const dx = x - p.x, dz = z - p.z;
+      if (dx * dx + dz * dz < min * min) return true;
+    }
+  }
+  return false;
+}
+
 // camera occlusion: march from `look` toward `eye`; return allowed distance
 export function cameraAllowed(look, eye, wanted) {
   const steps = Math.ceil(wanted / 0.15);
@@ -106,9 +175,11 @@ export function cameraAllowed(look, eye, wanted) {
   return wanted;
 }
 
+const nearCam = [];
 function pointInWall(x, y, z) {
-  if (!B) return false;
-  for (const b of B.buildings) {
+  if (!buildGrid) return false;
+  buildGrid.query(x, z, T, nearCam);
+  for (const b of nearCam) {
     if (b.collapsed) continue;
     const s = b.spec;
     if (x < s.x0 - T || x > s.x1 + T || z < s.z0 - T || z > s.z1 + T) continue;
@@ -127,17 +198,9 @@ function pointInWall(x, y, z) {
 
 // debris pushout vs walls (installed into pworld): coarse sphere test
 export function debrisVsWorld(body) {
-  if (!B) return;
+  if (!buildGrid) return;
   const r = body.half;
-  const [nx, nz] = capsuleVsWorldNoProps(body.x, body.z, body.y, r);
+  const [nx, nz] = capsuleVsWorld(body.x, body.z, body.y, r, false);
   if (nx !== body.x) { body.vx *= -0.3; body.x = nx; }
   if (nz !== body.z) { body.vz *= -0.3; body.z = nz; }
-}
-
-function capsuleVsWorldNoProps(x, z, y, r) {
-  const savedP = P, savedC = CARS;
-  P = null; CARS = null;
-  const out = capsuleVsWorld(x, z, y, r);
-  P = savedP; CARS = savedC;
-  return out;
 }

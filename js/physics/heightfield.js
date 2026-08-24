@@ -15,13 +15,29 @@ const idx = (x, z) => {
   return gz * SIZE + gx;
 };
 
-export function baseHeight(x, z) {
-  const inRoad = (v) => ROAD.centers.some((c) => Math.abs(v - c) <= ROAD.half);
-  if (inRoad(x) || inRoad(z)) return 0 - dent[idx(x, z)];
-  for (const b of BLOCKS) {
-    if (x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1) return 0.02 - dent[idx(x, z)];
+// Flattened road/block tables. baseHeight is called ~25k times a second (every
+// rigid body, every NPC, every blob shadow, every step) so it must not allocate:
+// the closures this used to build per call were a steady stream of garbage and a
+// matching stream of GC pauses — the "smooth, then it stutters" report.
+const RC = ROAD.centers.slice();
+const RHALF = ROAD.half;
+const BOX = new Float32Array(BLOCKS.length * 4);
+BLOCKS.forEach((b, i) => { BOX[i * 4] = b.x0; BOX[i * 4 + 1] = b.z0; BOX[i * 4 + 2] = b.x1; BOX[i * 4 + 3] = b.z1; });
+
+function inRoad(v) {
+  for (let i = 0; i < RC.length; i++) {
+    const d = v - RC[i];
+    if (d <= RHALF && d >= -RHALF) return true;
   }
-  if (Math.abs(x) > MAP_EDGE || Math.abs(z) > MAP_EDGE) return 0;
+  return false;
+}
+
+export function baseHeight(x, z) {
+  if (inRoad(x) || inRoad(z)) return 0 - dent[idx(x, z)];
+  for (let i = 0; i < BOX.length; i += 4) {
+    if (x >= BOX[i] && x <= BOX[i + 2] && z >= BOX[i + 1] && z <= BOX[i + 3]) return 0.02 - dent[idx(x, z)];
+  }
+  if (x > MAP_EDGE || x < -MAP_EDGE || z > MAP_EDGE || z < -MAP_EDGE) return 0;
   return 0.12 - dent[idx(x, z)]; // sidewalk band
 }
 

@@ -42,9 +42,19 @@ export function createBody(opts) {
   return b;
 }
 
+// Approximate LRU: sample a rotating window instead of scanning all 250 active
+// bodies. This runs on EVERY createBody once the cap is reached — i.e. dozens of
+// times inside the single step where a building's rubble spawns.
+let evictCursor = 0;
+const EVICT_SAMPLE = 32;
 function oldestSmallest() {
   let best = active[0];
-  for (const b of active) if (b.half < best.half || (b.half === best.half && b.id < best.id)) best = b;
+  const n = Math.min(EVICT_SAMPLE, active.length);
+  for (let i = 0; i < n; i++) {
+    const b = active[(evictCursor + i) % active.length];
+    if (b.half < best.half || (b.half === best.half && b.id < best.id)) best = b;
+  }
+  evictCursor = (evictCursor + n) % Math.max(active.length, 1);
   return best;
 }
 
@@ -113,7 +123,9 @@ function sleepBody(b, i) {
 }
 
 export function forceSleep(b) {
-  const i = active.indexOf(b);
+  // rubble is force-slept immediately after being pushed, so check the tail first
+  const last = active.length - 1;
+  const i = last >= 0 && active[last] === b ? last : active.indexOf(b);
   if (i >= 0) sleepBody(b, i);
 }
 

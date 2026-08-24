@@ -1,6 +1,7 @@
-// Traffic: cars follow lane circuits, queue behind each other, obey the
-// centre-intersection lights, brake for pedestrians, crush/deform when hit,
-// explode with splash damage, and can be grabbed and thrown.
+// Traffic: cars follow lane circuits, obey the lights at every intersection,
+// yield to whatever is in front of them (on any circuit), physically collide
+// with each other, brake for pedestrians, crush/deform when hit, explode with
+// splash damage, and can be grabbed and thrown.
 import * as THREE from 'three';
 import { makeWorldMaterial } from '../engine/materials.js';
 import { carGeo, trafficLensGeo } from './procprops.js';
@@ -8,6 +9,7 @@ import { neighbors } from '../ai/crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { removeSphere, craterAt } from './destruction.js';
 import { burstFire, burstSmoke, shockwave, burstSparks } from '../engine/particles.js';
+import { ROAD } from './city.js';
 import { emit, on, EV } from '../core/events.js';
 import { rand, pick, damp, dampAngle, clamp } from '../core/mathx.js';
 
@@ -23,8 +25,15 @@ const CIRCUITS = [
 const KINDS = ['sedan', 'taxi', 'van', 'sedan', 'taxi', 'sedan'];
 const CAR_COUNT = 12;
 
+// every road crossing, not just the middle one
+const JUNCTIONS = [];
+for (const cx of ROAD.centers) for (const cz of ROAD.centers) JUNCTIONS.push({ x: cx, z: cz });
+
 export function createTraffic(scene, propsReg, npcHooks, player, cam) {
   const mat = makeWorldMaterial();
+  // one scorched material for every wreck: repainting a car used to rewrite and
+  // re-upload its whole vertex-colour buffer at the exact moment it exploded
+  const scorchedMat = makeWorldMaterial({ color: 0x4a4a52 });
   const list = [];
   const lightState = { phase: 'EW', t: 0, amber: false };
 
@@ -60,18 +69,23 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
     scene.add(mesh);
     const ci = i % CIRCUITS.length;
     const car = {
-      kind, mesh, ci,
+      id: i, kind, mesh, ci,
       s: (Math.floor(i / CIRCUITS.length) + rand() * 0.5) * (circuitLen[ci] / Math.ceil(CAR_COUNT / CIRCUITS.length)),
       speed: 0, cruise: 6.5 + rand() * 2,
       x: 0, z: 0, px: 0, pz: 0, yaw: 0, visYaw: 0,
+      cos: 1, sin: 0,           // cached per step; capsuleVsWorld reads these
       hp: 2, alive: true, exploded: false,
       mode: 'drive',            // drive | loose | held | flying | wreck
       vx: 0, vz: 0, vy: 0, y: 0, wspin: 0,
       hw: 1.0, hl: 2.3,
       squash: 1,
+      panicT: 0,
+      reactT: 0,                // drivers are not instantaneous
+      carryQuat: null,          // set while a certain someone is holding it
     };
     const [x, z, yaw] = posAt(ci, car.s);
     car.x = car.px = x; car.z = car.pz = z; car.yaw = car.visYaw = yaw;
+    car.cos = Math.cos(yaw); car.sin = Math.sin(yaw);
     list.push(car);
   }
 
@@ -92,6 +106,7 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
   });
   lensMesh.instanceMatrix.needsUpdate = true;
 
+  let lensSig = '';
   function updateLights(dt) {
     lightState.t += dt;
     const GREEN = 9, AMBER = 2;
@@ -100,7 +115,12 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       lightState.amber = false; lightState.t = 0;
       lightState.phase = lightState.phase === 'EW' ? 'NS' : 'EW';
     }
-    // lens colors: k0 red, k1 amber, k2 green — heads show the NS phase
+    // lens colors: k0 red, k1 amber, k2 green — heads show the NS phase.
+    // Repainting 90 instances and re-uploading the buffer 60×/s for data that
+    // changes every ~9s was pure bandwidth; only push on an actual change.
+    const sig = `${lightState.phase}${lightState.amber}`;
+    if (sig === lensSig) return;
+    lensSig = sig;
     const nsGo = lightState.phase === 'NS' && !lightState.amber;
     const nsAmber = lightState.amber;
     lightProps.forEach((p, i) => {
@@ -115,17 +135,58 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
     if (lensMesh.instanceColor) lensMesh.instanceColor.needsUpdate = true;
   }
 
-  function gateStop(car) {
-    // approaching the (0,0) intersection on a centre circuit during cross phase
-    if (car.ci === 2 && (lightState.phase !== 'EW' || lightState.amber)) {
-      if (Math.abs(car.z) < 4 && Math.abs(car.x) > 6.5 && Math.abs(car.x) < 11 && movingToward(car, 0, car.z)) return true;
+  // ---- driver AI -----------------------------------------------------------
+
+  // The junction this car is approaching, if any, plus how far the stop line is.
+  function junctionAhead(car) {
+    let best = null, bd = 16;
+    for (const j of JUNCTIONS) {
+      const dx = j.x - car.x, dz = j.z - car.z;
+      const along = car.sin * dx + car.cos * dz;      // forward distance
+      const side = car.cos * dx - car.sin * dz;       // lateral offset
+      if (along < -2 || along > bd) continue;
+      if (Math.abs(side) > ROAD.half + 1.5) continue;
+      bd = along; best = j;
     }
-    if (car.ci === 3 && (lightState.phase !== 'NS' || lightState.amber)) {
-      if (Math.abs(car.x) < 4 && Math.abs(car.z) > 6.5 && Math.abs(car.z) < 11 && movingToward(car, car.x, 0)) return true;
-    }
-    return false;
+    return best ? { j: best, dist: bd } : null;
   }
-  const movingToward = (car, tx, tz) => (Math.sin(car.yaw) * (tx - car.x) + Math.cos(car.yaw) * (tz - car.z)) > 0;
+
+  // A car is on the EW phase if it is travelling mostly along x.
+  const isEW = (car) => Math.abs(car.sin) > Math.abs(car.cos);
+
+  function lightStop(car) {
+    const ja = junctionAhead(car);
+    if (!ja) return -1;
+    const go = isEW(car) ? lightState.phase === 'EW' : lightState.phase === 'NS';
+    if (go && !lightState.amber) return -1;
+    // amber: commit if we are already into the box, otherwise pull up
+    const stopLine = ja.dist - (ROAD.half + 1.6);
+    if (stopLine < -0.5) return -1;                   // past the line, keep going
+    if (lightState.amber && go && stopLine < 3.5) return -1;
+    return Math.max(0, stopLine);
+  }
+
+  // Anything in this car's forward corridor — any circuit, any mode. This is
+  // what makes them queue behind each other and yield at intersections instead
+  // of driving straight through one another.
+  function gapAhead(car) {
+    let gap = Infinity;
+    const look = clamp(car.speed * 1.5 + 5, 6, 18);
+    for (const o of list) {
+      if (o === car || o.mode === 'held' || o.mode === 'flying') continue;
+      const dx = o.x - car.x, dz = o.z - car.z;
+      const along = car.sin * dx + car.cos * dz;
+      if (along <= 0 || along > look) continue;
+      const side = car.cos * dx - car.sin * dz;
+      const oR = Math.hypot(o.hw, o.hl);              // conservative disc
+      if (Math.abs(side) > car.hw + oR) continue;
+      // Yield to anyone moving; among stopped cars the lower id goes first, so
+      // two drivers arriving together never deadlock staring at each other.
+      if (o.mode === 'drive' && o.speed < 0.4 && o.id > car.id) continue;
+      gap = Math.min(gap, along - car.hl - oR);
+    }
+    return gap;
+  }
 
   // terrified drivers: some abandon the car where it stands, the rest floor it
   function scareCars(x, z, radius) {
@@ -146,38 +207,40 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
     updateLights(dt);
     for (const car of list) {
       car.px = car.x; car.pz = car.z;
-      car.panicT = Math.max(0, (car.panicT || 0) - dt);
+      car.panicT = Math.max(0, car.panicT - dt);
+      car.reactT = Math.max(0, car.reactT - dt);
       if (car.mode === 'drive') {
         let target = car.panicT > 0 ? car.cruise * 2.1 : car.cruise;
-        // queue behind the nearest car ahead on the same circuit
-        for (const o of list) {
-          if (o === car || o.ci !== car.ci || o.mode !== 'drive') continue;
-          let gap = o.s - car.s;
-          const L = circuitLen[car.ci];
-          gap = ((gap % L) + L) % L;
-          if (gap > 0.1 && gap < 8) { target = Math.min(target, Math.max(0, (gap - 4) * 1.6)); }
+
+        // whatever is in front, on any circuit
+        const gap = gapAhead(car);
+        if (gap < Infinity) {
+          const MIN_GAP = 1.6;
+          target = Math.min(target, Math.max(0, (gap - MIN_GAP) * 1.5));
         }
-        // wrecks/loose cars block
-        for (const o of list) {
-          if (o === car || o.mode === 'drive' || o.mode === 'held') continue;
-          const dx = o.x - car.x, dz = o.z - car.z;
-          if (dx * dx + dz * dz < 64 && movingToward(car, o.x, o.z)) target = Math.min(target, Math.max(0, Math.hypot(dx, dz) * 0.8 - 3));
-        }
+
         if (car.panicT > 0) {
           // fleeing drivers run lights and mow what they can't miss
-          neighbors(car.x + Math.sin(car.yaw) * 2.5, car.z + Math.cos(car.yaw) * 2.5, 1.2, scratch);
-          if (scratch.length && car.speed > 4) npcHooks?.damageRadius?.(car.x + Math.sin(car.yaw) * 2.5, car.z + Math.cos(car.yaw) * 2.5, 1.2, 'car');
+          neighbors(car.x + car.sin * 2.5, car.z + car.cos * 2.5, 1.2, scratch);
+          if (scratch.length && car.speed > 4) npcHooks?.damageRadius?.(car.x + car.sin * 2.5, car.z + car.cos * 2.5, 1.2, 'car');
         } else {
-          // red light
-          if (gateStop(car)) target = 0;
+          const stopAt = lightStop(car);
+          // hard stop once we are on the line, so cars sit still at red
+          if (stopAt >= 0) target = Math.min(target, stopAt < 1.2 ? 0 : stopAt * 1.6);
           // pedestrians / player ahead
-          const aheadX = car.x + Math.sin(car.yaw) * 4, aheadZ = car.z + Math.cos(car.yaw) * 4;
+          const aheadX = car.x + car.sin * 4, aheadZ = car.z + car.cos * 4;
           neighbors(aheadX, aheadZ, 2.6, scratch);
           if (scratch.some((n) => n.state !== 'dead')) target = 0;
           const pd = Math.hypot(player.p.x - aheadX, player.p.z - aheadZ);
           if (pd < 3) target = 0;
         }
 
+        // braking is prompt, pulling away is not — plus a short reaction delay
+        // so a queue eases forward instead of every car launching in lockstep
+        if (target > car.speed + 0.5) {
+          if (car.reactT > 0) target = car.speed;
+          else if (car.speed < 0.2) car.reactT = 0.25 + rand() * 0.35;
+        }
         car.speed = damp(car.speed, target, target < car.speed ? 8 : 2.5, dt);
         car.s += car.speed * dt;
         const [x, z, yaw] = posAt(car.ci, car.s);
@@ -202,7 +265,65 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
         }
         npcHooks?.damageRadius?.(car.x, car.z, 1.6, 'car');
       }
+      car.cos = Math.cos(car.yaw); car.sin = Math.sin(car.yaw);
       // wrecks and held cars do nothing per-step
+    }
+    separateCars();
+  }
+
+  // ---- car↔car contact -----------------------------------------------------
+
+  // Separating-axis test on two yaw-aligned boxes; returns overlap depth (>0) or 0.
+  function boxOverlap(a, b) {
+    const dx = b.x - a.x, dz = b.z - a.z;
+    let depth = Infinity;
+    for (const c of [a, b]) {
+      // this box's two axes
+      const ax = [c.sin, c.cos], az = [c.cos, -c.sin];
+      for (const ax2 of [ax, az]) {
+        const dist = Math.abs(dx * ax2[0] + dz * ax2[1]);
+        const ra = Math.abs(a.hl * (ax2[0] * a.sin + ax2[1] * a.cos)) + Math.abs(a.hw * (ax2[0] * a.cos - ax2[1] * a.sin));
+        const rb = Math.abs(b.hl * (ax2[0] * b.sin + ax2[1] * b.cos)) + Math.abs(b.hw * (ax2[0] * b.cos - ax2[1] * b.sin));
+        const o = ra + rb - dist;
+        if (o <= 0) return 0;
+        if (o < depth) depth = o;
+      }
+    }
+    return depth;
+  }
+
+  // Cars used to drive straight through each other at crossings because each
+  // one only ever looked at its own circuit. gapAhead() makes them yield; this
+  // guarantees they never interpenetrate even when a yield comes too late.
+  function separateCars() {
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      if (a.mode === 'held' || a.mode === 'flying') continue;
+      for (let k = i + 1; k < list.length; k++) {
+        const b = list[k];
+        if (b.mode === 'held' || b.mode === 'flying') continue;
+        if (Math.abs(a.x - b.x) > 7 || Math.abs(a.z - b.z) > 7) continue;
+        const depth = boxOverlap(a, b);
+        if (depth <= 0) continue;
+        // back the yielding car along its own lane; displacing a driving car
+        // sideways would take it off the circuit that defines its path
+        const giveA = a.mode === 'drive' && (b.mode !== 'drive' || a.speed >= b.speed);
+        const give = giveA ? a : (b.mode === 'drive' ? b : a);
+        const other = give === a ? b : a;
+        if (give.mode === 'drive') {
+          give.s -= depth + 0.02;
+          const [x, z, yaw] = posAt(give.ci, give.s);
+          give.x = x; give.z = z; give.yaw = yaw;
+          give.cos = Math.cos(yaw); give.sin = Math.sin(yaw);
+          give.speed = Math.min(give.speed, other.speed * 0.5);
+          give.reactT = Math.max(give.reactT, 0.3);
+        } else {
+          // two loose/wrecked hulks: push apart, they are not on any lane
+          const dx = give.x - other.x, dz = give.z - other.z;
+          const d = Math.hypot(dx, dz) || 1;
+          give.x += (dx / d) * depth; give.z += (dz / d) * depth;
+        }
+      }
     }
   }
 
@@ -225,11 +346,9 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
     craterAt(car.x, car.z, 1.8);
     removeSphere(car.x, car.y + 1, car.z, 3.2, { impulse: 14, fragMult: 1.4, byPlayer: false, silent: true });
     npcHooks?.damageRadius?.(car.x, car.z, 4.5, 'explosion');
-    // scorch + crumple
+    // scorch + crumple — a shared material, not 1400 vertex colours re-uploaded
     car.squash = 0.55;
-    const col = car.mesh.geometry.getAttribute('color');
-    for (let i = 0; i < col.count; i++) col.setXYZ(i, col.getX(i) * 0.22, col.getY(i) * 0.22, col.getZ(i) * 0.25);
-    col.needsUpdate = true;
+    car.mesh.material = scorchedMat;
     cam.shake(0.4);
     emit(EV.CAR_EXPLODED, { x: car.x, z: car.z, byPlayer: car.lastHitByPlayer || false });
     emit(EV.SCREAM, { x: car.x, z: car.z, radius: 26 });
@@ -238,13 +357,18 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
 
   function frameUpdate(dt, alpha) {
     for (const car of list) {
-      car.visYaw = dampAngle(car.visYaw, car.yaw, 18, dt);
       car.mesh.position.set(
         car.px + (car.x - car.px) * alpha,
         car.y,
         car.pz + (car.z - car.pz) * alpha,
       );
-      car.mesh.rotation.set(0, car.visYaw, 0);
+      if (car.carryQuat) {
+        // held overhead: the carry pose owns the full orientation
+        car.mesh.quaternion.copy(car.carryQuat);
+      } else {
+        car.visYaw = dampAngle(car.visYaw, car.yaw, 18, dt);
+        car.mesh.rotation.set(0, car.visYaw, 0);
+      }
       const sq = damp(car.mesh.scale.y, car.squash, 8, dt);
       car.mesh.scale.set(1, sq, 1);
     }
@@ -289,22 +413,26 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       if (!best) return null;
       const car = best;
       car.mode = 'held';
+      car.speed = 0;
       return {
-        kind: 'entity', car,
-        follow: (f, yaw) => {
-          car.px = car.x = f.x + Math.sin(yaw) * 0.4;
-          car.pz = car.z = f.z + Math.cos(yaw) * 0.4;
-          car.y = f.y + 1.35;
-          car.yaw = yaw + Math.PI / 2;
+        kind: 'entity', car, style: 'carry_overhead',
+        // world pose at the moment of the grab, so the lift can ease from it
+        origin: { x: car.x, y: car.y, z: car.z, yaw: car.yaw },
+        // combat drives position + orientation; see anim/poselayer.js
+        place: (x, y, z, quat) => {
+          car.px = car.x = x; car.pz = car.z = z; car.y = y;
+          car.carryQuat = quat;
         },
         launch: (from, vx, vy, vz) => {
           car.mode = 'flying';
+          car.carryQuat = null;
           car.x = from.x; car.y = from.y + 1; car.z = from.z;
           car.vx = vx; car.vy = vy + 5; car.vz = vz;
           car.wspin = (rand() - 0.5) * 7;
           car.lastHitByPlayer = true;
           emit(EV.FEAT, { type: 'car_throw', x: from.x, z: from.z, magnitude: 40 });
         },
+        release: () => { car.carryQuat = null; if (car.mode === 'held') car.mode = 'loose'; },
       };
     },
     list,
@@ -316,6 +444,18 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
     phase: lightState.phase, amber: lightState.amber,
     sample: { x: +list[0].x.toFixed(1), z: +list[0].z.toFixed(1), speed: +list[0].speed.toFixed(1) },
   });
+  // #11 regression probe: deepest car-vs-car interpenetration right now
+  window.__test.carOverlap = () => {
+    let worst = 0;
+    for (let i = 0; i < list.length; i++) {
+      for (let k = i + 1; k < list.length; k++) {
+        const a = list[i], b = list[k];
+        if (a.mode === 'held' || b.mode === 'held' || a.mode === 'flying' || b.mode === 'flying') continue;
+        worst = Math.max(worst, boxOverlap(a, b));
+      }
+    }
+    return +worst.toFixed(3);
+  };
 
   return { fixedUpdate, frameUpdate, hooks, list };
 }

@@ -35,12 +35,12 @@ export function initOutfit(playerSys) {
   const s2 = [
     addFlap('LeftArm', 0.05, 0.09, 0.05, flapMat),
     addFlap('RightArm', 0.05, 0.09, -0.05, flapMat),
-    addFlap('Spine2', 0.07, 0.1, 0.09, flapMat),
+    addFlap('Spine02', 0.07, 0.1, 0.09, flapMat),
   ];
   const s3 = [
     addFlap('LeftForeArm', 0.04, 0.08, 0.045, skinMat),
     addFlap('RightForeArm', 0.04, 0.08, -0.045, skinMat),
-    addFlap('Spine2', 0.08, 0.12, -0.09, skinMat),
+    addFlap('Spine02', 0.08, 0.12, -0.09, skinMat),
     addFlap('LeftShoulder', 0.06, 0.08, 0.05, flapMat),
   ];
 

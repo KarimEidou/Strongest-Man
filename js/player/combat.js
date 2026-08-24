@@ -10,19 +10,49 @@ import { spawnDebris } from '../world/debris.js';
 import { burstDust, burstSparks } from '../engine/particles.js';
 import { wakeRadius, active as activeBodies, sleeping as sleepingBodies } from '../physics/pworld.js';
 import { groundHeight } from '../physics/heightfield.js';
+import { punchSound } from '../engine/audio.js';
 import { PROP_TYPES } from '../world/props.js';
+import { setGrabLabel } from '../ui/hud.js';
 import { clamp } from '../core/mathx.js';
 
 const CHARGE_TIME = 1.15;   // seconds to full
 const CHARGE_MIN = 0.16;    // hold time before charging starts
 
+// Carry timings. There is no pickup clip, so the lift is a pose blend plus an
+// eased arc from wherever the object was standing to the carry anchor — the arc
+// is what makes it read as picking something UP rather than the object snapping
+// into place, which is what it used to do.
+const REACH_T = 0.25, LIFT_T = 0.35, THROW_T = 0.20, RELEASE_AT = 0.11;
+const CARRY_OFFSET = {
+  carry_neck: new THREE.Vector3(0.42, 1.55, 0.50),
+  carry_overhead: new THREE.Vector3(0.00, 2.45, 0.10),
+};
+// how much the carried thing tracks the animated hands vs a fixed body offset.
+// All hands and a car visibly wobbles with the run cycle; no hands and the grip
+// looks painted on.
+const HAND_MIX = { carry_neck: 0.85, carry_overhead: 0.35 };
+const LIFT_ARC = { carry_neck: 0.35, carry_overhead: 0.80 };
+const CARRY_SLOW = { carry_neck: 0.82, carry_overhead: 0.62 };
+
+const EU = new THREE.Euler(0, 0, 0, 'YXZ');
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3();
+
 export function createCombat(playerSys, cam, scene) {
   const p = playerSys.p;
+  const pose = p.poseLayer;
   const st = {
     swing: null,        // pending strike {t, charge}
     slowmoT: 0,
-    carried: null,      // {kind:'prop'|'debris', vis, data}
+    carried: null,      // active carry handle, or null
     hooks: { npcs: null, monsters: null, cars: null }, // installed by later systems
+    carry: {
+      phase: 'idle',    // idle | reaching | lifting | carrying | throwing | whiff
+      t: 0, elapsed: 0, style: null, released: false,
+      from: new THREE.Vector3(), fromQ: new THREE.Quaternion(),
+      anchor: new THREE.Vector3(), anchorQ: new THREE.Quaternion(),
+      pos: new THREE.Vector3(), quat: new THREE.Quaternion(),
+      strideT: 0,
+    },
   };
 
   function forwardPoint(dist, h = 1.3) {
@@ -46,9 +76,10 @@ export function createCombat(playerSys, cam, scene) {
     }
 
     if (input.grabPressed && !p.dead) {
-      if (st.carried) throwCarried();
-      else tryGrab();
+      if (st.carry.phase === 'carrying') beginThrow();
+      else if (st.carry.phase === 'idle') tryGrab();
     }
+    advanceCarry(dt);
 
     // strike lands at the clip's contact moment
     if (st.swing) {
@@ -77,7 +108,7 @@ export function createCombat(playerSys, cam, scene) {
   }
 
   function strike(charge) {
-    import('../engine/audio.js').then(({ punchSound }) => punchSound(charge));
+    punchSound(charge);
     const reach = 1.5 + charge * 1.2;
     const f = forwardPoint(reach);
     const radius = 1.15 + charge * 4.6;
@@ -124,24 +155,28 @@ export function createCombat(playerSys, cam, scene) {
     }
   }
 
-  // ---- grab / throw --------------------------------------------------------
+  // ---- grab / carry / throw ------------------------------------------------
+  //
+  // Phases: idle -> reaching -> lifting -> carrying -> throwing -> idle.
+  // tryGrab commits the target immediately (the hooks freeze the NPC / flag the
+  // car) and the visual transition is animated on top, so nothing can be grabbed
+  // twice mid-lift.
 
   function tryGrab() {
-    // priority: entity hooks (NPC/monster/car) → sleeping debris → props
+    const c = st.carry;
+    // priority: entity hooks (monster/NPC/car) -> sleeping debris -> props
     for (const h of [st.hooks.monsters, st.hooks.npcs, st.hooks.cars]) {
       const got = h?.tryGrab?.(p);
-      if (got) { st.carried = got; return; }
+      if (got) { beginCarry(got); return; }
     }
     const f = forwardPoint(1.4, 0);
-    // sleeping debris near fist
     for (const b of sleepingBodies) {
       const dx = b.x - f.x, dz = b.z - f.z;
       if (dx * dx + dz * dz < 2.2) {
         const ud = b.userData;
-        st.carried = { kind: 'debris', body: b, size: ud?.size || 0.5 };
-        // remove from physics while carried; keep the instance following hands
         const i = sleepingBodies.indexOf(b);
         if (i >= 0) sleepingBodies.splice(i, 1);
+        beginCarry({ kind: 'debris', body: b, size: ud?.size || 0.5, origin: { x: b.x, y: b.y, z: b.z, yaw: 0 } });
         return;
       }
     }
@@ -152,36 +187,163 @@ export function createCombat(playerSys, cam, scene) {
       window.__propsReg.hide(pr);
       const cfg = PROP_TYPES[pr.type];
       const colors = { prop_bench: 0xb98a54, prop_dumpster: 0x2c4f9e, prop_tree: 0xd89048, prop_kiosk: 0x2452b8, prop_hydrant: 0xd06a28, prop_sign: 0x3090f0 };
-      const b = spawnDebris('part', f.x, f.y + 1.1, f.z, 0, 0, 0, Math.max(cfg.r * 1.3, 0.6), colors[pr.type] || 0x888888, { mass: cfg.mass });
+      const b = spawnDebris('part', pr.x, (pr.y || 0) + cfg.h * 0.5, pr.z, 0, 0, 0, Math.max(cfg.r * 1.3, 0.6), colors[pr.type] || 0x888888, { mass: cfg.mass });
       if (b) {
         const i = activeBodies.indexOf(b);
         if (i >= 0) activeBodies.splice(i, 1);
-        st.carried = { kind: 'debris', body: b, size: b.userData.size, blastR: Math.max(cfg.r * 1.6, 1.2) };
+        beginCarry({
+          kind: 'debris', body: b, size: b.userData.size,
+          blastR: Math.max(cfg.r * 1.6, 1.2),
+          origin: { x: pr.x, y: (pr.y || 0) + cfg.h * 0.5, z: pr.z, yaw: pr.yaw || 0 },
+        });
       }
+      return;
+    }
+    // grabbed at nothing: a short reach that comes back empty
+    c.phase = 'whiff'; c.t = 0.28;
+    pose.set('reach', 0.6, 14);
+  }
+
+  function beginCarry(handle) {
+    const c = st.carry;
+    st.carried = handle;
+    c.style = handle.style
+      || (handle.kind === 'debris' && handle.size > 0.85 ? 'carry_overhead' : 'carry_neck');
+    const o = handle.origin || { x: p.x, y: p.y + 1, z: p.z, yaw: p.yaw };
+    c.from.set(o.x, o.y, o.z);
+    EU.set(0, o.yaw || 0, 0);
+    c.fromQ.setFromEuler(EU);
+    c.pos.copy(c.from); c.quat.copy(c.fromQ);
+    c.phase = 'reaching'; c.t = REACH_T; c.elapsed = 0; c.released = false; c.strideT = 0;
+    pose.set('reach', 0.9, 16);
+    p.carrySlow = CARRY_SLOW[c.style];
+    // a car held overhead needs the camera to back off or it clips the near plane
+    if (c.style === 'carry_overhead') cam.st.dist = 7.0;
+    setGrabLabel('THROW');
+  }
+
+  function advanceCarry(dt) {
+    const c = st.carry;
+    if (c.phase === 'idle') return;
+    c.elapsed += dt;
+    c.t -= dt;
+    if (c.phase === 'whiff') {
+      if (c.t <= 0) { c.phase = 'idle'; pose.set(null, 0, 14); }
+      return;
+    }
+    if (c.phase === 'reaching' && c.t <= 0) {
+      c.phase = 'lifting'; c.t = LIFT_T;
+      pose.set(c.style, 0.85, 10);
+    } else if (c.phase === 'lifting' && c.t <= 0) {
+      c.phase = 'carrying';
+    } else if (c.phase === 'throwing') {
+      if (!c.released && c.t <= THROW_T - RELEASE_AT) release();
+      if (c.t <= 0) { c.phase = 'idle'; pose.set(null, 0, 12); }
     }
   }
 
-  function throwCarried() {
-    const c = st.carried;
+  function beginThrow() {
+    const c = st.carry;
+    c.phase = 'throwing'; c.t = THROW_T; c.released = false;
+    pose.set('throw_release', 1.0, 40);
+    playerSys.p.loco.playOneshot('punch', { timeScale: 3.2, fade: 0.05 });
+  }
+
+  function release() {
+    const c = st.carry;
+    const h = st.carried;
+    c.released = true;
     st.carried = null;
+    p.carrySlow = 1;
+    cam.st.dist = 6.2;
+    setGrabLabel('GRAB');
+    if (!h) return;
     const power = 26;
     const vx = Math.sin(p.yaw) * power, vz = Math.cos(p.yaw) * power;
-    const from = forwardPoint(1.2, 1.6);
-    if (c.kind === 'debris') {
-      const b = c.body;
+    const from = c.style === 'carry_overhead' ? forwardPoint(1.0, 2.4) : forwardPoint(1.2, 1.6);
+    if (h.kind === 'debris') {
+      const b = h.body;
       b.x = from.x; b.y = from.y; b.z = from.z;
       b.vx = vx; b.vy = 6; b.vz = vz;
       b.wx = 6; b.wy = 4; b.wz = 6;
       b.asleep = false; b.quiet = 0;
       if (b.pileCell >= 0) b.pileCell = -1;
       activeBodies.push(b);
-      armProjectile(b, c.blastR || 1.4);
-    } else if (c.kind === 'entity') {
-      c.launch(from, vx, 7, vz); // NPC/monster/car ragdoll launch (installed later)
+      armProjectile(b, h.blastR || 1.4);
+    } else {
+      h.launch(from, vx, 7, vz);
     }
-    playerSys.p.loco.playOneshot('punch', { timeScale: 3.2, fade: 0.05 });
-    emit(EV.PLAYER_THREW, { what: c.kind });
-    emit(EV.FEAT, { type: 'throw', x: p.x, z: p.z, magnitude: c.kind === 'entity' ? 40 : 22 });
+    emit(EV.PLAYER_THREW, { what: h.kind });
+    emit(EV.FEAT, { type: 'throw', x: p.x, z: p.z, magnitude: h.kind === 'entity' ? 40 : 22 });
+  }
+
+  // the carried thing died / despawned under us
+  function dropCarried() {
+    const c = st.carry;
+    st.carried?.release?.();
+    st.carried = null;
+    c.phase = 'idle';
+    p.carrySlow = 1;
+    cam.st.dist = 6.2;
+    pose.set(null, 0, 12);
+    setGrabLabel('GRAB');
+  }
+
+  // Where the carried thing sits this frame. Read off the hand bones so it
+  // tracks the actual animated pose, blended toward a fixed body offset so a
+  // 1.5-tonne car does not swing with the arm cycle.
+  function updateAnchor(dt) {
+    const c = st.carry;
+    c.anchor.copy(CARRY_OFFSET[c.style]).applyMatrix4(p.root.matrixWorld);
+
+    const mix = HAND_MIX[c.style];
+    if (c.style === 'carry_neck') {
+      const h = p.bones.rHand;
+      if (h) {
+        h.updateWorldMatrix(true, false);
+        _v.setFromMatrixPosition(h.matrixWorld);
+        c.anchor.lerp(_v, mix);
+      }
+    } else if (p.bones.lHand && p.bones.rHand) {
+      p.bones.lHand.updateWorldMatrix(true, false);
+      p.bones.rHand.updateWorldMatrix(true, false);
+      _v.setFromMatrixPosition(p.bones.lHand.matrixWorld);
+      _v2.setFromMatrixPosition(p.bones.rHand.matrixWorld);
+      c.anchor.lerp(_v.add(_v2).multiplyScalar(0.5), mix);
+    }
+
+    // stride-locked sway: the load answers to the footfalls
+    c.strideT += (p.speed * dt) / 1.6;
+    const k = Math.min(p.speed / 7, 1);
+    if (c.style === 'carry_overhead') {
+      c.anchor.y += Math.sin(c.strideT * Math.PI * 4) * 0.045 * k;
+      EU.set(
+        -0.10 + Math.sin(c.strideT * Math.PI * 2) * 0.05 * k,
+        p.visYaw + Math.PI / 2,                       // held across the body
+        0.06 + Math.cos(c.strideT * Math.PI) * 0.07 * k,
+      );
+    } else {
+      // held out at arm's length, facing away — and struggling, less and less
+      const w = Math.exp(-c.elapsed * 0.35);
+      EU.set(
+        -0.12 + Math.sin(c.elapsed * 7.1) * 0.10 * w,
+        p.visYaw + Math.sin(c.elapsed * 4.3) * 0.16 * w,
+        Math.sin(c.elapsed * 5.7) * 0.08 * w,
+      );
+    }
+    c.anchorQ.setFromEuler(EU);
+  }
+
+  function placeCarried() {
+    const c = st.carry, h = st.carried;
+    if (!h) return;
+    if (h.kind === 'debris') {
+      const b = h.body;
+      b.x = b.px = c.pos.x; b.y = b.py = c.pos.y; b.z = b.pz = c.pos.z;
+      b.onMove?.(b);
+    } else {
+      h.place?.(c.pos.x, c.pos.y, c.pos.z, c.quat, c.elapsed);
+    }
   }
 
   // thrown bodies smash what they land on
@@ -205,17 +367,28 @@ export function createCombat(playerSys, cam, scene) {
   }
 
   function frameUpdate(dt) {
-    // carried object rides in front of the chest
-    if (st.carried) {
-      const f = forwardPoint(1.1, 1.15);
-      if (st.carried.kind === 'debris') {
-        const b = st.carried.body;
-        b.x = b.px = f.x; b.y = b.py = f.y; b.z = b.pz = f.z;
-        b.onMove?.(b);
-      } else if (st.carried.kind === 'entity') {
-        st.carried.follow?.(f, p.yaw);
-      }
+    // Runs after player.frameUpdate (and therefore after loco.update) — see the
+    // frameSystems order in main.js. The pose layer writes on top of the mixer.
+    pose.update(dt);
+
+    const c = st.carry;
+    if (c.phase === 'idle' || c.phase === 'whiff') return;
+    if (st.carried?.alive?.() === false) { dropCarried(); return; }
+
+    p.root.updateWorldMatrix(true, false);
+    updateAnchor(dt);
+
+    if (c.phase === 'reaching' || c.phase === 'lifting') {
+      const k = clamp(c.elapsed / (REACH_T + LIFT_T), 0, 1);
+      const e = k * k * (3 - 2 * k);
+      c.pos.lerpVectors(c.from, c.anchor, e);
+      c.pos.y += Math.sin(e * Math.PI) * LIFT_ARC[c.style];   // the arc sells the lift
+      c.quat.copy(c.fromQ).slerp(c.anchorQ, e);
+    } else if (c.phase === 'carrying') {
+      c.pos.copy(c.anchor);
+      c.quat.copy(c.anchorQ);
     }
+    placeCarried();
   }
 
   window.__test.punchAt = (x, z, charge = 0) => {
@@ -228,6 +401,13 @@ export function createCombat(playerSys, cam, scene) {
     import('../world/destruction.js').then((d) => d.collapseBuilding(window.__buildingsReg.buildings[i]));
     return true;
   };
+
+  window.__test.carry = () => ({
+    phase: st.carry.phase,
+    style: st.carry.style,
+    label: document.getElementById('btn-grab')?.textContent,
+    pos: [+st.carry.pos.x.toFixed(2), +st.carry.pos.y.toFixed(2), +st.carry.pos.z.toFixed(2)],
+  });
 
   return { fixedUpdate, frameUpdate, st };
 }

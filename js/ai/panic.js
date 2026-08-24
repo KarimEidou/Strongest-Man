@@ -4,17 +4,52 @@
 // back out if their shelter starts collapsing.
 import { on, emit, EV } from '../core/events.js';
 import { neighbors } from './crowd.js';
-import { capsuleVsWorld } from '../physics/collide.js';
 import { randRange, rand, clamp } from '../core/mathx.js';
 
 const scratch = [];
+
+// Threat alerts are QUEUED, not applied inline. Applying them inline was a real
+// bug as well as a spike: alertAt walked the shared `scratch` array while
+// toPanic -> emit(SCREAM) -> the SCREAM listener -> alertAt refilled that same
+// array underneath the loop, so the outer pass ended up iterating the inner
+// query's results and screaming again. A collapse (radius 45, plus an NPC_DIED
+// alert for every casualty) turned that into a cascade. Draining a few merged
+// alerts per step removes the re-entrancy, bounds the per-step cost, and
+// staggers the panic wave — which reads better anyway.
+const alertQueue = [];
+const alertBuf = [];
+const MAX_ALERTS = 24;
+const ALERTS_PER_STEP = 4;
+const MERGE_DIST = 6;
 
 export function installPanic(npcSys, buildingsReg, city) {
   const { npcs, sys } = npcSys;
 
   function alertAt(x, z, radius, severity = 1) {
+    for (const a of alertQueue) {
+      if (Math.abs(a.x - x) < MERGE_DIST && Math.abs(a.z - z) < MERGE_DIST) {
+        a.radius = Math.max(a.radius, radius);
+        a.severity = Math.max(a.severity, severity);
+        return;
+      }
+    }
+    if (alertQueue.length >= MAX_ALERTS) alertQueue.shift();
+    alertQueue.push({ x, z, radius, severity });
+  }
+
+  function fixedUpdate(dt) {
+    for (let i = 0; i < ALERTS_PER_STEP && alertQueue.length; i++) {
+      const a = alertQueue.shift();
+      applyAlert(a.x, a.z, a.radius, a.severity);
+    }
+  }
+
+  function applyAlert(x, z, radius, severity) {
+    // snapshot: anything reached below may run its own neighbour query
     neighbors(x, z, radius, scratch);
-    for (const n of scratch) {
+    alertBuf.length = 0;
+    for (const n of scratch) alertBuf.push(n);
+    for (const n of alertBuf) {
       if (n.state === 'dead' || n.state === 'carried' || n.state === 'hide') continue;
       n.threatX = x; n.threatZ = z;
       if (n.state === 'panic') { n.stateT = Math.max(n.stateT, randRange(8, 14)); continue; }
@@ -87,6 +122,21 @@ export function installPanic(npcSys, buildingsReg, city) {
     }
   });
 
+  // Panic has to end somewhere. This was called but never defined, so every
+  // panicking NPC threw a ReferenceError the moment their timer ran out — which
+  // aborted the rest of their think(), left them stuck in 'panic' forever, and
+  // then threw again on every subsequent tick, for all 48 of them.
+  function recover(n) {
+    n.state = 'commute';
+    n.panicLevel = 0;
+    n.goal = null;
+    n.path.length = 0; n.pathI = 0;
+    n.stuckT = 0;
+    n.stateT = randRange(2, 6);
+    n.shelter = null;
+    n.targetSpeed = 0;
+  }
+
   function evacuate(n) {
     n.state = 'panic';
     n.stateT = randRange(10, 16);
@@ -154,7 +204,12 @@ export function installPanic(npcSys, buildingsReg, city) {
         n.targetSpeed = 0;
         if (n.stateT <= 0) {
           n.root.scale.y /= 0.92;
+          // Step back out through the door. NPCs collide with walls now, so
+          // resuming from inside the footprint would just wedge them.
+          const d = n.shelterB?.spec?.door;
+          if (d) { n.x = n.px = d.outX; n.z = n.pz = d.outZ; }
           n.state = 'commute'; n.goal = null; n.panicLevel = 0;
+          n.path.length = 0; n.pathI = 0; n.stuckT = 0;
           n.shelterB = null;
         }
         break;
@@ -175,10 +230,9 @@ export function installPanic(npcSys, buildingsReg, city) {
   };
 
   // panicked direct movement must respect walls (they leave the lattice)
-  sys.panicCollide = (n, dt) => {
-    if (n.state === 'panic' || n.state === 'tumbled') {
-      const [cx, cz] = capsuleVsWorld(n.x, n.z, n.y + 0.9, 0.3);
-      n.x = cx; n.z = cz;
-    }
-  };
+  // NPC collision is unconditional now (see ai/npc.js move()), so panic no
+  // longer needs its own pushout.
+
+  window.__test.alertQueue = () => alertQueue.length;
+  return { fixedUpdate };
 }

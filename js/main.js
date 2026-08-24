@@ -1,7 +1,7 @@
 // Boot + system wiring. Order matters: fixed-step systems run in the order
 // they appear in `fixedSystems`; render-frame systems in `frameSystems`.
 import * as THREE from 'three';
-import { initDebug, perfFrame, flags } from './core/debug.js';
+import { initDebug, perfFrame, addSimTime, profile, flags } from './core/debug.js';
 import { loadState, game, setGameState } from './core/state.js';
 import { createLoop } from './core/loop.js';
 import { pollInput } from './core/input.js';
@@ -70,17 +70,17 @@ initParticles(scene);
 initDestruction(scene, buildingsReg, propsReg, cam);
 initBlobShadows(scene);
 const combat = createCombat(player, cam, scene);
-addBlob(() => ({ x: player.p.x, z: player.p.z, y: player.p.y, r: 0.75 }));
+addBlob(player.p, 0.75);
 window.__buildingsReg = buildingsReg;
 window.__propsReg = propsReg;
 
-fixedSystems.push((dt) => player.fixedUpdate(dt));
-fixedSystems.push((dt) => combat.fixedUpdate(dt));
-fixedSystems.push((dt) => destructionFixed(dt));
-fixedSystems.push((dt) => physicsStep(dt));
-frameSystems.push((dt, alpha) => player.frameUpdate(dt, alpha));
-frameSystems.push((dt) => combat.frameUpdate(dt));
-frameSystems.push((dt) => { debrisFrame(dt); particlesFrame(dt); blobFrame(); });
+fixedSystems.push(profile('player', (dt) => player.fixedUpdate(dt)));
+fixedSystems.push(profile('combat', (dt) => combat.fixedUpdate(dt)));
+fixedSystems.push(profile('destruction', (dt) => destructionFixed(dt)));
+fixedSystems.push(profile('physics', (dt) => physicsStep(dt)));
+frameSystems.push(profile('player.frame', (dt, alpha) => player.frameUpdate(dt, alpha)));
+frameSystems.push(profile('combat.frame', (dt) => combat.frameUpdate(dt)));
+frameSystems.push(profile('fx.frame', (dt) => { debrisFrame(dt); particlesFrame(dt); blobFrame(); }));
 window.__bodyStats = bodyStats;
 
 loadingProgress(0.96, 'people…');
@@ -96,7 +96,7 @@ combat.st.hooks.cars = traffic.hooks;
 const { installPanic } = await import('./ai/panic.js');
 const { createMonsters } = await import('./ai/monster.js');
 const { createDirector } = await import('./ai/director.js');
-installPanic(npcs, buildingsReg, city);
+const panic = installPanic(npcs, buildingsReg, city);
 const monsters = createMonsters(scene, npcs, player, cam);
 const director = createDirector(monsters);
 combat.st.hooks.monsters = monsters.hooks;
@@ -107,21 +107,22 @@ const karma = initKarma();
 const reputation = initReputation(npcs, monsters, player, city);
 karma.fire();
 
-fixedSystems.push((dt) => npcs.fixedUpdate(dt));
-fixedSystems.push((dt) => traffic.fixedUpdate(dt));
-fixedSystems.push((dt) => monsters.fixedUpdate(dt));
-fixedSystems.push((dt) => director.fixedUpdate(dt));
-fixedSystems.push((dt) => { karma.fixedUpdate(dt); reputation.fixedUpdate(dt); });
+fixedSystems.push(profile('panic', (dt) => panic.fixedUpdate(dt)));
+fixedSystems.push(profile('npcs', (dt) => npcs.fixedUpdate(dt)));
+fixedSystems.push(profile('traffic', (dt) => traffic.fixedUpdate(dt)));
+fixedSystems.push(profile('monsters', (dt) => monsters.fixedUpdate(dt)));
+fixedSystems.push(profile('director', (dt) => director.fixedUpdate(dt)));
+fixedSystems.push(profile('karmaRep', (dt) => { karma.fixedUpdate(dt); reputation.fixedUpdate(dt); }));
 window.__reputation = reputation;
 
 const { initBubbles } = await import('./dialogue/bubbles.js');
 const { initDialogue } = await import('./dialogue/talk.js');
 initBubbles(cam.camera);
 const dialogue = initDialogue(npcs, monsters, reputation, player, cam);
-fixedSystems.push((dt) => {
+fixedSystems.push(profile('dialogue', (dt) => {
   dialogue.fixedUpdate(dt);
   if (inputRef.interactPressed) dialogue.onInteract();
-});
+}));
 frameSystems.push((dt) => dialogue.frameUpdate(dt));
 const { input: inputRef } = await import('./core/input.js');
 
@@ -129,7 +130,7 @@ const { initAudio } = await import('./engine/audio.js');
 const { initOutfit } = await import('./player/outfit.js');
 initAudio();
 initOutfit(player);
-frameSystems.push((dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha); });
+frameSystems.push(profile('chars.frame', (dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha); }));
 fixedSystems.push((dt) => {
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
 });
@@ -137,6 +138,12 @@ window.__npcs = npcs;
 window.__trafficList = traffic.list;
 window.__trafficState = traffic.hooks.lightState;
 window.__cityBuildings = city.buildings;
+
+// Compile every deferred shader behind the loading screen — see engine/warmup.js
+loadingProgress(0.98, 'shaders…');
+const { warmUp } = await import('./engine/warmup.js');
+const { bangMaterial } = await import('./ai/monster.js');
+await warmUp(renderer, scene, cam.camera, [bangMaterial()]);
 
 loadingProgress(1, 'ready');
 window.__test.city = () => ({ buildings: city.buildings.length, cells: buildingsReg.cells.length, props: propsReg.all.length });
@@ -172,18 +179,22 @@ if (flags.autoplay) {
 let simTime = 0;
 function fixed(dt) {
   if (game.state !== 'playing') return;
+  const t0 = performance.now();
   pollInput(dt);
   simTime += dt;
   for (const s of fixedSystems) s(dt);
+  addSimTime(performance.now() - t0);
 }
 
 let lastDt = 1 / 60;
 function frame(dt, alpha) {
   lastDt = dt;
   if (game.state === 'playing' || game.state === 'paused') {
+    const t0 = performance.now();
     for (const s of frameSystems) s(dt, alpha);
     cam.frameUpdate(dt);
     hudFrame();
+    addSimTime(performance.now() - t0);
   }
 }
 
@@ -201,6 +212,15 @@ createLoop({ fixed, frame, render });
 
 // expose plumbing for later phases + tests
 window.__test.simTime = () => simTime;
+// ?prof=1: per-system average ms per call over the window since the last read
+window.__test.profile = () => {
+  const out = {};
+  for (const [k, v] of Object.entries(window.__sys)) {
+    out[k] = { avg: +(v.ms / Math.max(v.calls, 1)).toFixed(4), max: +v.max.toFixed(3), calls: v.calls };
+    v.ms = 0; v.max = 0; v.calls = 0;
+  }
+  return out;
+};
 export { scene, renderer, cam, fixedSystems, frameSystems };
 
 // Service worker: content-hash-versioned precache, generated by tools/gen-sw.mjs
