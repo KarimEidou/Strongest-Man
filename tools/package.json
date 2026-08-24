@@ -9,5 +9,8 @@
     "@gltf-transform/functions": "^4.1.0",
     "playwright-core": "^1.49.0",
     "sharp": "^0.33.5"
+  },
+  "dependencies": {
+    "meshoptimizer": "^1.2.0"
   }
 }
