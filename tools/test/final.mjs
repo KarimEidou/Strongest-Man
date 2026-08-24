@@ -8,7 +8,12 @@ import { fileURLToPath } from 'url';
 const here = dirname(fileURLToPath(import.meta.url));
 function findChrome() {
   const base = '/opt/pw-browsers';
-  for (const d of readdirSync(base)) if (d.startsWith('chromium')) return join(base, d, 'chrome-linux', 'chrome');
+  for (const d of readdirSync(base)) {
+    if (d.startsWith('chromium')) {
+      const p = join(base, d, 'chrome-linux', 'chrome');
+      try { readdirSync(join(base, d, 'chrome-linux')); return p; } catch { /* keep looking */ }
+    }
+  }
   throw new Error('no chromium');
 }
 
