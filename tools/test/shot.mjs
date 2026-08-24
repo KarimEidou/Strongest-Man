@@ -60,6 +60,22 @@ try {
 } catch {
   errors.push('window.__ready never became true');
 }
+
+// OFFLINE=1: let the SW finish precaching, cut the network, reload — the game
+// must boot entirely from cache (the Home Screen offline scenario).
+if (process.env.OFFLINE) {
+  await page.waitForTimeout(6000);
+  await page.evaluate(() => navigator.serviceWorker ? navigator.serviceWorker.ready.then(() => true) : false);
+  await page.waitForTimeout(3000); // let precaching finish
+  await page.context().setOffline(true);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  try {
+    await page.waitForFunction('window.__ready === true', null, { timeout: 25000 });
+    console.log('OFFLINE RELOAD OK');
+  } catch {
+    errors.push('offline reload failed: __ready never true');
+  }
+}
 await page.waitForTimeout(parseInt(waitMs, 10));
 
 let scriptResult = null;

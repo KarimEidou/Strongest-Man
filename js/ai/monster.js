@@ -149,6 +149,7 @@ export function createMonsters(scene, npcSys, player, cam) {
             m.swingT = 1.2;
             // the hit lands... and does nothing. every first hit teaches them.
             cam.shake(0.15);
+            import('../ui/hud.js').then(({ flashVignette }) => flashVignette(0.5));
             burstDust(player.p.x, player.p.y + 1.2, player.p.z, 4, 0x9a92a8, 2);
             m.knowledge = Math.max(m.knowledge, 55);
             realize(m);

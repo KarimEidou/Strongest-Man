@@ -77,6 +77,7 @@ export function createCombat(playerSys, cam, scene) {
   }
 
   function strike(charge) {
+    import('../engine/audio.js').then(({ punchSound }) => punchSound(charge));
     const reach = 1.5 + charge * 1.2;
     const f = forwardPoint(reach);
     const radius = 1.15 + charge * 4.6;

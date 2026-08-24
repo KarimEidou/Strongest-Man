@@ -8,7 +8,7 @@ import { neighbors } from '../ai/crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { removeSphere, craterAt } from './destruction.js';
 import { burstFire, burstSmoke, shockwave, burstSparks } from '../engine/particles.js';
-import { emit, EV } from '../core/events.js';
+import { emit, on, EV } from '../core/events.js';
 import { rand, pick, damp, dampAngle, clamp } from '../core/mathx.js';
 
 const scratch = [];
@@ -127,12 +127,28 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
   }
   const movingToward = (car, tx, tz) => (Math.sin(car.yaw) * (tx - car.x) + Math.cos(car.yaw) * (tz - car.z)) > 0;
 
+  // terrified drivers: some abandon the car where it stands, the rest floor it
+  function scareCars(x, z, radius) {
+    for (const car of list) {
+      if (car.mode !== 'drive' || car.panicT > 0) continue;
+      const d = Math.hypot(car.x - x, car.z - z);
+      if (d > radius) continue;
+      if (rand() < 0.35) { car.mode = 'wreck'; car.speed = 0; }   // abandoned mid-lane
+      else car.panicT = 15;
+    }
+  }
+  on(EV.MONSTER_SPAWNED, ({ monster }) => scareCars(monster.x, monster.z, 40));
+  on(EV.CAR_EXPLODED, ({ x, z }) => scareCars(x, z, 26));
+  on(EV.BUILDING_COLLAPSED, ({ x, z }) => scareCars(x, z, 36));
+  on(EV.FEAT, ({ x, z, magnitude }) => { if (magnitude >= 40) scareCars(x, z, 24); });
+
   function fixedUpdate(dt) {
     updateLights(dt);
     for (const car of list) {
       car.px = car.x; car.pz = car.z;
+      car.panicT = Math.max(0, (car.panicT || 0) - dt);
       if (car.mode === 'drive') {
-        let target = car.cruise;
+        let target = car.panicT > 0 ? car.cruise * 2.1 : car.cruise;
         // queue behind the nearest car ahead on the same circuit
         for (const o of list) {
           if (o === car || o.ci !== car.ci || o.mode !== 'drive') continue;
@@ -147,14 +163,20 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
           const dx = o.x - car.x, dz = o.z - car.z;
           if (dx * dx + dz * dz < 64 && movingToward(car, o.x, o.z)) target = Math.min(target, Math.max(0, Math.hypot(dx, dz) * 0.8 - 3));
         }
-        // red light
-        if (gateStop(car)) target = 0;
-        // pedestrians / player ahead
-        const aheadX = car.x + Math.sin(car.yaw) * 4, aheadZ = car.z + Math.cos(car.yaw) * 4;
-        neighbors(aheadX, aheadZ, 2.6, scratch);
-        if (scratch.some((n) => n.state !== 'dead')) target = 0;
-        const pd = Math.hypot(player.p.x - aheadX, player.p.z - aheadZ);
-        if (pd < 3) target = 0;
+        if (car.panicT > 0) {
+          // fleeing drivers run lights and mow what they can't miss
+          neighbors(car.x + Math.sin(car.yaw) * 2.5, car.z + Math.cos(car.yaw) * 2.5, 1.2, scratch);
+          if (scratch.length && car.speed > 4) npcHooks?.damageRadius?.(car.x + Math.sin(car.yaw) * 2.5, car.z + Math.cos(car.yaw) * 2.5, 1.2, 'car');
+        } else {
+          // red light
+          if (gateStop(car)) target = 0;
+          // pedestrians / player ahead
+          const aheadX = car.x + Math.sin(car.yaw) * 4, aheadZ = car.z + Math.cos(car.yaw) * 4;
+          neighbors(aheadX, aheadZ, 2.6, scratch);
+          if (scratch.some((n) => n.state !== 'dead')) target = 0;
+          const pd = Math.hypot(player.p.x - aheadX, player.p.z - aheadZ);
+          if (pd < 3) target = 0;
+        }
 
         car.speed = damp(car.speed, target, target < car.speed ? 8 : 2.5, dt);
         car.s += car.speed * dt;
