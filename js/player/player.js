@@ -131,6 +131,7 @@ export function createPlayer(scene, cam) {
   }
 
   window.__test.teleport = (x, z) => { p.x = p.px = x; p.z = p.pz = z; p.y = p.py = groundHeight(x, z); };
+  window.__test.faceTo = (x, z) => { p.yaw = p.visYaw = Math.atan2(x - p.x, z - p.z); };
   window.__test.playerStats = () => ({
     x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2),
     ground: +groundHeight(p.x, p.z).toFixed(2), speed: +p.speed.toFixed(2), grounded: p.grounded,

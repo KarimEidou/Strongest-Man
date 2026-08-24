@@ -402,6 +402,11 @@ export function createMonsters(scene, npcSys, player, cam) {
   };
 
   window.__test.spawnMonster = (kind = 0, x = 40, z = 40) => { spawn(kind, x, z); return monsters.length; };
+  // #13 regression probe: soles must sit on the ground, not above it
+  window.__test.monsterFeet = () => monsters.map((m) => {
+    const b = new THREE.Box3().setFromObject(m.root);
+    return { kind: m.base, gap: +(b.min.y - groundHeight(m.x, m.z)).toFixed(3), h: +(b.max.y - b.min.y).toFixed(2) };
+  });
   window.__test.monsterStats = () => monsters.map((m) => ({
     state: m.state, hp: m.hp, x: +m.x.toFixed(1), z: +m.z.toFixed(1), know: m.knowledge,
   }));

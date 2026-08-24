@@ -24,13 +24,13 @@ const CHARGE_MIN = 0.16;    // hold time before charging starts
 // into place, which is what it used to do.
 const REACH_T = 0.25, LIFT_T = 0.35, THROW_T = 0.20, RELEASE_AT = 0.11;
 const CARRY_OFFSET = {
-  carry_neck: new THREE.Vector3(0.42, 1.55, 0.50),
-  carry_overhead: new THREE.Vector3(0.00, 2.45, 0.10),
+  carry_neck: new THREE.Vector3(0.42, 1.98, 0.55),   // high enough that their feet clear the floor
+  carry_overhead: new THREE.Vector3(0.00, 2.05, 0.10),   // chassis rests on the hands
 };
 // how much the carried thing tracks the animated hands vs a fixed body offset.
 // All hands and a car visibly wobbles with the run cycle; no hands and the grip
 // looks painted on.
-const HAND_MIX = { carry_neck: 0.85, carry_overhead: 0.35 };
+const HAND_MIX = { carry_neck: 0.55, carry_overhead: 0.35 };
 const LIFT_ARC = { carry_neck: 0.35, carry_overhead: 0.80 };
 const CARRY_SLOW = { carry_neck: 0.82, carry_overhead: 0.62 };
 
@@ -47,7 +47,7 @@ export function createCombat(playerSys, cam, scene) {
     hooks: { npcs: null, monsters: null, cars: null }, // installed by later systems
     carry: {
       phase: 'idle',    // idle | reaching | lifting | carrying | throwing | whiff
-      t: 0, elapsed: 0, style: null, released: false,
+      t: 0, elapsed: 0, style: null, released: false, wantThrow: false,
       from: new THREE.Vector3(), fromQ: new THREE.Quaternion(),
       anchor: new THREE.Vector3(), anchorQ: new THREE.Quaternion(),
       pos: new THREE.Vector3(), quat: new THREE.Quaternion(),
@@ -76,8 +76,12 @@ export function createCombat(playerSys, cam, scene) {
     }
 
     if (input.grabPressed && !p.dead) {
-      if (st.carry.phase === 'carrying') beginThrow();
-      else if (st.carry.phase === 'idle') tryGrab();
+      const ph = st.carry.phase;
+      if (ph === 'carrying') beginThrow();
+      // pressed mid-lift: remember it and throw the moment the lift lands,
+      // rather than eating the input (which is what a dropped frame used to do)
+      else if (ph === 'reaching' || ph === 'lifting') st.carry.wantThrow = true;
+      else if (ph === 'idle') tryGrab();
     }
     advanceCarry(dt);
 
@@ -215,6 +219,7 @@ export function createCombat(playerSys, cam, scene) {
     c.fromQ.setFromEuler(EU);
     c.pos.copy(c.from); c.quat.copy(c.fromQ);
     c.phase = 'reaching'; c.t = REACH_T; c.elapsed = 0; c.released = false; c.strideT = 0;
+    c.wantThrow = false;
     pose.set('reach', 0.9, 16);
     p.carrySlow = CARRY_SLOW[c.style];
     // a car held overhead needs the camera to back off or it clips the near plane
@@ -236,6 +241,7 @@ export function createCombat(playerSys, cam, scene) {
       pose.set(c.style, 0.85, 10);
     } else if (c.phase === 'lifting' && c.t <= 0) {
       c.phase = 'carrying';
+      if (c.wantThrow) { c.wantThrow = false; beginThrow(); }
     } else if (c.phase === 'throwing') {
       if (!c.released && c.t <= THROW_T - RELEASE_AT) release();
       if (c.t <= 0) { c.phase = 'idle'; pose.set(null, 0, 12); }

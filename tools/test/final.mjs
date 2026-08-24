@@ -30,6 +30,20 @@ await page.waitForTimeout(3000);
 const results = {};
 const shot = (name) => page.screenshot({ path: join(here, 'shots', `final_${name}.png`) });
 
+// These assertions are about game behaviour, which happens in SIM time. On a
+// software rasterizer wall-clock and sim time diverge badly, so wait on the
+// simulation clock rather than a stopwatch.
+const simElapsed = () => page.evaluate('window.__test.simTime()');
+async function waitSim(seconds, capMs = 180000) {
+  const from = await simElapsed();
+  const t0 = Date.now();
+  for (;;) {
+    await page.waitForTimeout(250);
+    if ((await simElapsed()) - from >= seconds) return true;
+    if (Date.now() - t0 > capMs) return false;
+  }
+}
+
 // 1) HUD inside safe bounds (torture-free: everything must sit within viewport margins)
 results.hud = await page.evaluate(() => {
   const ids = ['karma-wrap', 'btns', 'btn-pause'];
@@ -43,7 +57,7 @@ results.hud = await page.evaluate(() => {
 // 2) red light stops a centre-circuit car eventually
 results.redLight = await page.evaluate(() => new Promise((res) => {
   let sawStop = false;
-  const t0 = performance.now();
+  const t0 = window.__test.simTime();
   const iv = setInterval(() => {
     const ls = window.__trafficState;
     for (const c of window.__trafficList) {
@@ -52,7 +66,7 @@ results.redLight = await page.evaluate(() => new Promise((res) => {
       const gatedNS = c.ci === 3 && (ls.phase !== 'NS' || ls.amber) && Math.abs(c.z) > 6.5 && Math.abs(c.z) < 12 && Math.abs(c.x) < 4;
       if ((gatedEW || gatedNS) && c.speed < 0.4) sawStop = true;
     }
-    if (sawStop || performance.now() - t0 > 40000) { clearInterval(iv); res(sawStop); }
+    if (sawStop || window.__test.simTime() - t0 > 40) { clearInterval(iv); res(sawStop); }
   }, 400);
 }));
 
@@ -65,9 +79,9 @@ results.gossip = await page.evaluate(() => new Promise((res) => {
   a.state = 'at_poi'; a.stateT = 99; a.targetSpeed = 0;
   b.state = 'at_poi'; b.stateT = 99; b.targetSpeed = 0;
   b.x = a.x + 1.5; b.z = a.z; b.px = b.x; b.pz = b.z;
-  const t0 = performance.now();
+  const t0 = window.__test.simTime();
   const iv = setInterval(() => {
-    if (b.knowledge > 10 || performance.now() - t0 > 30000) {
+    if (b.knowledge > 10 || window.__test.simTime() - t0 > 30) {
       clearInterval(iv);
       res({ transferred: +b.knowledge.toFixed(1), ok: b.knowledge > 10 });
     }
@@ -76,7 +90,7 @@ results.gossip = await page.evaluate(() => new Promise((res) => {
 
 // 4) debris no-jitter: collapse, wait for settle, then positions must freeze
 await page.evaluate(() => window.__test.collapseBuilding(3));
-await page.waitForTimeout(14000);
+await waitSim(14);
 results.jitter = await page.evaluate(() => new Promise(async (res) => {
   const m = await import('./js/physics/pworld.js');
   const snap = m.sleeping.map((b) => [b.x, b.y, b.z]);
@@ -92,32 +106,35 @@ results.jitter = await page.evaluate(() => new Promise(async (res) => {
 await shot('rubble');
 
 // 5) grab a car and throw it
-results.grabCar = await page.evaluate(() => new Promise((res) => {
+await page.evaluate(() => {
   const car = window.__trafficList.find((c) => c.mode === 'drive');
-  const probe = () => window.__test.carStats();
   window.__test.teleport(car.x + 1.2, car.z + 1.2);
-  setTimeout(() => {
-    window.__test.press('grab');
-    setTimeout(() => {
-      const held = probe().modes.held || 0;
-      window.__test.press('grab'); // throw
-      setTimeout(() => {
-        res({ heldDuring: held, after: probe().modes, ok: held >= 1 });
-      }, 1500);
-    }, 800);
-  }, 400);
-}));
+});
+await waitSim(0.5);
+await page.evaluate(() => window.__test.press('grab'));
+await waitSim(1.2);
+const heldDuring = await page.evaluate(() => (window.__test.carStats().modes.held || 0));
+const carryMid = await page.evaluate(() => window.__test.carry());
+await page.evaluate(() => window.__test.press('grab'));   // throw
+await waitSim(2.5);
+results.grabCar = await page.evaluate((held) => ({
+  heldDuring: held,
+  after: window.__test.carStats().modes,
+  label: document.getElementById('btn-grab').textContent,
+  ok: held >= 1 && !window.__test.carStats().modes.held,
+}), heldDuring);
+results.grabCar.carriedAs = carryMid.style;
 
 // 6) monster realization end-to-end (spawn near player, let it swing)
 results.realize = await page.evaluate(() => new Promise((res) => {
   window.__test.teleport(2, 20);
   window.__test.spawnMonster(0, 2, 26);
-  const t0 = performance.now();
+  const t0 = window.__test.simTime();
   const iv = setInterval(() => {
     const ms = window.__test.monsterStats();
     const m = ms[ms.length - 1];
     if (!m) return;
-    if ((m.state === 'flee' || m.state === 'rage' || m.state === 'realize') || performance.now() - t0 > 40000) {
+    if ((m.state === 'flee' || m.state === 'rage' || m.state === 'realize') || window.__test.simTime() - t0 > 40) {
       clearInterval(iv);
       res({ state: m.state, know: m.know, ok: m.know >= 50 });
     }
@@ -126,14 +143,12 @@ results.realize = await page.evaluate(() => new Promise((res) => {
 await shot('realize');
 
 // 7) shops close when feared + known
-results.shops = await page.evaluate(() => new Promise((res) => {
-  window.__test.setKarma(-80);
-  window.__test.setKnowledgeAll(60);
-  setTimeout(() => {
-    const closed = window.__cityBuildings?.filter((b) => b.closed).length ?? -1;
-    res({ closed, ok: closed > 0 || closed === -1 });
-  }, 12000);
-}));
+await page.evaluate(() => { window.__test.setKarma(-80); window.__test.setKnowledgeAll(60); });
+await waitSim(12);
+results.shops = await page.evaluate(() => {
+  const closed = window.__cityBuildings?.filter((b) => b.closed).length ?? -1;
+  return { closed, ok: closed > 0 || closed === -1 };
+});
 
 // 8) perf snapshot
 results.perf = await page.evaluate('window.__perf');

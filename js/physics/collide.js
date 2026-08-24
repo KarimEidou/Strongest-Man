@@ -110,7 +110,8 @@ export function capsuleVsWorld(x, z, y, r, opts) {
 
   if (CARS && !skipCars) {
     for (const c of CARS.list) {
-      if (!c.alive) continue;
+      // a car held over someone's head, or in mid-air, is not a wall
+      if (!c.alive || c.mode === 'held' || c.mode === 'flying') continue;
       // oriented box → transform into car space (yaw only)
       const dx = x - c.x, dz = z - c.z;
       const cos = Math.cos(-c.yaw), sin = Math.sin(-c.yaw);

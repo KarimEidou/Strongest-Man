@@ -4,7 +4,12 @@
 import { game } from './state.js';
 
 const FIXED_DT = 1 / 60;
-const MAX_STEPS = 3;
+// Cap on catch-up steps per frame. At 3 the simulation silently falls behind
+// real time below ~20fps — the accumulator saturates, the remainder is thrown
+// away, and the whole world runs in slow motion exactly when a collapse is
+// making frames expensive. 5 keeps sim and wall clock together down to ~12fps
+// and still bounds the worst-case step cost.
+const MAX_STEPS = 5;
 
 export function createLoop({ fixed, frame, render }) {
   let last = performance.now();
