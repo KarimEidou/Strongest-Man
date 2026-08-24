@@ -13,6 +13,7 @@ const ACTIVE_CAP = 250;
 let nextId = 1;
 export const active = [];      // awake bodies
 export const sleeping = [];    // settled bodies (matrices frozen)
+export const counters = { created: 0, slept: 0, fellOut: 0, forced: 0 };
 
 export function createBody(opts) {
   const b = {
@@ -35,8 +36,9 @@ export function createBody(opts) {
     userData: opts.userData || null,
     pileCell: -1, pileAmount: 0,
   };
-  if (active.length >= ACTIVE_CAP) forceSleep(oldestSmallest());
+  if (active.length >= ACTIVE_CAP) { counters.forced++; forceSleep(oldestSmallest()); }
   active.push(b);
+  counters.created++;
   return b;
 }
 
@@ -54,6 +56,7 @@ export function step(dt) {
 
     b.vy += GRAVITY * dt;
     b.vx *= 0.999; b.vz *= 0.999;
+    b.wx *= 0.985; b.wy *= 0.985; b.wz *= 0.985;
     b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
     b.rx += b.wx * dt; b.ry += b.wy * dt; b.rz += b.wz * dt;
 
@@ -64,9 +67,13 @@ export function step(dt) {
       if (b.vy < 0) {
         const bounce = -b.vy * b.restitution;
         b.vy = bounce > 0.6 ? bounce : 0;
-        b.vx *= b.friction; b.vz *= b.friction;
-        b.wx *= 0.8; b.wy *= 0.9; b.wz *= 0.8;
       }
+    }
+    // rolling/sliding friction every grounded step — bodies must come to rest
+    if (b.y - b.half <= g + 0.02) {
+      b.vx *= b.friction ** (dt * 60) * 0.98;
+      b.vz *= b.friction ** (dt * 60) * 0.98;
+      b.wx *= 0.86; b.wy *= 0.9; b.wz *= 0.86;
     }
 
     // building walls: coarse — push out of alive wall cells
@@ -83,7 +90,7 @@ export function step(dt) {
       continue;
     }
     if (b.onMove) b.onMove(b);
-    if (b.y < -20) { active.splice(i, 1); b.dead = true; b.onSleep?.(b); }
+    if (!(b.y > -20)) { counters.fellOut++; active.splice(i, 1); b.dead = true; b.onSleep?.(b); }
   }
 }
 
@@ -96,6 +103,7 @@ function sleepBody(b, i) {
   b.prx = b.rx; b.pry = b.ry; b.prz = b.rz;
   active.splice(i ?? active.indexOf(b), 1);
   sleeping.push(b);
+  counters.slept++;
   b.asleep = true;
   // raise the pile so future debris stacks on top of this one
   b.pileAmount = Math.min(b.half * 1.2, 0.5);

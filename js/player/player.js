@@ -114,8 +114,8 @@ export function createPlayer(scene, cam) {
       p.bones.spine2.scale.x = damp(p.bones.spine2.scale.x, s, 12, dt);
     }
 
-    // feed the camera
-    cam.st.target.set(root.position.x, root.position.y, root.position.z);
+    // feed the camera (suspended while a test drives it)
+    if (!cam.st.freeCam) cam.st.target.set(root.position.x, root.position.y, root.position.z);
   }
 
   window.__test.teleport = (x, z) => { p.x = p.px = x; p.z = p.pz = z; p.y = p.py = groundHeight(x, z); };

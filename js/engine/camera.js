@@ -53,7 +53,7 @@ export function createCamera() {
     eye.copy(look).add(off);
 
     let allowed = wanted;
-    if (st.occlusionQuery) allowed = st.occlusionQuery(look, eye, wanted);
+    if (st.occlusionQuery && !st.noOcclusion) allowed = st.occlusionQuery(look, eye, wanted);
     st.curDist = damp(st.curDist, allowed, allowed < st.curDist ? 60 : 6, dt);
     eye.copy(look).addScaledVector(off, st.curDist / wanted);
 

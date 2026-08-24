@@ -14,6 +14,7 @@ export const EV = {
   BUILDING_COLLAPSED: 'buildingCollapsed', // {building, byPlayer, occupied}
   CAR_EXPLODED: 'carExploded',      // {x, z, byPlayer}
   HYDRANT_BURST: 'hydrantBurst',    // {x, z}
+  PROP_DESTROYED: 'propDestroyed',  // {type}
   PLAYER_THREW: 'playerThrew',      // {what:'car'|'npc'|'monster'|'prop'|'debris'}
   GAME_STATE: 'gameState',          // {state:'title'|'playing'|'paused'|'settings'}
   SETTINGS_CHANGED: 'settingsChanged', // {settings}

@@ -58,9 +58,29 @@ buildClipBank();
 const player = createPlayer(scene, cam);
 cam.st.occlusionQuery = (look, eye, wanted) => cameraAllowed(look, eye, wanted);
 
+loadingProgress(0.92, 'destruction…');
+const { initDebris, debrisFrame } = await import('./world/debris.js');
+const { initParticles, particlesFrame } = await import('./engine/particles.js');
+const { initDestruction, destructionFixed } = await import('./world/destruction.js');
+const { initBlobShadows, addBlob, blobFrame } = await import('./engine/blobshadows.js');
+const { createCombat } = await import('./player/combat.js');
+
+initDebris(scene);
+initParticles(scene);
+initDestruction(scene, buildingsReg, propsReg, cam);
+initBlobShadows(scene);
+const combat = createCombat(player, cam, scene);
+addBlob(() => ({ x: player.p.x, z: player.p.z, y: player.p.y, r: 0.75 }));
+window.__buildingsReg = buildingsReg;
+window.__propsReg = propsReg;
+
 fixedSystems.push((dt) => player.fixedUpdate(dt));
+fixedSystems.push((dt) => combat.fixedUpdate(dt));
+fixedSystems.push((dt) => destructionFixed(dt));
 fixedSystems.push((dt) => physicsStep(dt));
 frameSystems.push((dt, alpha) => player.frameUpdate(dt, alpha));
+frameSystems.push((dt) => combat.frameUpdate(dt));
+frameSystems.push((dt) => { debrisFrame(dt); particlesFrame(dt); blobFrame(); });
 window.__bodyStats = bodyStats;
 
 loadingProgress(1, 'ready');
@@ -77,6 +97,8 @@ window.__test.showcase = (names) => {
 };
 import('./engine/assets.js').then((m) => { window.__assets = m; });
 window.__test.lookFrom = (x, y, z, tx, ty, tz) => {
+  cam.st.noOcclusion = true;
+  cam.st.freeCam = true;
   cam.st.target.set(tx, ty ?? 0, tz);
   cam.st.smoothed.set(tx, ty ?? 0, tz);
   const dx = x - tx, dz = z - tz;

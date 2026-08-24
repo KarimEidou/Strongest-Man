@@ -26,6 +26,13 @@ export function buildClipBank() {
   take('clip_punch', 'punch');
   take('clip_die', 'die');
 
+  // the boxing clip carries a long guard prep; trim to windup→strike→recover
+  if (CLIPS.punch) {
+    const fps = 30;
+    const trimmed = THREE.AnimationUtils.subclip(CLIPS.punch, 'punch_core', Math.floor(1.15 * fps), Math.floor(2.9 * fps), fps);
+    if (trimmed.duration > 0.3) CLIPS.punch = trimmed;
+  }
+
   // reference hips height from the player rig's rest pose
   const hips = findBone(MODELS.player.scene, 'Hips');
   if (hips) refHipsY = hips.position.y || 1;
