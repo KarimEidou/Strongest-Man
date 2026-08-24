@@ -142,7 +142,9 @@ export function createNPCs(scene, city, player) {
         }
         break;
       }
-      default: break; // panic states handled in panic.js
+      default:
+        if (sys.panicThink) sys.panicThink(n, dt, t);
+        break;
     }
   }
 
@@ -170,6 +172,7 @@ export function createNPCs(scene, city, player) {
       }
       n.px = n.x; n.pz = n.z;
       n.x += vx * dt; n.z += vz * dt;
+      sys.panicCollide?.(n, dt);
     } else {
       n.px = n.x; n.pz = n.z;
     }

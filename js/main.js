@@ -93,9 +93,19 @@ setCars({ list: traffic.list });
 combat.st.hooks.npcs = npcs.hooks;
 combat.st.hooks.cars = traffic.hooks;
 
+const { installPanic } = await import('./ai/panic.js');
+const { createMonsters } = await import('./ai/monster.js');
+const { createDirector } = await import('./ai/director.js');
+installPanic(npcs, buildingsReg, city);
+const monsters = createMonsters(scene, npcs, player, cam);
+const director = createDirector(monsters);
+combat.st.hooks.monsters = monsters.hooks;
+
 fixedSystems.push((dt) => npcs.fixedUpdate(dt));
 fixedSystems.push((dt) => traffic.fixedUpdate(dt));
-frameSystems.push((dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); });
+fixedSystems.push((dt) => monsters.fixedUpdate(dt));
+fixedSystems.push((dt) => director.fixedUpdate(dt));
+frameSystems.push((dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha); });
 fixedSystems.push((dt) => {
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
 });
