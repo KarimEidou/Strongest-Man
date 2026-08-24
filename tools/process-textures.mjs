@@ -42,5 +42,21 @@ console.log('skybox written; horizon fog color =', hex);
 
 // --- splash + title
 await sharp(join(ART, '7_splash.png')).resize(1920, 1080, { fit: 'cover' }).webp({ quality: 82 }).toFile(join(root, 'assets/img/splash.webp'));
-await sharp(join(ART, '8_title.png')).resize(1280, 720, { fit: 'cover' }).webp({ quality: 90 }).toFile(join(root, 'assets/img/title.webp'));
+// title logo: key the flat dark-navy backdrop to alpha, then trim to content
+{
+  const img = sharp(join(ART, '8_title.png')).removeAlpha().resize(1400, null);
+  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
+  const out = Buffer.alloc(info.width * info.height * 4);
+  for (let i = 0, o = 0; i < data.length; i += 3, o += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    // backdrop is very dark navy (~#0a1226); key by low luminance + blue bias
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const a = lum < 26 && b >= r ? 0 : lum < 40 && b >= r ? Math.round(((lum - 26) / 14) * 255) : 255;
+    out[o] = r; out[o + 1] = g; out[o + 2] = b; out[o + 3] = a;
+  }
+  await sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .trim({ threshold: 12 })
+    .webp({ quality: 92 })
+    .toFile(join(root, 'assets/img/title.webp'));
+}
 console.log('splash + title written');

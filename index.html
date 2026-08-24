@@ -24,10 +24,89 @@
 </head>
 <body>
 <canvas id="gl"></canvas>
-<div id="boot"><div id="boot-inner">
-  <div id="boot-title">STRONGEST&nbsp;MAN</div>
-  <div id="boot-msg">BOOT OK — game modules land in the next commits</div>
-</div></div>
+
+<!-- speech bubbles project into this layer (inside safe area) -->
+<div id="bubbles"></div>
+
+<!-- HUD: everything interactive lives inside the safe-area box -->
+<div id="hud" hidden>
+  <div id="karma-wrap" aria-label="karma">
+    <div id="karma-bar"><div id="karma-fill"></div><div id="karma-tick"></div></div>
+    <div id="karma-label">NEUTRAL</div>
+  </div>
+  <div id="rep-hint" class="hidden"></div>
+
+  <div id="stick"><div id="stick-nub"></div></div>
+
+  <div id="btns">
+    <button id="btn-interact" class="abtn small" aria-label="talk">TALK</button>
+    <button id="btn-grab" class="abtn small" aria-label="grab or throw">GRAB</button>
+    <button id="btn-jump" class="abtn" aria-label="jump">JUMP</button>
+    <button id="btn-punch" class="abtn big" aria-label="punch, hold to charge"><span id="charge-ring"></span>PUNCH</button>
+  </div>
+
+  <button id="btn-pause" aria-label="pause">II</button>
+  <div id="toast" class="hidden"></div>
+</div>
+
+<!-- title / splash -->
+<div id="title-screen">
+  <img id="title-splash" alt="" src="./assets/img/splash.webp" draggable="false">
+  <img id="title-logo" alt="STRONGEST MAN" src="./assets/img/title.webp" draggable="false">
+  <div id="title-buttons">
+    <button id="btn-play" class="mbtn">PLAY</button>
+    <button id="btn-settings" class="mbtn ghost">SETTINGS</button>
+  </div>
+  <div id="title-tip">Add to Home Screen for fullscreen play</div>
+</div>
+
+<!-- settings -->
+<div id="settings-screen" hidden>
+  <div id="settings-panel">
+    <h2>SETTINGS</h2>
+    <label class="srow">Look sensitivity
+      <input id="set-sens" type="range" min="0.4" max="2" step="0.05">
+      <span id="set-sens-val"></span>
+    </label>
+    <label class="srow">Invert look Y <input id="set-invy" type="checkbox"></label>
+    <label class="srow">Sound <input id="set-audio" type="checkbox"></label>
+    <div class="srow key-row">
+      <div>Groq API key <span class="hint">optional — powers live NPC dialogue. Stored only on this device, sent only to api.groq.com. Without it NPCs use their built-in lines.</span></div>
+      <input id="set-groq" type="password" placeholder="gsk_..." autocomplete="off">
+      <div id="groq-status" class="hint"></div>
+    </div>
+    <div class="srow btnrow">
+      <button id="btn-settings-done" class="mbtn">DONE</button>
+    </div>
+  </div>
+</div>
+
+<!-- pause -->
+<div id="pause-screen" hidden>
+  <div id="pause-panel">
+    <h2>PAUSED</h2>
+    <button id="btn-resume" class="mbtn">RESUME</button>
+    <button id="btn-pause-settings" class="mbtn ghost">SETTINGS</button>
+  </div>
+</div>
+
+<!-- rotate overlay: game is landscape-only; iOS can't lock orientation -->
+<div id="rotate-overlay" hidden>
+  <div id="rotate-inner">
+    <div id="rotate-icon">⟳</div>
+    <div>Rotate your phone to play</div>
+  </div>
+</div>
+
+<!-- boot progress -->
+<div id="loading">
+  <div id="loading-inner">
+    <div id="loading-title">STRONGEST&nbsp;MAN</div>
+    <div id="loading-bar"><div id="loading-fill"></div></div>
+    <div id="loading-msg">loading…</div>
+  </div>
+</div>
+
 <script type="module" src="./js/main.js"></script>
 </body>
 </html>

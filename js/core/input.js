@@ -1,0 +1,168 @@
+// Unified multi-touch + keyboard/mouse input.
+//  - left half of the screen: floating virtual joystick (movement)
+//  - right half: swipe to look (camera), simultaneous with everything else
+//  - DOM action buttons manage their own pointers and set flags here
+//  - desktop testing: WASD move, mouse-drag look, J punch (hold=charge),
+//    K jump, L grab/throw, E interact
+import { settings, game } from './state.js';
+import { clamp } from './mathx.js';
+
+export const input = {
+  moveX: 0, moveZ: 0,           // joystick, unit circle
+  lookDX: 0, lookDY: 0,         // accumulated look delta this frame (px)
+  punchDown: false,             // button currently held
+  punchPressed: false,          // went down this fixed step
+  punchReleased: false,         // went up this fixed step
+  chargeTime: 0,                // seconds punch has been held
+  jumpPressed: false,
+  grabPressed: false,
+  interactPressed: false,
+  anyTouch: false,
+};
+
+const state = {
+  stickId: -1, stickCX: 0, stickCY: 0,
+  lookId: -1, lookLX: 0, lookLY: 0,
+  keys: new Set(),
+  mouseLook: false,
+  pendingPunchDown: false, pendingPunchUp: false,
+  pendingJump: false, pendingGrab: false, pendingInteract: false,
+};
+
+const STICK_R = 56;
+let stickEl = null, nubEl = null;
+
+export function bindButtons({ punch, jump, grab, interact }) {
+  const opts = { passive: false };
+  const press = (el, down, up) => {
+    el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); el.setPointerCapture(e.pointerId); el.classList.add('held'); down(); }, opts);
+    const release = (e) => { e.preventDefault(); el.classList.remove('held'); up && up(); };
+    el.addEventListener('pointerup', release, opts);
+    el.addEventListener('pointercancel', release, opts);
+  };
+  press(punch, () => { state.pendingPunchDown = true; input.punchDown = true; },
+    () => { state.pendingPunchUp = true; input.punchDown = false; });
+  press(jump, () => { state.pendingJump = true; });
+  press(grab, () => { state.pendingGrab = true; });
+  press(interact, () => { state.pendingInteract = true; });
+}
+
+export function initInput(surface, stick, nub) {
+  stickEl = stick; nubEl = nub;
+  const opts = { passive: false };
+
+  surface.addEventListener('pointerdown', (e) => {
+    if (game.state !== 'playing') return;
+    e.preventDefault();
+    input.anyTouch = true;
+    const w = window.innerWidth;
+    if (e.clientX < w * 0.44 && state.stickId === -1) {
+      state.stickId = e.pointerId;
+      state.stickCX = e.clientX; state.stickCY = e.clientY;
+      stickEl.style.left = `${e.clientX}px`; stickEl.style.top = `${e.clientY}px`;
+      stickEl.classList.add('active');
+      moveNub(0, 0);
+    } else if (state.lookId === -1) {
+      state.lookId = e.pointerId;
+      state.lookLX = e.clientX; state.lookLY = e.clientY;
+    }
+  }, opts);
+
+  surface.addEventListener('pointermove', (e) => {
+    if (e.pointerId === state.stickId) {
+      e.preventDefault();
+      let dx = e.clientX - state.stickCX, dy = e.clientY - state.stickCY;
+      const len = Math.hypot(dx, dy);
+      if (len > STICK_R) { dx = dx / len * STICK_R; dy = dy / len * STICK_R; }
+      moveNub(dx, dy);
+      input.moveX = dx / STICK_R;
+      input.moveZ = dy / STICK_R;
+    } else if (e.pointerId === state.lookId) {
+      e.preventDefault();
+      input.lookDX += (e.clientX - state.lookLX) * settings.lookSensitivity;
+      input.lookDY += (e.clientY - state.lookLY) * settings.lookSensitivity * (settings.invertY ? -1 : 1);
+      state.lookLX = e.clientX; state.lookLY = e.clientY;
+    }
+  }, opts);
+
+  const end = (e) => {
+    if (e.pointerId === state.stickId) {
+      state.stickId = -1;
+      input.moveX = 0; input.moveZ = 0;
+      stickEl.classList.remove('active');
+    } else if (e.pointerId === state.lookId) {
+      state.lookId = -1;
+    }
+  };
+  surface.addEventListener('pointerup', end, opts);
+  surface.addEventListener('pointercancel', end, opts);
+
+  // ---- desktop fallbacks for development/testing
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    state.keys.add(e.code);
+    if (e.code === 'KeyJ') { state.pendingPunchDown = true; input.punchDown = true; }
+    if (e.code === 'KeyK') state.pendingJump = true;
+    if (e.code === 'KeyL') state.pendingGrab = true;
+    if (e.code === 'KeyE') state.pendingInteract = true;
+  });
+  window.addEventListener('keyup', (e) => {
+    state.keys.delete(e.code);
+    if (e.code === 'KeyJ') { state.pendingPunchUp = true; input.punchDown = false; }
+  });
+  surface.addEventListener('mousedown', (e) => { if (e.button === 0 && !e.isPrimary === false) state.mouseLook = true; });
+  window.addEventListener('mouseup', () => { state.mouseLook = false; });
+  surface.addEventListener('mousemove', (e) => {
+    if (state.mouseLook && game.state === 'playing') {
+      input.lookDX += e.movementX * settings.lookSensitivity;
+      input.lookDY += e.movementY * settings.lookSensitivity * (settings.invertY ? -1 : 1);
+    }
+  });
+
+  // iOS belt-and-braces: kill pinch zoom / double-tap zoom / callouts
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
+    document.addEventListener(ev, (e) => e.preventDefault(), opts);
+  }
+  document.addEventListener('dblclick', (e) => e.preventDefault(), opts);
+  document.addEventListener('touchmove', (e) => { if (e.target === surface) e.preventDefault(); }, opts);
+}
+
+function moveNub(dx, dy) {
+  nubEl.style.transform = `translate(-50%,-50%) translate(${dx}px,${dy}px)`;
+}
+
+// Called once per fixed step: fold pending edges + keyboard axes into `input`.
+export function pollInput(dt) {
+  input.punchPressed = state.pendingPunchDown; state.pendingPunchDown = false;
+  input.punchReleased = state.pendingPunchUp; state.pendingPunchUp = false;
+  input.jumpPressed = state.pendingJump; state.pendingJump = false;
+  input.grabPressed = state.pendingGrab; state.pendingGrab = false;
+  input.interactPressed = state.pendingInteract; state.pendingInteract = false;
+
+  if (state.keys.size) {
+    let kx = 0, kz = 0;
+    if (state.keys.has('KeyA')) kx -= 1;
+    if (state.keys.has('KeyD')) kx += 1;
+    if (state.keys.has('KeyW')) kz -= 1;
+    if (state.keys.has('KeyS')) kz += 1;
+    if (state.keys.has('ArrowLeft')) input.lookDX -= 240 * dt;
+    if (state.keys.has('ArrowRight')) input.lookDX += 240 * dt;
+    if (state.keys.has('ArrowUp')) input.lookDY -= 160 * dt;
+    if (state.keys.has('ArrowDown')) input.lookDY += 160 * dt;
+    if (kx || kz) {
+      const l = Math.hypot(kx, kz);
+      input.moveX = kx / l; input.moveZ = kz / l;
+    } else if (state.stickId === -1) {
+      input.moveX = 0; input.moveZ = 0;
+    }
+  }
+
+  input.chargeTime = input.punchDown ? input.chargeTime + dt : 0;
+}
+
+// Look deltas are consumed by the camera each render frame.
+export function consumeLook() {
+  const dx = input.lookDX, dy = input.lookDY;
+  input.lookDX = 0; input.lookDY = 0;
+  return [dx, dy];
+}

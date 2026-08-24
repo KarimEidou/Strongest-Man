@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - claude/3d-destruction-game-iphone-s8m5qr
   workflow_dispatch:
 permissions:
   contents: read
