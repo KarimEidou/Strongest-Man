@@ -41,25 +41,31 @@ async function shot(name, script) {
 }
 
 // pick prop helper injected once
+// Returns null rather than undefined when a seed happens to place none of a
+// type: l[Math.min(i, -1)] is l[-1], and every caller then died on p.x, taking
+// the rest of the run down with it.
 await page.evaluate(`window.__pick = (type, i=0) => {
   const l = window.__propsReg.types[type].list.filter(p => p.alive);
-  return l[Math.min(i, l.length-1)];
+  return l.length ? l[Math.min(i, l.length-1)] : null;
 }`);
 
 await shot('pp-lamp', `(() => {
   const p = __pick('prop_streetlamp', 2);
+  if (!p) return 'none placed at this seed';
   __test.lookFrom(p.x + 6.5, 3.4, p.z + 5.5, p.x, 2.6, p.z);
   return { x: p.x, z: p.z, yaw: p.yaw };
 })()`);
 
 await shot('pp-lamp-front', `(() => {
   const p = __pick('prop_streetlamp', 2);
+  if (!p) return 'none placed at this seed';
   __test.lookFrom(p.x + 0.5, 2.6, p.z + 8.5, p.x, 2.8, p.z);
   return 1;
 })()`);
 
 await shot('pp-trafficlight', `(() => {
   const p = __pick('prop_trafficlight', 0);
+  if (!p) return 'none placed at this seed';
   const dx = Math.sin(p.yaw), dz = Math.cos(p.yaw);
   __test.lookFrom(p.x + dx * 7 + dz * 3, 3.4, p.z + dz * 7 - dx * 3, p.x + dx * 1.2, 2.7, p.z + dz * 1.2);
   return { x: p.x, z: p.z, yaw: p.yaw };
@@ -67,6 +73,7 @@ await shot('pp-trafficlight', `(() => {
 
 await shot('pp-trafficlight-side', `(() => {
   const p = __pick('prop_trafficlight', 1);
+  if (!p) return 'none placed at this seed';
   const dx = Math.sin(p.yaw), dz = Math.cos(p.yaw);
   __test.lookFrom(p.x - dz * 6 + dx * 4, 2.8, p.z + dx * 6 + dz * 4, p.x + dx * 1.0, 2.6, p.z + dz * 1.0);
   return 1;
@@ -74,6 +81,7 @@ await shot('pp-trafficlight-side', `(() => {
 
 await shot('pp-sign', `(() => {
   const p = __pick('prop_sign', 1);
+  if (!p) return 'none placed at this seed';
   const dx = Math.sin(p.yaw), dz = Math.cos(p.yaw);
   __test.lookFrom(p.x + dx * 4.5, 2.0, p.z + dz * 4.5, p.x, 1.6, p.z);
   return { x: p.x, z: p.z };
@@ -81,12 +89,14 @@ await shot('pp-sign', `(() => {
 
 await shot('pp-tree', `(() => {
   const p = __pick('prop_tree', 0);
+  if (!p) return 'none placed at this seed';
   __test.lookFrom(p.x - 4.5, 3.4, p.z + 5.5, p.x, 2.7, p.z);
   return { x: p.x, z: p.z, s: p.s };
 })()`);
 
 await shot('pp-kiosk', `(() => {
   const p = __pick('prop_kiosk', 0);
+  if (!p) return 'none placed at this seed';
   const dx = Math.sin(p.yaw), dz = Math.cos(p.yaw);
   __test.lookFrom(p.x + dx * 5 + dz * 2.2, 2.3, p.z + dz * 5 - dx * 2.2, p.x, 1.4, p.z);
   return { x: p.x, z: p.z, yaw: p.yaw };
@@ -94,6 +104,7 @@ await shot('pp-kiosk', `(() => {
 
 await shot('pp-kiosk-front', `(() => {
   const p = __pick('prop_kiosk', 1);
+  if (!p) return 'none placed at this seed';
   const dx = Math.sin(p.yaw), dz = Math.cos(p.yaw);
   __test.lookFrom(p.x + dx * 4.6, 1.9, p.z + dz * 4.6, p.x, 1.35, p.z);
   return 1;

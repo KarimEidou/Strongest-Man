@@ -9,7 +9,7 @@
 // they have actually SEEN what you can do, public opinion of you, their district
 // and the time of day — so the same NPC answers you differently before and after
 // they watch you throw a taxi.
-import { chatTurn, chatAvailable } from './groq.js';
+import { chatTurn, chatUnavailable, describeError } from './groq.js';
 import { cannedLine } from './lines.js';
 import { karmaBand } from '../ai/karma.js';
 import { save } from '../core/state.js';
@@ -30,6 +30,19 @@ const ARCHETYPE_LINE = {
   worker: 'a commuter on your way home from a shift',
   vendor: 'a shopkeeper who works this street',
   kid: 'a teenager who is out later than you should be',
+};
+
+// reputation.attitude(n) already decides how this person treats him second to
+// second — it drives whether they flee, stare or keep their distance. It was
+// being computed in talk.js and then thrown away here, which is why a terrified
+// vendor and an adoring kid produced the same neutral voice.
+const ATTITUDE_LINE = {
+  oblivious: 'He is a stranger to you. You answer him the way you would answer anyone.',
+  curious: 'You are curious about him. You would like to know if the stories are true.',
+  wary: 'You do not trust him. You keep your answers short and your distance.',
+  whisper: 'You know what he is and you talk about him behind his back. To his face you are careful.',
+  awe: 'You look up to him. Being spoken to by him is the best thing to happen to you this month.',
+  terror: 'You are frightened of him. You want this conversation over.',
 };
 
 function knowledgeLine(n) {
@@ -60,6 +73,7 @@ export function systemPrompt(n, ctx) {
     `You are ${ARCHETYPE_LINE[n.archetype] || 'a passer-by'} in a stylized low-poly city.`,
     `A man in a jacket has stopped you in ${districtName(n.x, n.z)}. It is ${clockLine(ctx.timeOfDay)}.`,
     knowledgeLine(n),
+    ATTITUDE_LINE[ctx.attitude] || ATTITUDE_LINE.oblivious,
     `Public opinion of him around here: ${KARMA_LINE[karmaBand()] || 'mixed'}.`,
     ctx.recent ? `Something people are still talking about: ${ctx.recent}.` : '',
     'Answer IN CHARACTER, out loud, as this person. One or two short sentences, under 35 words.',
@@ -77,30 +91,33 @@ export function endSession(n) { sessions.delete(n.id); }
 
 export function historyOf(n) { return sessionFor(n).history; }
 
-// Returns { text, live } — live=false means the model was unavailable and the
-// answer came from the built-in corpus, so the feature degrades instead of
-// failing.
+// Returns { text, live, reason } — live=false means the model never answered and
+// the line came from the built-in corpus, with `reason` saying why in words the
+// player can act on. Degrading silently is what made a bad key look exactly like
+// no key at all: the caller MUST show the reason.
 export async function ask(n, playerText, ctx) {
   const s = sessionFor(n);
   s.history.push({ role: 'user', content: playerText });
   while (s.history.length > MAX_TURNS * 2) s.history.shift();
 
-  if (chatAvailable()) {
-    const reply = await chatTurn([
+  let reason = chatUnavailable();
+  if (!reason) {
+    const { line, error } = await chatTurn([
       { role: 'system', content: systemPrompt(n, ctx) },
       ...s.history,
     ]);
-    if (reply) {
-      s.history.push({ role: 'assistant', content: reply });
-      return { text: reply, live: true };
+    if (line) {
+      s.history.push({ role: 'assistant', content: line });
+      return { text: line, live: true, reason: null };
     }
+    reason = describeError(error);
   }
 
   const att = ctx.attitude || 'oblivious';
   const situation = att === 'terror' ? 'talk_terror' : att === 'awe' ? 'talk_awe' : 'talk_neutral';
   const text = cannedLine(situation, karmaBand()) || cannedLine(situation, 'any') || '…';
   s.history.push({ role: 'assistant', content: text });
-  return { text, live: false };
+  return { text, live: false, reason };
 }
 
 // Roughly how long this NPC should keep gesturing: reading speed, clamped.

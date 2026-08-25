@@ -37,11 +37,33 @@ export const SURF = {
   WINDOW: 12,
 };
 
-// How many streetlamps light the ground at once. engine/citylights.js keeps the
+// How many streetlamps light the world at once. engine/citylights.js keeps the
 // nearest this many loaded, so the fragment loop is a fixed, small cost and the
-// ones that drop out are past their pool radius anyway.
-export const LAMP_SLOTS = 12;
-const POOL_R = 6.0;
+// ones that drop out are past their pool radius anyway. 16 rather than 12
+// because POOL_R doubled: a junction now has four lamps inside one pool radius
+// of the player and the old list ran out mid-crossing.
+export const LAMP_SLOTS = 16;
+// Horizontal footprint of one lamp, in metres. 6.0 was a pool that never reached
+// the asphalt — the head stands on the pavement 5.4m up and the road is 10m wide
+// (world/city.js ROAD.half), so the light died at the kerb. 12 carries it across
+// both lanes. LAMP_SOFT is the inverse-square softening radius; at roughly the
+// head height it puts the knee of the falloff level with the ground under the
+// lamp instead of below it, which is what keeps the core from blowing out.
+export const POOL_R = 12.0;
+const LAMP_SOFT = 5.5;
+// Added straight to outgoingLight, so these are linear multiples of uLampCol.
+// The ground gets twice what everything else does: it is the surface you steer
+// by, and wet asphalt bounces sodium light back up. Both are more than double the
+// old 0.17, but the number that really moved is the AREA — the old ramp was
+// already at zero 6m out, where this still delivers a fifth of the core, and it
+// delivers it to facades, benches, cars and people as well as to the tarmac.
+// Masking every lamp slot off and re-shooting the same frame: a road pool core
+// RGB(16, 34, 75) -> RGB(104, 84, 77), the facade beside the lamp
+// RGB(0, 29, 106) -> RGB(38, 28, 100), the lamp's own post RGB(1, 7, 29) ->
+// RGB(30, 15, 17). Pushed past ~0.6/0.3 the tails of neighbouring lamps stack
+// and the whole street becomes one ochre sheet with the buildings washed pink.
+const LAMP_GROUND = 0.38;
+const LAMP_SIDE = 0.19;
 
 // Shared uniform objects: onBeforeCompile hands the SAME object to every
 // material, so engine/sky.js mutates one value and the whole world follows.
@@ -140,27 +162,60 @@ vec3 smSurface(int id, vec3 wp, vec3 wn, float fade, out float sInt, out float s
 // Night lighting, such as it is: the city has no point lights and no emissive
 // maps — there is exactly one HemisphereLight and one DirectionalLight in the
 // whole scene, and adding real lights would cost a program per light count and a
-// draw-call storm on the phone this is built for. So the lamps, the windows and
-// the pools of light they throw are all one additive term in the shared shader,
-// scaled by uWorld.y — the 0..1 night factor engine/sky.js has been writing
-// every frame since it was added, with nothing reading it until now.
-const NIGHT_GLSL = `
+// draw-call storm on the phone this is built for (see engine/quality.js). So the
+// lamps, the windows and the pools of light they throw are all one additive term
+// in the shared shader, scaled by uWorld.y — the 0..1 night factor engine/sky.js
+// writes every frame.
+//
+// This half of it is surface-agnostic and lives on its own so the character
+// material can reuse it: same GLSL, same uLamps array, no second copy and no
+// second set of uniforms. See applyLampLighting below.
+export const LAMP_GLSL = `
 uniform vec4 uLamps[${LAMP_SLOTS}];
 uniform vec3 uLampCol;
 
-float smLampPool(vec3 wp) {
+// One accumulated lamp term with a real N·L against each HEAD. uLamps[i].y — the
+// 5.4m gooseneck height engine/citylights.js has always uploaded and that
+// nothing read until now — is what makes this light instead of a decal: the road
+// under a lamp takes a full dot, the facade beside it a grazing one, and a
+// person walking through the pool is lit from above and to the side like
+// everything around him. The old term was max(wn.y, 0.0), i.e. UPWARD-FACING
+// GROUND ONLY, which is why a player standing directly under a streetlamp was
+// shaded exactly as if it were switched off.
+float smLampLight(vec3 wp, vec3 wn) {
   float k = 0.0;
   for (int i = 0; i < ${LAMP_SLOTS}; i++) {
     if (uLamps[i].w < 0.5) continue;
-    // squared linear falloff: bright right under the head, gone by POOL_R.
-    // Smoothstep on the SQUARED distance was nearly flat across the whole pool
-    // and the overlaps stacked into one continuous orange carpet.
-    float f = max(0.0, 1.0 - length(wp.xz - uLamps[i].xz) / ${POOL_R.toFixed(1)});
-    k += f * f;
+    vec3 d = uLamps[i].xyz - wp;
+    float dd = max(dot(d, d), 1e-4);
+    float nl = max(dot(wn, d) * inversesqrt(dd), 0.0);
+    // A soft-windowed inverse square, not a ramp. The old squared LINEAR falloff
+    // was fine at POOL_R 6; stretched to 12 it is nearly flat across the middle
+    // 8m, and with the lamps ~18m apart the tails stack into exactly the
+    // continuous orange carpet the earlier smoothstep-on-squared-distance
+    // attempt produced. 1/(1 + d²/K²) keeps a bright core under the head and a
+    // thin tail instead, and the (1 - r²/R²)³ window drives the value AND its
+    // slope to zero at the rim, so a lamp leaving the slot list cannot pop.
+    // Cubed, not squared: the far kerb is 10m out and the next lamp 18m, barely
+    // a factor of two between "reaches the road" and "merges with the
+    // neighbour". Squared washed the street flat; cubed holds 28% of the core
+    // at the centre line and 2% by 9m. r is horizontal, so the pool's footprint
+    // on the ground is exactly POOL_R whatever the head height.
+    float w = max(0.0, 1.0 - dot(d.xz, d.xz) * ${(1 / (POOL_R * POOL_R)).toFixed(6)});
+    k += nl * w * w * w / (1.0 + dd * ${(1 / (LAMP_SOFT * LAMP_SOFT)).toFixed(6)});
   }
-  return min(k, 1.0);
+  return min(k, 1.25);
 }
 
+// Everything that is not road, lens or window: walls, props, cars, trees,
+// debris — and characters, through makeCharacterMaterial reusing this file.
+vec3 smLampGlow(vec3 wp, vec3 wn) {
+  return uLampCol * smLampLight(wp, wn) * ${LAMP_SIDE.toFixed(2)};
+}
+`;
+
+// The world material's own share: the two emissive ids, and the hotter ground.
+const NIGHT_GLSL = `
 vec3 smNightGlow(int id, vec3 wp, vec3 wn) {
   if (id == 11) return uLampCol * 1.45;                    // the lens itself
   if (id == 12) {                                          // windows: some rooms lit
@@ -169,35 +224,36 @@ vec3 smNightGlow(int id, vec3 wp, vec3 wn) {
     return uLampCol * step(0.44, cell) * (0.22 + cell * 0.38);
   }
   // the ground under the lamps — pools, not a wash, so the street still reads
-  if (id == 1 || id == 3 || id == 2) return uLampCol * smLampPool(wp) * 0.17 * max(wn.y, 0.0);
-  return vec3(0.0);
+  if (id == 1 || id == 3 || id == 2) return uLampCol * smLampLight(wp, wn) * ${LAMP_GROUND.toFixed(2)};
+  return smLampGlow(wp, wn);
 }
 `;
 
-export function makeWorldMaterial(opts = {}) {
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uInterior = worldUniforms.uInterior;
-    shader.uniforms.uSkyTint = worldUniforms.uSkyTint;
-    shader.uniforms.uWorld = worldUniforms.uWorld;
-    shader.uniforms.uLamps = worldUniforms.uLamps;
-    shader.uniforms.uLampCol = worldUniforms.uLampCol;
+// Attach the lamp pools to any material whose shader three is about to compile.
+// It owns the vWPos/vWNormal varyings, the uniform bindings and the additive
+// term, so the world material and the (separately authored) skinned character
+// material differ only in the `glow` expression they hand in.
+//
+// CALL IT LAST. Both injection points prepend, so whatever is inserted last ends
+// up FIRST in the fragment prelude — which is how smLampLight comes out declared
+// above the world's smNightGlow that calls it — and LAST at opaque_fragment,
+// after the interior override has had its say about outgoingLight.
+//
+// The vertex hook sits on project_vertex, which in every three vertex shader
+// comes after the skinning chunks, so `transformed` and `objectNormal` are
+// already posed by the time this reads them. instanceMatrix has to be applied by
+// hand: worldpos_vertex is guarded on envmap/shadow defines, so three's own
+// worldPosition cannot be relied on to exist.
+export function applyLampLighting(shader, glow = 'smLampGlow(vWPos, normalize(vWNormal))') {
+  shader.uniforms.uWorld = worldUniforms.uWorld;
+  shader.uniforms.uLamps = worldUniforms.uLamps;
+  shader.uniforms.uLampCol = worldUniforms.uLampCol;
 
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>
-attribute float aInterior;
-attribute float aSurface;
-varying float vInterior;
-varying float vSurface;
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>
 varying vec3 vWPos;
 varying vec3 vWNormal;`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-vInterior = aInterior;
-vSurface = aSurface;`)
-      // objectNormal is still in scope here, and instanceMatrix has to be
-      // applied by hand — worldpos_vertex is guarded on envmap/shadow defines
-      // so we cannot rely on three's own worldPosition existing.
-      .replace('#include <project_vertex>', `#include <project_vertex>
+    .replace('#include <project_vertex>', `#include <project_vertex>
 {
   vec4 smWp = vec4(transformed, 1.0);
   vec3 smWn = objectNormal;
@@ -209,15 +265,38 @@ vSurface = aSurface;`)
   vWNormal = normalize(mat3(modelMatrix) * smWn);
 }`);
 
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>
+uniform vec4 uWorld;
+varying vec3 vWPos;
+varying vec3 vWNormal;
+${LAMP_GLSL}`)
+    .replace('#include <opaque_fragment>', `outgoingLight += (${glow}) * uWorld.y;
+#include <opaque_fragment>`);
+}
+
+export function makeWorldMaterial(opts = {}) {
+  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uInterior = worldUniforms.uInterior;
+    shader.uniforms.uSkyTint = worldUniforms.uSkyTint;
+
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>
+attribute float aInterior;
+attribute float aSurface;
+varying float vInterior;
+varying float vSurface;`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+vInterior = aInterior;
+vSurface = aSurface;`);
+
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform vec3 uInterior;
 uniform vec3 uSkyTint;
-uniform vec4 uWorld;
 varying float vInterior;
 varying float vSurface;
-varying vec3 vWPos;
-varying vec3 vWNormal;
 ${NOISE_GLSL}${SURFACE_GLSL}${NIGHT_GLSL}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 float smSpecInt = 0.0;
@@ -246,12 +325,67 @@ reflectedLight.directSpecular *= smSpecInt;
       .replace(
         '#include <opaque_fragment>',
         `outgoingLight = mix( outgoingLight, diffuseColor.rgb * uInterior * 3.2, vInterior );
-outgoingLight += smNightGlow( int( vSurface + 0.5 ), vWPos, normalize( vWNormal ) ) * uWorld.y;
 #include <opaque_fragment>`,
       );
+
+    // last, per the ordering note on applyLampLighting. A revealed interior is
+    // masked out of it: the lamp is on the far side of the wall, and now that
+    // every surface id takes lamp light — not just the three ground ones — a
+    // smashed-open room would otherwise glow orange from the street outside.
+    applyLampLighting(shader,
+      'smNightGlow( int( vSurface + 0.5 ), vWPos, normalize( vWNormal ) ) * ( 1.0 - vInterior )');
   };
   // one program for every world material
-  mat.customProgramCacheKey = () => 'sm-world-v3';
+  mat.customProgramCacheKey = () => 'sm-world-v4';
+  return mat;
+}
+
+// The characters — player, 48 townsfolk, monsters — are skinned GLB meshes and
+// never went through makeWorldMaterial, so they missed everything it does. Most
+// of that they should miss: they have no aSurface attribute and want no
+// procedural brickwork. But two things they very much needed.
+//
+// The lamps: smNightGlow only ever ran on the world material, so a man standing
+// directly under a streetlamp at midnight was shaded exactly as if it were off —
+// which, with the old night keys, meant a black silhouette. applyLampLighting is
+// factored for precisely this: same GLSL, same uLamps array, no second copy.
+//
+// And a specular lobe with a sky-tinted rim, at cloth/skin strength rather than
+// the world's per-surface table. Lambert alone gives a figure no highlight and no
+// silhouette separation from the wall behind it, which is most of why the models
+// read as flat next to the buildings.
+const CHAR_SPEC = 0.17, CHAR_POW = 26.0, CHAR_RIM = 0.55;
+
+export function makeCharacterMaterial(src) {
+  const mat = new THREE.MeshLambertMaterial({
+    map: src?.map || null,
+    color: src?.color ? src.color.clone() : new THREE.Color(1, 1, 1),
+  });
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uSkyTint = worldUniforms.uSkyTint;
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+uniform vec3 uSkyTint;`)
+      // same trick the world material uses: Lambert's struct carries an unused
+      // specularStrength, so it is free storage for the exponent
+      .replace('#include <lights_lambert_fragment>', `#include <lights_lambert_fragment>
+material.specularStrength = ${CHAR_POW.toFixed(1)};`)
+      .replace(
+        'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
+        `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );
+	vec3 smHalf = normalize( directLight.direction + geometryViewDir );
+	reflectedLight.directSpecular += directLight.color * dotNL *
+		pow( saturate( dot( geometryNormal, smHalf ) ), material.specularStrength ) * ${CHAR_SPEC.toFixed(2)};`,
+      )
+      .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+{
+  float smFres = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 4.0);
+  reflectedLight.indirectDiffuse += uSkyTint * smFres * ${CHAR_RIM.toFixed(2)};
+}`);
+    applyLampLighting(shader);   // last, per the ordering note above
+  };
+  // one program for every character, skinned or not
+  mat.customProgramCacheKey = () => 'sm-char-v1';
   return mat;
 }
 

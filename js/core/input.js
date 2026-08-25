@@ -141,10 +141,14 @@ function moveNub(dx, dy) {
 
 // test hook: scripted stick input (Playwright drives the character with this)
 let driveOverride = null;
+let driveCleared = false;
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     if (window.__test) {
-      window.__test.drive = (x, z) => { driveOverride = x === null ? null : { x, z }; };
+      window.__test.drive = (x, z) => {
+        driveOverride = x === null ? null : { x, z };
+        if (x === null) driveCleared = true;
+      };
       window.__test.press = (btn) => {
         if (btn === 'punchDown') { state.pendingPunchDown = true; input.punchDown = true; }
         if (btn === 'punchUp') { state.pendingPunchUp = true; input.punchDown = false; }
@@ -173,6 +177,11 @@ export function pollInput(dt) {
     return;
   }
   if (driveOverride) { input.moveX = driveOverride.x; input.moveZ = driveOverride.z; }
+  // Releasing the scripted stick has to actually stop him. moveX/moveZ are
+  // LATCHED by whoever last wrote them — the touch stick zeroes them when the
+  // finger lifts — so `drive(null)` left the character sprinting for the rest of
+  // the session, which silently walked every later assertion out of position.
+  else if (driveCleared) { input.moveX = 0; input.moveZ = 0; driveCleared = false; }
   input.punchPressed = state.pendingPunchDown; state.pendingPunchDown = false;
   input.punchReleased = state.pendingPunchUp; state.pendingPunchUp = false;
   input.jumpPressed = state.pendingJump; state.pendingJump = false;

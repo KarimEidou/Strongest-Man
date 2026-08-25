@@ -15,14 +15,19 @@ export const TIERS = {
   low: {
     dpr: 1.25, detail: 0, shadows: false, shadowSize: 0, shadowEvery: 0,
     cloudLayers: 1, fbm: 2, godrays: 'off', godrayScale: 0, characterShadows: false,
+    propShadows: false, pbr: false,
   },
   medium: {
     dpr: 1.75, detail: 0.65, shadows: 'pcf', shadowSize: 1024, shadowEvery: 6,
     cloudLayers: 1, fbm: 3, godrays: 'off', godrayScale: 0, characterShadows: false,
+    propShadows: true, pbr: true,
   },
   high: {
-    dpr: 2, detail: 1, shadows: 'pcf', shadowSize: 2048, shadowEvery: 3,
+    // 3072 rather than 2048: the ortho covers 68m and the extra texels are what
+    // let a streetlamp's shadow read as a pole instead of a smear.
+    dpr: 2, detail: 1, shadows: 'pcf', shadowSize: 3072, shadowEvery: 3,
     cloudLayers: 2, fbm: 4, godrays: 'full', godrayScale: 1, characterShadows: true,
+    propShadows: true, pbr: true,
   },
 };
 

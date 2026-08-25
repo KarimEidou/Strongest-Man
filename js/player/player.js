@@ -114,17 +114,27 @@ export function createPlayer(scene, cam) {
 
     p.loco.update(dt, p.speed);
 
-    // sleeper-build reveal: winding a charge swells forearms/shoulders — the
-    // stretched sleeve IS the fabric-strain read. Permanent baseline rises
-    // with tear stage.
-    const base = 1 + p.tearStage * 0.06;
-    const swell = base + p.charge * 0.38;
-    const armSwell = base + p.charge * 0.22;
-    for (const b of [p.bones.lFore, p.bones.rFore]) if (b) b.scale.setScalar(damp(b.scale.x, swell, 12, dt));
-    for (const b of [p.bones.lArm, p.bones.rArm]) if (b) b.scale.setScalar(damp(b.scale.x, armSwell, 12, dt));
-    if (p.bones.spine2) {
-      const s = 1 + p.charge * 0.1 + p.tearStage * 0.03;
-      p.bones.spine2.scale.x = damp(p.bones.spine2.scale.x, s, 12, dt);
+    // The sleeper-build reveal used to SCALE bones — forearms to 1.38, upper arms
+    // to 1.22, Spine02.x to 1.10, all driven by p.charge. It is gone. Charge is
+    // zeroed the frame the button releases (player/combat.js) and cannot be held
+    // while sprinting, so the man visibly deflated the instant you ran: "my arms
+    // grow when I load a punch" and "my whole body shrinks when I sprint" were one
+    // bug, not two. Overall size is PLAYER_SCALE and nothing else touches it.
+    //
+    // The strain read is a POSE instead: shoulders rolling back, elbows flaring,
+    // chest lifting, with a fine tremor at full wind. Twists rather than an
+    // authored pose because combat.js owns pose.set() for the carry styles and
+    // runs after this — an additive twist layers under that instead of fighting
+    // it, and is zero-cost at charge 0.
+    if (p.charge > 0.02) {
+      const c = p.charge;
+      const tremor = Math.sin(performance.now() * 0.031) * 0.012 * c * c;
+      p.poseLayer.twist('RightArm', -0.12 * c + tremor, 0, -0.24 * c);
+      p.poseLayer.twist('LeftArm', -0.12 * c - tremor, 0, 0.24 * c);
+      p.poseLayer.twist('RightForeArm', -0.38 * c, 0, 0);
+      p.poseLayer.twist('LeftForeArm', -0.38 * c, 0, 0);
+      p.poseLayer.twist('Spine02', -0.09 * c, 0, 0);
+      p.poseLayer.twist('neck', -0.05 * c, 0, 0);
     }
 
     // feed the camera (suspended while a test drives it)
@@ -137,14 +147,36 @@ export function createPlayer(scene, cam) {
   // that never retires pins every weight at 15% and the run never plays.
   window.__test.locoWeights = () => p.loco.weights();
   window.__test.playerStats = () => ({
-    x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2),
+    x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2), yaw: +p.yaw.toFixed(3),
     ground: +groundHeight(p.x, p.z).toFixed(2), speed: +p.speed.toFixed(2), grounded: p.grounded,
     charge: +p.charge.toFixed(3), carrySlow: p.carrySlow,
   });
-  // #12 regression probe: world height must not change between animation states
+  // #12 regression probe: world size must not change between animation states.
+  // Height alone was not enough — the charge swell was 38% on the forearms and 10%
+  // on the chest, none of which moves the top of the head, so it measured clean
+  // through the whole bug. All three axes now.
   window.__test.playerHeight = () => {
     const b = new THREE.Box3().setFromObject(root);
     return +(b.max.y - b.min.y).toFixed(4);
+  };
+  window.__test.playerBounds = () => {
+    const b = new THREE.Box3().setFromObject(root);
+    return {
+      w: +(b.max.x - b.min.x).toFixed(4),
+      h: +(b.max.y - b.min.y).toFixed(4),
+      d: +(b.max.z - b.min.z).toFixed(4),
+    };
+  };
+  // Bone scale is the thing that must never move. Report the largest deviation
+  // from 1 anywhere in the skeleton, so a probe can assert it outright.
+  window.__test.boneScaleDrift = () => {
+    let worst = 0, name = '';
+    root.traverse((o) => {
+      if (!o.isBone) return;
+      const d = Math.max(Math.abs(o.scale.x - 1), Math.abs(o.scale.y - 1), Math.abs(o.scale.z - 1));
+      if (d > worst) { worst = d; name = o.name; }
+    });
+    return { worst: +worst.toFixed(5), bone: name };
   };
 
   return { ...pAccessors(p), p, fixedUpdate, frameUpdate };

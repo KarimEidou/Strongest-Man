@@ -93,7 +93,10 @@
     <label class="srow">Sound <input id="set-audio" type="checkbox"></label>
     <div class="srow key-row">
       <div>Groq API key <span class="hint">optional — powers live NPC dialogue. Stored only on this device, sent only to api.groq.com. Without it NPCs use their built-in lines.</span></div>
-      <input id="set-groq" type="password" placeholder="gsk_..." autocomplete="off">
+      <div class="key-test">
+        <input id="set-groq" type="password" placeholder="gsk_..." autocomplete="off">
+        <button id="btn-groq-test" type="button" class="mbtn ghost">TEST KEY</button>
+      </div>
       <div id="groq-status" class="hint"></div>
     </div>
     <div class="srow btnrow">

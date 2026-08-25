@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { initDebug, perfFrame, addSimTime, profile, flags } from './core/debug.js';
 import { loadState, game, setGameState, settings, persist } from './core/state.js';
-import { createLoop } from './core/loop.js';
+import { createLoop, FIXED_DT } from './core/loop.js';
 import { pollInput } from './core/input.js';
 import { createRenderer } from './engine/renderer.js';
 import { initSky } from './engine/sky.js';
@@ -119,7 +119,7 @@ window.__reputation = reputation;
 loadingProgress(0.97, 'lighting…');
 const { initShadows, setCharacterCasting } = await import('./engine/shadows.js');
 const { initGodrays } = await import('./engine/godrays.js');
-const shadows = initShadows(renderer, scene, sky.sun, buildingsReg, traffic, tierOf(flags.quality || settings.quality));
+const shadows = initShadows(renderer, scene, sky.sun, buildingsReg, traffic, tierOf(flags.quality || settings.quality), propsReg);
 const godrays = initGodrays(renderer, cam.camera);
 const qualityCtx = {
   renderer, scene, camera: cam.camera, sky, shadows, godrays,
@@ -265,6 +265,20 @@ createLoop({ fixed, frame, render });
 
 // expose plumbing for later phases + tests
 window.__test.simTime = () => simTime;
+// Pump the simulation without waiting on the display. Under software rendering a
+// frame costs ~80ms, and core/loop.js caps catch-up at MAX_STEPS, so the world
+// advances at about a seventh of real time — a two-second animation takes fifteen
+// seconds of wall clock to observe and every timing assertion becomes a guess.
+// This runs the same fixed+frame systems the loop runs, in order, as fast as the
+// CPU will go. Test-only; nothing in the game calls it.
+window.__test.step = (seconds, withFrame = true) => {
+  const n = Math.max(1, Math.round(seconds * 60));
+  for (let i = 0; i < n; i++) {
+    fixed(FIXED_DT);
+    if (withFrame) frame(FIXED_DT, 1);
+  }
+  return +simTime.toFixed(3);
+};
 // ?prof=1: per-system average ms per call over the window since the last read
 window.__test.profile = () => {
   const out = {};

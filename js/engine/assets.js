@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { makeCharacterMaterial } from './materials.js';
 
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
@@ -26,11 +27,20 @@ export async function loadModels(onProgress) {
       if (o.isMesh) {
         o.frustumCulled = true;
         if (o.material) {
-          // swap PBR for cheap Lambert, keep the baked texture/color
           const src = o.material;
-          const mat = new THREE.MeshLambertMaterial({ map: src.map || null, color: src.color?.clone() || new THREE.Color(1, 1, 1) });
           if (src.map) src.map.colorSpace = THREE.SRGBColorSpace;
-          o.material = mat;
+          // These GLBs carry a baked base-colour texture and NOTHING else — no
+          // normal, roughness, metalness or occlusion map anywhere in the set,
+          // and a metalness FACTOR of 1.0 with no map, which is why swapping the
+          // PBR material out was right in the first place (MeshStandard would
+          // render them near-black without an environment). So the upgrade is not
+          // "keep the PBR", it is to give the characters the same lighting model
+          // the city already has: a specular lobe, a sky rim, and the streetlamps.
+          // Static props keep the plain Lambert here — world/props.js rebuilds
+          // them on the shared world material, which needs the raw map off this.
+          o.material = o.isSkinnedMesh
+            ? makeCharacterMaterial(src)
+            : new THREE.MeshLambertMaterial({ map: src.map || null, color: src.color?.clone() || new THREE.Color(1, 1, 1) });
         }
       }
     });

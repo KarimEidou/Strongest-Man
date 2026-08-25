@@ -257,7 +257,23 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
           if (car.mode === 'flying') { explode(car); continue; }
           car.vy = 0;
           car.vx *= 0.86; car.vz *= 0.86; car.wspin *= 0.85;
-          if (Math.hypot(car.vx, car.vz) < 0.4) { car.mode = car.exploded ? 'wreck' : 'drive'; snapToCircuit(car); }
+          if (Math.hypot(car.vx, car.vz) < 0.4) {
+            // A car you threw does not dust itself off and rejoin the traffic. It
+            // used to: any 'loose' car that stopped moving went back to 'drive'
+            // and snapToCircuit teleported it onto the nearest lane, upright and
+            // driving, however far across the city it had landed. Only a car that
+            // was merely nudged goes back to work.
+            if (car.exploded || car.lastHitByPlayer || car.wasHeld) {
+              car.mode = 'wreck';
+              // it settles on whatever corner it came down on
+              car.restRoll = (rand() - 0.5) * 0.5;
+              car.restPitch = (rand() - 0.5) * 0.35;
+              car.squash = Math.min(car.squash ?? 1, 0.82);
+            } else {
+              car.mode = 'drive';
+              snapToCircuit(car);
+            }
+          }
         }
         // smash through walls while fast
         if ((car.vx * car.vx + car.vz * car.vz) > 60) {
@@ -368,7 +384,8 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
         car.mesh.quaternion.copy(car.carryQuat);
       } else {
         car.visYaw = dampAngle(car.visYaw, car.yaw, 18, dt);
-        car.mesh.rotation.set(0, car.visYaw, 0);
+        // a wreck keeps the tilt it came to rest on; anything still driving is flat
+        car.mesh.rotation.set(car.restPitch || 0, car.visYaw, car.restRoll || 0);
       }
       const sq = damp(car.mesh.scale.y, car.squash, 8, dt);
       car.mesh.scale.set(1, sq, 1);
@@ -378,6 +395,14 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
   const hooks = {
     onPunch(f, radius, impulse, charge) {
       for (const car of list) {
+        // Never punch the car you are holding. This loop had no mode guard, unlike
+        // gapAhead, separateCars and physics/collide.js — and a held car is inside
+        // the punch sphere by construction, since the sphere is one metre in front
+        // of the man whose hands it is in. Setting it 'loose' handed the same car
+        // to the world collider while combat kept pinning it to his palms every
+        // frame, so capsuleVsWorld ejected him 2.7m per fixed step, forever: the
+        // "punching with a car launches me across the map" report.
+        if (car.mode === 'held' || car.mode === 'flying') continue;
         const dx = car.x - f.x, dz = car.z - f.z;
         const d = Math.hypot(dx, dz);
         if (d > Math.max(radius, 2.6) + 1.5) continue;
@@ -417,6 +442,10 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       car.speed = 0;
       return {
         kind: 'entity', car, style: 'carry_overhead',
+        // combat.js drops the carry when alive() goes false. The car handle used to
+        // omit it entirely, so `undefined !== false` and a car that stopped being
+        // held stayed pinned to the hands regardless.
+        alive: () => car.alive !== false && car.mode === 'held',
         // a car's origin is its wheel-contact plane, so the palms have to meet the
         // chassis underside — otherwise the whole body rides a clearance above them
         gripDrop: CAR_CLEARANCE,
@@ -428,6 +457,7 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
           car.carryQuat = quat;
         },
         launch: (from, vx, vy, vz) => {
+          car.wasHeld = true;          // it never drives again, see the landing branch
           car.mode = 'flying';
           car.carryQuat = null;
           car.x = from.x; car.y = from.y + 1; car.z = from.z;

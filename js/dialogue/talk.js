@@ -5,7 +5,7 @@
 import { on, EV } from '../core/events.js';
 import { cannedLine } from './lines.js';
 import { say, bubblesFrame } from './bubbles.js';
-import { cachedLine, requestLine, groqTick, groqAvailable, chatAvailable, chatBusy } from './groq.js';
+import { cachedLine, requestLine, groqTick, groqAvailable, chatUnavailable, chatBusy } from './groq.js';
 import { ask, endSession, speakDuration, historyOf } from './conversation.js';
 import { karmaBand } from '../ai/karma.js';
 import { neighbors } from '../ai/crowd.js';
@@ -140,8 +140,17 @@ Line:`;
   // ---- TALK: open a real conversation with whoever is in front of you
   const chat = {
     el: null, log: null, form: null, input: null, who: null, hint: null,
-    npc: null,
+    npc: null, live: false,
   };
+
+  // The one place the player is told the model did not answer. Silence here is
+  // exactly what made a rejected key indistinguishable from having no key: the
+  // reply still arrived, it was just canned and unrelated to what they typed.
+  function showHint(reason) {
+    if (!chat.hint) return;
+    chat.hint.textContent = reason || '';
+    chat.hint.classList.toggle('hidden', !reason);
+  }
 
   function bindChat() {
     if (chat.el) return;
@@ -176,8 +185,8 @@ Line:`;
     chat.log.textContent = '';
     chat.who.textContent = (n.archetype || 'stranger').toUpperCase();
     chat.el.hidden = false;
-    chat.hint.classList.toggle('hidden', chatAvailable());
-    if (!chatAvailable()) chat.hint.textContent = 'No API key set — replies come from built-in lines. Add a Groq key in Settings.';
+    chat.live = false;
+    showHint(chatUnavailable());
     for (const m of historyOf(n)) line(m.role === 'user' ? 'you' : 'them', m.content);
     npcSys.sys.beginTalk?.(n);
     cam.frameTwoShot(player.p, n);
@@ -206,13 +215,17 @@ Line:`;
     chat.input.value = '';
     line('you', text);
     const pending = line('them pending', '…');
-    const { text: reply } = await ask(n, text, {
+    const { text: reply, live, reason } = await ask(n, text, {
       timeOfDay: game.timeOfDay,
       attitude: reputation.attitude(n),
       recent: lastEvent,
     });
     if (chat.npc !== n) return;              // they died / you walked off
-    pending.className = 'them';
+    chat.live = live;
+    showHint(live ? null : reason);
+    // A fallback line reads differently in the log too, so the difference is
+    // visible even after the hint scrolls out of mind.
+    pending.className = live ? 'them' : 'them canned';
     pending.textContent = reply;
     chat.log.scrollTop = chat.log.scrollHeight;
     // the physical half: they stop, face you, and visibly say it
@@ -232,7 +245,14 @@ Line:`;
   // A conversation cannot survive the city coming apart around it.
   let lastEvent = '';
   on(EV.BUILDING_COLLAPSED, () => { lastEvent = 'a building came down in the street'; interrupt(); });
-  on(EV.MONSTER_SPAWNED, () => { lastEvent = 'a monster walked in out of the fog'; interrupt(); });
+  // ...but only when it is coming apart HERE. Spawn frequency is roughly three
+  // times what it was, so an unconditional interrupt ended every conversation in
+  // the city on a timer. 45m is the monster_spot bark radius above: inside it
+  // somebody can see the thing, outside it nothing has happened to them yet.
+  on(EV.MONSTER_SPAWNED, ({ monster }) => {
+    lastEvent = 'a monster walked in out of the fog';
+    if (monster && Math.hypot(monster.x - player.p.x, monster.z - player.p.z) < 45) interrupt();
+  });
   on(EV.CAR_EXPLODED, () => { lastEvent = 'a car went up like a bomb'; });
   on(EV.MONSTER_DIED, () => { lastEvent = 'someone killed a monster with their bare hands'; });
   on(EV.NPC_DIED, ({ npc }) => { if (chat.npc === npc) closeChat(false); });
@@ -257,6 +277,9 @@ Line:`;
   };
   window.__test.chatState = () => ({
     open: !!chat.npc,
+    live: chat.live,
+    hint: chat.hint ? chat.hint.textContent : null,
+    hintShown: chat.hint ? !chat.hint.classList.contains('hidden') : false,
     npcState: chat.npc?.state ?? null,
     speakT: +(chat.npc?.speakT ?? 0).toFixed(2),
     npcSpeed: +(chat.npc?.speed ?? 0).toFixed(2),

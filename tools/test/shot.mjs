@@ -32,23 +32,50 @@ const vw = parseInt(process.env.VW || '956', 10), vh = parseInt(process.env.VH |
 const page = await browser.newPage({ viewport: { width: vw, height: vh }, deviceScaleFactor: 2 });
 
 const errors = [];
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+// A stubbed 4xx/5xx makes chromium log "Failed to load resource" on the console.
+// That is the browser reporting a status code, not the application throwing, and
+// the whole point of the 401/429 modes is to exercise those statuses — so the
+// network log is not an error when we asked for it.
+// The URL is not in the message text, only in its location.
+const stubNoise = (m) => process.env.GROQSTUB
+  && /Failed to load resource/.test(m.text())
+  && /groq/i.test(`${m.text()} ${m.location()?.url || ''}`);
+page.on('console', (m) => { if (m.type() === 'error' && !stubNoise(m)) errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
 
-// GROQSTUB=slow|429 fakes api.groq.com so client behavior is testable offline
+// GROQSTUB=ok|slow|401|429|dead fakes api.groq.com so client behaviour is
+// testable offline. The client probes /models once a session to resolve a live
+// model id, so the stub has to answer that too or every mode degrades into the
+// no-catalogue path and the test measures the wrong thing.
+//   ok    200, instantly            — the live path, end to end
+//   slow  200 after 3s              — the pending "…" and the 15s budget
+//   401   rejected key              — must be reported, never backed off
+//   429   rate limited              — must back off the BARKS only
+//   dead  404 on the first model id — must walk the list inside one turn
 let groqCalls = 0;
+const STUB_LINE = 'Stubbed line from the model.';
 if (process.env.GROQSTUB) {
+  const mode = process.env.GROQSTUB;
   await page.route('**/api.groq.com/**', async (route) => {
     groqCalls++;
-    if (process.env.GROQSTUB === '429') {
-      await route.fulfill({ status: 429, headers: { 'retry-after': '30' }, body: '{}' });
+    const url = route.request().url();
+    if (url.includes('/models')) {
+      if (mode === '401') { await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: { message: 'Invalid API Key' } }) }); return; }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: [{ id: 'llama-3.3-70b-versatile' }, { id: 'llama-3.1-8b-instant' }] }),
+      });
       return;
     }
-    await new Promise((res) => setTimeout(res, 3000));
+    if (mode === '429') { await route.fulfill({ status: 429, headers: { 'retry-after': '30' }, contentType: 'application/json', body: '{}' }); return; }
+    if (mode === '401') { await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: { message: 'Invalid API Key' } }) }); return; }
+    if (mode === 'dead' && groqCalls < 3) { await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: { message: 'model_not_found' } }) }); return; }
+    if (mode === 'slow') await new Promise((res) => setTimeout(res, 3000));
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ choices: [{ message: { content: 'Stubbed line from the model.' } }] }),
+      body: JSON.stringify({ choices: [{ message: { content: STUB_LINE } }] }),
     });
   });
   await page.addInitScript(() => { try { localStorage.setItem('sm_groq_key', 'gsk_test'); } catch {} });

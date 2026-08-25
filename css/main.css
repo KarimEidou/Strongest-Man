@@ -209,6 +209,10 @@ button { font: inherit; color: inherit; }
 #chat-log .them { color: var(--ink); }
 #chat-log .them::before { content: "— "; opacity: 0.5; }
 #chat-log .pending { opacity: 0.55; font-style: italic; }
+/* A built-in line, not an answer: dimmer, and marked, so the player can tell at
+   a glance which replies actually came from the model. */
+#chat-log .them.canned { color: var(--blue-bright); opacity: 0.8; }
+#chat-log .them.canned::before { content: "— "; opacity: 0.5; }
 #chat-form { display: flex; gap: 6px; }
 #chat-input {
   flex: 1 1 auto; min-width: 0;
@@ -294,6 +298,15 @@ button { font: inherit; color: inherit; }
   background: #091430; color: var(--ink); font-size: 14px;
   -webkit-user-select: text; user-select: text;
 }
+/* The key belongs to the owner's device, so the only way to diagnose it is from
+   the owner's device: the field and its one-shot test live on the same row. */
+.key-test { display: flex; align-items: flex-start; gap: 8px; }
+.key-test input[type=password] { flex: 1 1 auto; min-width: 0; }
+#btn-groq-test {
+  flex: none; margin-top: 8px; padding: 10px 14px;
+  font-size: 12px; letter-spacing: 1px; border-radius: 8px;
+}
+#btn-groq-test[disabled] { opacity: 0.5; }
 .hint { display: block; font-size: 11px; opacity: 0.7; margin-top: 3px; font-weight: 400; }
 .btnrow { text-align: center; margin-top: 20px; }
 #pause-panel .mbtn { display: block; margin: 12px auto; min-width: 220px; }

@@ -30,13 +30,21 @@ export function createLocomotion(root, opts = {}) {
 
   let oneshot = null;
   let oneshotDone = null;
+  // A HELD one-shot is never retired. Death needs this: `clampWhenFinished` makes
+  // three pause the action on its last frame — and then fire 'finished', which the
+  // listener below turned into a fadeOut(0.12). The die pose bled away, the ducked
+  // locomotion weights damped back to idle = 1, and the corpse stood up about a
+  // second after it hit the ground. Holding pins the clip at weight 1 and drives
+  // every locomotion weight to zero instead of 15%, so nothing underneath it can
+  // surface. reset() is the only way out.
+  let oneshotHeld = false;
 
   // A LoopOnce action ends by setting `enabled = false` — it only PAUSES when
   // clampWhenFinished is on. Watching for `paused` alone therefore never retired
   // an unclamped one-shot (every punch and every throw), and a one-shot that is
   // never retired pins all locomotion weights at 15% below, permanently, so
   // sprinting can no longer reach the run clip. The mixer's own event is exact.
-  mixer.addEventListener('finished', (e) => { if (e.action === oneshot) finishOneshot(); });
+  mixer.addEventListener('finished', (e) => { if (e.action === oneshot && !oneshotHeld) finishOneshot(); });
 
   function update(dt, speed) {
     // pick surrounding pair, crossfade by position between breakpoints
@@ -53,19 +61,20 @@ export function createLocomotion(root, opts = {}) {
       let target = 0;
       if (a === lo) target = 1 - t;
       if (a === hi) target = Math.max(target, t);
-      if (oneshot) target *= 0.15; // locomotion ducks under a one-shot
+      if (oneshot) target *= oneshotHeld ? 0 : 0.15; // locomotion ducks under a one-shot
       a.action.setEffectiveWeight(damp(a.action.getEffectiveWeight(), target, 14, dt));
       if (a.native) a.action.setEffectiveTimeScale(clamp(speed / a.native, 0.75, 1.5));
     }
     mixer.update(dt);
     // belt-and-braces: the 'finished' listener above is the real retirement path
-    if (oneshot && (oneshot.paused || !oneshot.enabled)) finishOneshot();
+    if (oneshot && !oneshotHeld && (oneshot.paused || !oneshot.enabled)) finishOneshot();
   }
 
-  function playOneshot(name, { timeScale = 1, clamp: clampEnd = false, fade = 0.09, onDone } = {}) {
+  function playOneshot(name, { timeScale = 1, clamp: clampEnd = false, fade = 0.09, hold = false, onDone } = {}) {
     const clip = clipFor(name, hipsY);
     if (!clip) return null;
     if (oneshot) { oneshot.fadeOut(0.08); }
+    oneshotHeld = hold;
     const a = mixer.clipAction(clip);
     a.reset();
     a.setLoop(THREE.LoopOnce, 1);
@@ -82,7 +91,7 @@ export function createLocomotion(root, opts = {}) {
   function finishOneshot() {
     const cb = oneshotDone;
     if (oneshot) { oneshot.fadeOut(0.12); }
-    oneshot = null; oneshotDone = null;
+    oneshot = null; oneshotDone = null; oneshotHeld = false;
     cb?.();
   }
 
@@ -90,7 +99,7 @@ export function createLocomotion(root, opts = {}) {
   // known-good animation state after something ended abnormally.
   function reset() {
     if (oneshot) oneshot.stop();
-    oneshot = null; oneshotDone = null;
+    oneshot = null; oneshotDone = null; oneshotHeld = false;
     for (const a of actions) a.action.setEffectiveWeight(a.speed === 0 ? 1 : 0);
   }
 
@@ -99,12 +108,17 @@ export function createLocomotion(root, opts = {}) {
     const out = {};
     for (const a of actions) out[a.name] = +a.action.getEffectiveWeight().toFixed(3);
     out.oneshot = !!oneshot;
+    out.held = oneshotHeld;
     return out;
   }
 
   return {
     mixer, update, playOneshot, reset, weights,
     get busy() { return !!oneshot; },
+    get held() { return oneshotHeld; },
+    // Duration of the clip a held one-shot is sitting on, so a caller can tell when
+    // the pose has finished settling and it can stop paying for the mixer at all.
+    get oneshotDuration() { return oneshot ? oneshot.getClip().duration / Math.max(Math.abs(oneshot.getEffectiveTimeScale()), 0.01) : 0; },
     cancelOneshot: finishOneshot,
     hipsY,
   };

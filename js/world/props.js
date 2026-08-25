@@ -4,7 +4,7 @@
 // spawning a clone).
 import * as THREE from 'three';
 import { staticGeometry } from '../engine/assets.js';
-import { makeWorldMaterial } from '../engine/materials.js';
+import { makeWorldMaterial, tagGeometry, SURF } from '../engine/materials.js';
 import { streetlampGeo, trafficLightGeo, signGeo, treeGeo, kioskGeo } from './procprops.js';
 import { ROAD, WALK, BLOCKS, MAP_EDGE } from './city.js';
 import { baseHeight } from '../physics/heightfield.js';
@@ -40,7 +40,7 @@ export const PROP_TYPES = {
 const KERB_MARGIN = 0.25;    // how far onto the pavement a base must sit
 const NODE_MARGIN = 0.3;     // keep the pedestrian lattice walkable
 const NUDGE_STEP = 0.75;
-const NUDGE_MAX = 3.0;
+const NUDGE_MAX = 6.0;
 
 export function buildProps(scene, city) {
   const placements = {};
@@ -64,9 +64,14 @@ export function buildProps(scene, city) {
     const cfg = PROP_TYPES[type];
     const r = cfg.r * s, clear = cfg.clear * s;
     if (Math.abs(x) > MAP_EDGE - r || Math.abs(z) > MAP_EDGE - r) return false;
-    // the base must stand on pavement, not asphalt (overhanging arms and
-    // canopies are fine and wanted — only the footing is tested)
-    if (!offRoad(x, r + KERB_MARGIN) && !offRoad(z, r + KERB_MARGIN)) return false;
+    // The base must stand on pavement, not asphalt (overhanging arms and
+    // canopies are fine and wanted — only the footing is tested). Roads run along
+    // BOTH axes, so a point is asphalt when x is in a road band OR z is — which is
+    // what physics/heightfield.js:baseHeight has always said. This test used to be
+    // an AND, which rejects only the nine intersection squares and passes every
+    // other square metre of road: 25 of 130 props stood on tarmac at the shipped
+    // seed, seven of them on painted crosswalks.
+    if (!offRoad(x, r + KERB_MARGIN) || !offRoad(z, r + KERB_MARGIN)) return false;
     // clear of buildings
     for (const b of city.buildings) {
       if (x > b.x0 - clear && x < b.x1 + clear && z > b.z0 - clear && z < b.z1 + clear) return false;
@@ -112,22 +117,43 @@ export function buildProps(scene, city) {
   const curb = WALK.inner + 0.95;
   const C = ROAD.centers;
 
+  // Junction guard, applied to every EMITTED position rather than only to the loop
+  // variable. The +9 / +4.5 / +13.5 offsets below step straight over a guard that
+  // tested `x` alone, which is how a lamp was emitted at x = -0.5 (the centre line
+  // of the x = 0 carriageway) and a tree at x = 4.0 (its far lane, on the painted
+  // crosswalk). canPlace now rejects those too, but rejecting them here means the
+  // nudge search is not spent trying to rescue a candidate 4m out into traffic.
+  const clearOfJunction = (v) => C.every((c) => Math.abs(v - c) >= 8);
+
+  // Snap a coordinate onto the middle of the pavement band it is nearest to —
+  // just clear of the kerb test (ROAD.half + r + KERB_MARGIN) and just inside the
+  // building line. For the widest props that band is the only place they fit.
+  const kerbBand = (v) => {
+    for (const c of C) if (Math.abs(v - c) < 12) return c + Math.sign(v - c || 1) * (ROAD.half + 1.7);
+    return v;
+  };
+
   // streetlamps + trees alternate along each road, both sides
   for (const cz of C) {
     for (let x = -MAP_EDGE + 8; x < MAP_EDGE - 8; x += 18) {
-      if (C.some((cx) => Math.abs(x - cx) < 8)) continue;   // keep junctions clear
+      if (!clearOfJunction(x)) continue;
       add('prop_streetlamp', x, cz - curb, 0, 1, 'x');
-      add('prop_streetlamp', x + 9, cz + curb, Math.PI, 1, 'x');
-      if (rand() < 0.75) add('prop_tree', x + 4.5, cz - curb - 0.7, rand() * Math.PI, 0.8 + rand() * 0.4, 'x');
-      if (rand() < 0.75) add('prop_tree', x + 13.5, cz + curb + 0.7, rand() * Math.PI, 0.8 + rand() * 0.4, 'x');
+      if (clearOfJunction(x + 9)) add('prop_streetlamp', x + 9, cz + curb, Math.PI, 1, 'x');
+      // the roll is drawn before the guard so the world stays identical from one
+      // seed whether or not a given slot is skipped
+      const a = { p: rand(), yaw: rand() * Math.PI, s: 0.8 + rand() * 0.4 };
+      if (a.p < 0.75 && clearOfJunction(x + 4.5)) add('prop_tree', x + 4.5, cz - curb - 0.7, a.yaw, a.s, 'x');
+      const b = { p: rand(), yaw: rand() * Math.PI, s: 0.8 + rand() * 0.4 };
+      if (b.p < 0.75 && clearOfJunction(x + 13.5)) add('prop_tree', x + 13.5, cz + curb + 0.7, b.yaw, b.s, 'x');
     }
   }
   for (const cx of C) {
     for (let z = -MAP_EDGE + 12; z < MAP_EDGE - 12; z += 18) {
-      if (C.some((cz) => Math.abs(z - cz) < 8)) continue;
+      if (!clearOfJunction(z)) continue;
       add('prop_streetlamp', cx - curb, z, Math.PI / 2, 1, 'z');
-      add('prop_streetlamp', cx + curb, z + 9, -Math.PI / 2, 1, 'z');
-      if (rand() < 0.6) add('prop_tree', cx - curb - 0.7, z + 4.5, rand() * Math.PI, 0.8 + rand() * 0.4, 'z');
+      if (clearOfJunction(z + 9)) add('prop_streetlamp', cx + curb, z + 9, -Math.PI / 2, 1, 'z');
+      const a = { p: rand(), yaw: rand() * Math.PI, s: 0.8 + rand() * 0.4 };
+      if (a.p < 0.6 && clearOfJunction(z + 4.5)) add('prop_tree', cx - curb - 0.7, z + 4.5, a.yaw, a.s, 'z');
     }
   }
 
@@ -155,8 +181,26 @@ export function buildProps(scene, city) {
       add('prop_bench', d.outX + oz * 1.2 + ox * 0.4, d.outZ + ox * 1.2 + oz * 0.4, Math.atan2(-ox, -oz));
     }
     if (s.type === 'diner' && kiosks < 3 && rand() < 0.5) {
-      add('prop_kiosk', d.outX - (d.outZ > d.z ? 3 : -3), d.outZ + 1.5, Math.atan2(d.outX - d.x, d.outZ - d.z));
-      kiosks++;
+      // Beside the door and along the pavement, the way the bench above is
+      // placed — not "3m in x and 1.5m in z" regardless of which way the door
+      // faces, which put a 2.8m-wide kiosk in the carriageway as often as not.
+      // And `kiosks++` used to run whether or not the prop was actually placed,
+      // so once the road test started rejecting those the counter burned all
+      // three slots on candidates that were never built and the city ended up
+      // with no kiosks at all.
+      const ox = d.outX - d.x, oz = d.outZ - d.z;
+      const ol = Math.hypot(ox, oz) || 1;
+      const ux = ox / ol, uz = oz / ol;
+      // A kiosk is 2.8m across and the pavement is 3.5m (city.js WALK 5 -> 8.5),
+      // so once the kerb test works there is only a ~15cm band where one fits at
+      // all — its own centreline. Aim at that rather than at a fixed offset from
+      // the door, and hand the nudge the ALONG-street axis so it can walk into
+      // one of the 3.7m gaps between pedestrian-lattice nodes (7.15m apart).
+      const kx = Math.abs(ux) > 0.5 ? kerbBand(d.outX) : d.outX;
+      const kz = Math.abs(uz) > 0.5 ? kerbBand(d.outZ) : d.outZ;
+      const placed = add('prop_kiosk', kx, kz, Math.atan2(ux, uz), 1,
+        Math.abs(ux) > 0.5 ? 'z' : 'x');
+      if (placed) kiosks++;
     }
     if ((s.type === 'apartment' || s.type === 'office') && rand() < 0.3) {
       // dumpster tucked at the building's back corner (courtyard side)
@@ -175,13 +219,28 @@ export function buildProps(scene, city) {
     }
   }
 
+  // The generated props that shipped their own texture used to keep the plain
+  // Lambert engine/assets.js gives every GLB — which meant a bench got none of
+  // the procedural surface detail, none of the specular, and, after dark, none of
+  // the streetlamp light that everything around it was catching. They go through
+  // the shared world material too now, keeping their baked texture as the base
+  // map and being tagged with the surface they actually are.
+  const GLB_SURF = { prop_hydrant: SURF.METAL, prop_bench: SURF.WOOD, prop_dumpster: SURF.METAL };
+
   // ---- build instanced meshes
   const reg = { types: {}, all: [] };
   const worldMat = makeWorldMaterial();
+  const texMat = new Map();     // one material per baked texture, not one per prop
   for (const [type, list] of Object.entries(placements)) {
     const { geometry, material } = PROC_GEO[type]
       ? { geometry: PROC_GEO[type](), material: worldMat }
-      : staticGeometry(type);
+      : (() => {
+        const g = staticGeometry(type);
+        tagGeometry(g.geometry, 0xffffff, 0, 1, GLB_SURF[type] ?? SURF.CONCRETE);
+        let m = texMat.get(g.material.map);
+        if (!m) { m = makeWorldMaterial({ map: g.material.map || null }); texMat.set(g.material.map, m); }
+        return { geometry: g.geometry, material: m };
+      })();
     const im = new THREE.InstancedMesh(geometry, material, Math.max(list.length, 1));
     im.frustumCulled = false;
     im.receiveShadow = true;
@@ -240,8 +299,24 @@ export function buildProps(scene, city) {
     p.x = x; p.z = z;
     p.y = baseHeight(x, z);
     if (yaw !== undefined) p.yaw = yaw;
+    p.felled = false;
+    p.restQ = null;
     Q.setFromAxisAngle(V.set(0, 1, 0), p.yaw);
     reg.setMatrix(p, V2.set(p.x, p.y, p.z), Q);
+    p.alive = true;
+    reg.onRestore?.(p);
+  };
+  // Comes to rest IN THE POSE IT LANDED IN. reattach above rebuilds the matrix
+  // from a pure Y rotation, which is why a thrown tree snapped bolt upright the
+  // instant its body went to sleep: the pitch and roll that had it lying across
+  // the road were simply thrown away. A felled prop keeps its orientation, keeps
+  // its slot, and stays a real prop — it can be picked up and thrown again, and it
+  // still blocks at its base, it just is not standing any more.
+  reg.rest = (p, x, y, z, quat) => {
+    p.x = x; p.z = z; p.y = y;
+    p.felled = true;
+    p.restQ = (p.restQ || new THREE.Quaternion()).copy(quat);
+    reg.setMatrix(p, V2.set(x, y, z), quat);
     p.alive = true;
     reg.onRestore?.(p);
   };
@@ -253,7 +328,7 @@ export function buildProps(scene, city) {
     let onRoad = 0, overlap = 0;
     for (const p of live) {
       const r = PROP_TYPES[p.type].r * (p.s || 1);
-      if (!offRoad(p.x, r) && !offRoad(p.z, r)) onRoad++;
+      if (!offRoad(p.x, r) || !offRoad(p.z, r)) onRoad++;
     }
     for (let i = 0; i < live.length; i++) {
       for (let k = i + 1; k < live.length; k++) {
@@ -264,6 +339,16 @@ export function buildProps(scene, city) {
     }
     return { total: live.length, onRoad, overlap, dropped };
   };
+
+  // #7 regression probe: a prop that came to rest after a throw must not be
+  // standing up again. Reports how far each felled prop's own up-axis has been
+  // knocked off vertical, in degrees.
+  window.__test.restingProps = () => reg.all
+    .filter((p) => p.felled)
+    .map((p) => {
+      V.set(0, 1, 0).applyQuaternion(p.restQ || Q.identity());
+      return { type: p.type, tiltDeg: +(Math.acos(Math.min(1, Math.max(-1, V.y))) * 180 / Math.PI).toFixed(1) };
+    });
   return reg;
 }
 

@@ -20,9 +20,9 @@ home indicator, and — after the first launch — works with no connection at a
 |---|---|
 | Left half of screen | Floating joystick — walk / jog / sprint by stick distance |
 | Swipe on right half | Look around (sensitivity in Settings) |
-| PUNCH tap | Jab |
-| PUNCH hold | Charge — a full charge levels a building |
-| GRAB | Grab cars, props, rubble, people, weakened monsters; press again to throw |
+| PUNCH tap | Jab — or, with something in your hands, swing it at what is in front of you |
+| PUNCH hold | Charge — a full charge levels a building, or a car |
+| GRAB | Grab cars, props, rubble, people, bodies, weakened monsters; press again to throw |
 | JUMP | Jump |
 | TALK | Start a conversation with whoever is in front of you — type and they answer. Press again to end it |
 
@@ -41,9 +41,15 @@ gesture while they speak; a monster arriving or a building coming down ends the
 conversation the way it would in life.
 
 The key is stored only in your phone's local storage and is sent only to
-`api.groq.com`. Ambient street barks stay instant and canned — only the
-conversation waits on the model — and the client stays far inside Groq's free
-tier. With no key the panel still opens and answers from the built-in corpus.
+`api.groq.com`. **TEST KEY**, beside the field, runs one real request and prints
+exactly what came back — a rejected key says so instead of silently falling back
+to canned lines, which is the whole difference between "the model is answering"
+and "the model has never been reached". Whenever it is unavailable the reason is
+printed under the conversation and the reply is marked as a built-in line.
+
+Ambient street barks stay instant and canned — only the conversation waits on the
+model — and the client stays far inside Groq's free tier. With no key the panel
+still opens and answers from the built-in corpus.
 
 ## Graphics
 
@@ -57,8 +63,12 @@ clouds, and sun shafts. **Auto** measures the device on first boot.
   traffic with working lights, hydrants, benches, trees, kiosks, dumpsters.
 - Everything is destructible: chunked facades, progressive top-down collapse,
   craters, bursting hydrants, felled streetlights, cars that crush and explode.
+  What you throw stays where it lands — a tree lies across the carriageway, a
+  hydrant shears off its main, a wrecked car does not quietly rejoin the traffic.
 - 48 townsfolk live real days — commuting, shopping, eating, chatting — and
-  panic properly: scattering, screaming, trampling, hiding indoors.
+  panic properly: scattering, screaming, trampling, hiding indoors. Held up by
+  the throat they claw at your forearm and kick; carried at a sprint they trail
+  behind you. The dead stay down — and can be picked up again.
 - Monsters arrive from the fog, eat pedestrians, and treat you as easy prey.
   Their moment of realization is yours to savor. Protect the city, join the
   chaos, or flatten all of it — the only judge is the karma meter.
@@ -77,6 +87,7 @@ tools/                # dev-only (node)
   process-textures.mjs# skybox seam-blend, splash/title WebP
   gen-sw.mjs          # regenerates sw.js (content-hash precache) — run before commits
   check-rig.mjs       # verifies all rigs share one skeleton
+  rigdump.mjs         # bind-pose bone axes — how anim/poses.js targets were authored
   test/serve.mjs      # local server mirroring the Pages subpath
   test/shot.mjs       # Playwright screenshot/assert driver
   test/final.mjs      # full end-to-end suite (waits on sim time, not wall clock)

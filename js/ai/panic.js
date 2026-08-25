@@ -168,7 +168,7 @@ export function installPanic(npcSys, buildingsReg, city) {
             n.px = n.x; n.pz = n.z;
             n.targetSpeed = 0;
             n.stateT = randRange(24, 40);
-            n.root.scale.y *= 0.92; // cower
+            n.root.scale.y = n.baseY * 0.92; // cower
             return;
           }
           n.yaw = Math.atan2(d.outX - n.x, d.outZ - n.z);
@@ -203,7 +203,10 @@ export function installPanic(npcSys, buildingsReg, city) {
       case 'hide': {
         n.targetSpeed = 0;
         if (n.stateT <= 0) {
-          n.root.scale.y /= 0.92;
+          // Absolute, not `/= 0.92`. The squash above and this were the only
+          // pair, so any other way out of 'hide' — killed in the doorway, or
+          // grabbed out of it — left that person permanently 8% short.
+          n.root.scale.y = n.baseY;
           // Step back out through the door. NPCs collide with walls now, so
           // resuming from inside the footprint would just wedge them.
           const d = n.shelterB?.spec?.door;

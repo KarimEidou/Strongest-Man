@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { MODELS } from '../engine/assets.js';
+import { makeCharacterMaterial } from '../engine/materials.js';
 import { clipFor, findBone } from '../anim/retarget.js';
 import { neighbors } from './crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
@@ -20,6 +21,11 @@ import { rand, randRange, damp, dampAngle, clamp } from '../core/mathx.js';
 
 const scratch = [];
 const MAX_HP = 12;
+
+// Ids have to outlive the array: despawn() splices, so `monsters.length` handed
+// a fresh monster the id of one still walking around. Invisible at a cap of 2,
+// an aliasing bug at 4.
+let nextMonsterId = 1;
 
 // One canvas + texture + material for every monster's realization "!". Building
 // these per spawn meant a fresh SpriteMaterial whose shader program compiled the
@@ -67,7 +73,9 @@ export function createMonsters(scene, npcSys, player, cam) {
     const scale = targetH / height;
     let mat = null;
     src.traverse((o) => { if (o.isMesh && !mat) mat = o.material; });
-    const shared = mat.clone();
+    // built, not cloned — see the note in ai/npc.js: a Material.clone() drops the
+    // own-property onBeforeCompile that carries the lamp lighting and specular
+    const shared = makeCharacterMaterial(mat);
     shared.color.multiplyScalar(1.18);
     // feet-to-origin offset: the rig's origin is not necessarily its sole, and
     // planting the root at ground height without this is why monsters hovered
@@ -92,10 +100,13 @@ export function createMonsters(scene, npcSys, player, cam) {
     const walk = mixer.clipAction(clipFor(walkName, hipsY));
     walk.play();
 
+    // facing the player from frame one; visYaw starts matched so the model does
+    // not swing through a half turn while the damp catches up
+    const facing = aimAtPlayer(sx, sz);
     const m = {
-      id: monsters.length, base, root, mixer, hipsY,
+      id: nextMonsterId++, base, root, mixer, hipsY,
       x: sx, z: sz, y: 0, px: sx, pz: sz,
-      yaw: Math.atan2(-sx, -sz), visYaw: 0,
+      yaw: facing, visYaw: facing,
       speed: 0, targetSpeed: 0, cruise: kindIdx === 0 ? 2.4 : 3.1,
       hp: MAX_HP, knowledge: 0,
       state: 'arrive',       // arrive|rampage|attack_player|eat|realize|flee|rage|dead
@@ -113,6 +124,8 @@ export function createMonsters(scene, npcSys, player, cam) {
     emit(EV.MONSTER_SPAWNED, { monster: m });
     return m;
   }
+
+  function aimAtPlayer(x, z) { return Math.atan2(player.p.x - x, player.p.z - z); }
 
   function makeBang(root, info) {
     const sprite = new THREE.Sprite(bangMaterial());
@@ -137,8 +150,16 @@ export function createMonsters(scene, npcSys, player, cam) {
       switch (m.state) {
         case 'arrive': {
           m.targetSpeed = m.cruise;
-          m.yaw = Math.atan2(-m.x, -m.z);
-          if (Math.abs(m.x) < 62 && Math.abs(m.z) < 62) enterRampage(m);
+          // Walk at the player, not at the world origin. Aiming at 0,0 is how a
+          // spawn became someone else's problem: the monster crossed the map on
+          // a line the player was not standing on and then went for whatever
+          // townsfolk it found where it stopped.
+          m.yaw = aimAtPlayer(m.x, m.z);
+          // ...and start wrecking as soon as it is in sight (34m, just outside
+          // the 30m radius where witnessing a feat registers) instead of always
+          // running the ring down to ±62 first — 8-10s of approach the player
+          // never saw when the two were on the same side of town anyway.
+          if (pd < 34 || (Math.abs(m.x) < 62 && Math.abs(m.z) < 62)) enterRampage(m);
           break;
         }
         case 'rampage': {
@@ -218,7 +239,16 @@ export function createMonsters(scene, npcSys, player, cam) {
         case 'flee': {
           m.yaw = Math.atan2(m.x - player.p.x, m.z - player.p.z);
           m.targetSpeed = m.cruise * 1.9;
-          if (Math.abs(m.x) > 86 || Math.abs(m.z) > 86) despawn(m);
+          // capsuleVsWorld clamps every capsule to MAP_EDGE + 14 = ±85.5, so the
+          // old `> 86` test could never fire: a monster that fled ran to the
+          // map bound and stood there alive forever, holding a concurrency slot
+          // the director would not refill. With the old cap of 2 that was two
+          // frightened monsters away from no monsters for the rest of the session.
+          if (Math.abs(m.x) > 85 || Math.abs(m.z) > 85) despawn(m);
+          // wedged behind a building instead, with the flee timer run out: retire
+          // it out of sight, and if the player is close enough to watch it vanish,
+          // send it back to the crowd the way `rage` does
+          else if (m.stateT <= 0) { if (pd > 45) despawn(m); else enterRampage(m); }
           break;
         }
         case 'rage': {
@@ -259,11 +289,17 @@ export function createMonsters(scene, npcSys, player, cam) {
   function pickVictim(m) {
     // A 60m hash query spans 17×17 cells; with only 48 townsfolk a direct scan
     // is both cheaper and exact.
+    // Scored rather than strictly nearest: always eating the closest body walks
+    // the monster away from the player toward whichever crowd it landed beside,
+    // so the rampage happened off-screen. Weighting the victim's distance from
+    // the player at 0.35 of the monster's own (both squared) keeps close prey
+    // winning, but only among the ones on the player's street.
     let best = null, bd = Infinity;
     for (const n of npcSys.npcs) {
       if (n.state === 'dead' || n.state === 'carried' || n.state === 'hide') continue;
       const dx = n.x - m.x, dz = n.z - m.z;
-      const d = dx * dx + dz * dz;
+      const px = n.x - player.p.x, pz = n.z - player.p.z;
+      const d = dx * dx + dz * dz + (px * px + pz * pz) * 0.35;
       if (d < bd) { bd = d; best = n; }
     }
     return best;
@@ -415,8 +451,10 @@ export function createMonsters(scene, npcSys, player, cam) {
     return { kind: m.base, gap: +(b.min.y - groundHeight(m.x, m.z)).toFixed(3), h: +(b.max.y - b.min.y).toFixed(2) };
   });
   window.__test.monsterStats = () => monsters.map((m) => ({
-    state: m.state, hp: m.hp, x: +m.x.toFixed(1), z: +m.z.toFixed(1), know: m.knowledge,
+    id: m.id, state: m.state, hp: m.hp, x: +m.x.toFixed(1), z: +m.z.toFixed(1), know: m.knowledge,
   }));
 
-  return { monsters, fixedUpdate, frameUpdate, hooks, spawn, sys };
+  // `player` rides along so the director can bias spawn edges toward the side of
+  // town the player is on; it is handed the monster system and nothing else.
+  return { monsters, fixedUpdate, frameUpdate, hooks, spawn, sys, player };
 }

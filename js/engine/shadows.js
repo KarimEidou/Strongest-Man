@@ -11,13 +11,25 @@
 // The player and monsters cast from their real skinned meshes, because a boxy
 // silhouette under the character you are looking at is worse than no shadow.
 // The 48 townsfolk keep their blob shadows.
+//
+// Street furniture used to cast nothing at all — trees, lamps, benches, kiosks,
+// every one of them floated on an unbroken sheet of sunlight, which is most of
+// why the city read as untextured. They are proxies too, on the same layer and
+// the same nearest-first cadence: a box for anything post- or crate-shaped, and
+// a coarse icosahedron for tree canopies, because a rectangle of shade under a
+// round tree is worse than none. Two extra draw calls in the shadow pass, on the
+// top tier only.
 import * as THREE from 'three';
 import { FLOOR_H } from '../world/city.js';
+import { PROP_TYPES } from '../world/props.js';
 
 export const LAYER_SHADOW = 2;
 export const LAYER_OCCLUDER = 3;
 
 const CAP = 64;
+const PROP_CAP = 44;        // posts, benches, bins, kiosks, trunks
+const CANOPY_CAP = 20;      // tree canopies, as spheres
+const PROP_R2 = 46 * 46;    // past this a prop's shadow is off the ortho frustum anyway
 // The roof instance sits 0.10m proud of floors * FLOOR_H (see world/buildings.js),
 // so the proxy has to reach that high or roofs self-shadow against their own box.
 const ROOF_PROUD = 0.1;
@@ -28,18 +40,27 @@ const centre = new THREE.Vector3(), fwd = new THREE.Vector3(), lightPos = new TH
 const byDistance = (a, b) => a.d2 - b.d2;
 const fLight = new THREE.Vector3(), rLight = new THREE.Vector3(), uLight = new THREE.Vector3();
 
-export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier) {
+export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier, propsReg) {
   // black, unlit, never drawn for the camera — only its depth matters
   const proxyMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-  const proxy = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), proxyMat, CAP);
-  proxy.castShadow = true;
-  proxy.frustumCulled = false;
-  proxy.name = 'shadowProxy';
-  proxy.layers.set(LAYER_SHADOW);
-  proxy.layers.enable(LAYER_OCCLUDER);
-  for (let i = 0; i < CAP; i++) proxy.setMatrixAt(i, ZERO);
-  proxy.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  scene.add(proxy);
+  const makeProxy = (geo, cap, name) => {
+    const m = new THREE.InstancedMesh(geo, proxyMat, cap);
+    m.castShadow = true;
+    m.frustumCulled = false;
+    m.name = name;
+    m.layers.set(LAYER_SHADOW);
+    m.layers.enable(LAYER_OCCLUDER);
+    for (let i = 0; i < cap; i++) m.setMatrixAt(i, ZERO);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(m);
+    return m;
+  };
+  const proxy = makeProxy(new THREE.BoxGeometry(1, 1, 1), CAP, 'shadowProxy');
+  const propProxy = makeProxy(new THREE.BoxGeometry(1, 1, 1), PROP_CAP, 'shadowPropProxy');
+  // detail 0: 20 triangles, and a shadow does not need more than that
+  const canopyProxy = makeProxy(new THREE.IcosahedronGeometry(0.5, 0), CANOPY_CAP, 'shadowCanopyProxy');
+  propProxy.visible = false;
+  canopyProxy.visible = false;
 
   sun.layers.enable(LAYER_SHADOW);
   sun.layers.enable(LAYER_OCCLUDER);
@@ -50,9 +71,14 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier) {
   sun.shadow.camera.far = 220;
 
   let extent = 34, every = 3, enabled = false, frame = 0;
+  let props = false;
 
   function setTier(t) {
     enabled = !!t.shadows;
+    // street furniture is the top tier's luxury: two more shadow draws
+    props = enabled && !!t.propShadows;
+    propProxy.visible = props;
+    canopyProxy.visible = props;
     renderer.shadowMap.enabled = enabled;
     // PCFShadowMap, deliberately, at every tier. PCFSoftShadowMap renders the
     // entire lit scene black on at least one driver we can test against
@@ -137,6 +163,7 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier) {
     }
     for (let k = n; k < cand.length; k++) { cand[k].b = null; cand[k].c = null; cand[k].d2 = Infinity; }
     cand.sort(byDistance);
+    if (props) repackProps(playerPos);
 
     let i = 0;
     for (; i < CAP && i < n; i++) {
@@ -154,6 +181,59 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier) {
     }
     for (; i < CAP; i++) proxy.setMatrixAt(i, ZERO);
     proxy.instanceMatrix.needsUpdate = true;
+  }
+
+  // Street furniture, same nearest-first discipline. A tree gets two proxies —
+  // a slim trunk box and a canopy ball — because it is the canopy that makes the
+  // shade and the trunk that makes the stripe across the pavement.
+  const pcand = Array.from({ length: 160 }, () => ({ p: null, d2: Infinity }));
+
+  function repackProps(playerPos) {
+    const all = propsReg?.all;
+    if (!all) return;
+    let n = 0;
+    for (const p of all) {
+      if (n >= pcand.length) break;
+      if (!p.alive || p.felled) continue;      // a felled prop is flat; not worth a proxy
+      const dx = p.x - playerPos.x, dz = p.z - playerPos.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 > PROP_R2) continue;
+      const e = pcand[n++];
+      e.p = p; e.d2 = d2;
+    }
+    for (let k = n; k < pcand.length; k++) { pcand[k].p = null; pcand[k].d2 = Infinity; }
+    pcand.sort(byDistance);
+
+    let bi = 0, ci = 0;
+    for (let i = 0; i < n && (bi < PROP_CAP || ci < CANOPY_CAP); i++) {
+      const p = pcand[i].p;
+      const cfg = PROP_TYPES[p.type];
+      if (!cfg) continue;
+      const sc = p.s || 1;
+      const h = cfg.h * sc, r = cfg.r * sc, y = p.y || 0;
+      Q.setFromAxisAngle(V.set(0, 1, 0), p.yaw || 0);
+      if (p.type === 'prop_tree') {
+        if (bi < PROP_CAP) {
+          const th = h * 0.55;
+          M.compose(V.set(p.x, y + th / 2, p.z), Q, S.set(r * 1.5, th, r * 1.5));
+          propProxy.setMatrixAt(bi++, M);
+        }
+        if (ci < CANOPY_CAP) {
+          const cr = cfg.clear * sc * 0.85;
+          M.compose(V.set(p.x, y + h * 0.72, p.z), Q, S.set(cr * 2, cr * 1.5, cr * 2));
+          canopyProxy.setMatrixAt(ci++, M);
+        }
+      } else if (bi < PROP_CAP) {
+        // posts get their pole width, boxes their real footprint
+        const w = cfg.tall ? Math.max(r * 1.6, 0.24) : cfg.clear * sc * 1.5;
+        M.compose(V.set(p.x, y + h / 2, p.z), Q, S.set(w, h, w));
+        propProxy.setMatrixAt(bi++, M);
+      }
+    }
+    for (; bi < PROP_CAP; bi++) propProxy.setMatrixAt(bi, ZERO);
+    for (; ci < CANOPY_CAP; ci++) canopyProxy.setMatrixAt(ci, ZERO);
+    propProxy.instanceMatrix.needsUpdate = true;
+    canopyProxy.instanceMatrix.needsUpdate = true;
   }
 
   return {

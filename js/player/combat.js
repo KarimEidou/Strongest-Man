@@ -12,7 +12,7 @@ import { groundHeight, removePile } from '../physics/heightfield.js';
 import { punchSound } from '../engine/audio.js';
 import { PROP_TYPES } from '../world/props.js';
 import { setGrabLabel } from '../ui/hud.js';
-import { clamp } from '../core/mathx.js';
+import { clamp, damp } from '../core/mathx.js';
 
 const CHARGE_TIME = 1.15;   // seconds to full
 const CHARGE_MIN = 0.16;    // hold time before charging starts
@@ -36,8 +36,21 @@ const CARRY_OFFSET = {
 };
 const GRIP_REACH = 0.07;   // wrist bone -> the middle of the closed fist
 const GRIP_SINK = 0.03;    // how far the palms press into the load
+// A person held by the throat hangs their own height below the fist, so the fist
+// is the one anchor that has a floor: the run clip swings the hand through a
+// 25cm arc, and taking it raw put the victim's knees through the tarmac twice a
+// stride. Damped, and never below this.
+const GRIP_MIN_H = 1.30;
+const GRIP_SMOOTH = 11;
 const LIFT_ARC = { carry_neck: 0.35, carry_overhead: 0.80 };
 const CARRY_SLOW = { carry_neck: 0.82, carry_overhead: 0.62 };
+// Swinging the load. Wind-up, strike, recover — the object rides the hands, so the
+// arc is authored once as a pair of poses (anim/poses.js swing_wind/swing_follow)
+// and the anchor, which is already read off the hand bones every frame, follows it
+// for free. Overhead loads come down through the target; one-handed loads go
+// through it flat, like a bat.
+const SWING_WIND = 0.20, SWING_STRIKE = 0.15, SWING_RECOVER = 0.28;
+const SWING_AT = 0.45;      // fraction into the strike where contact lands
 
 const EU = new THREE.Euler(0, 0, 0, 'YXZ');
 const TUMBLE = new THREE.Euler();
@@ -58,7 +71,9 @@ export function createCombat(playerSys, cam, scene) {
       from: new THREE.Vector3(), fromQ: new THREE.Quaternion(),
       anchor: new THREE.Vector3(), anchorQ: new THREE.Quaternion(),
       pos: new THREE.Vector3(), quat: new THREE.Quaternion(),
-      strideT: 0,
+      strideT: 0, smoothY: 0,
+      // carried-object swing (see swingCarried)
+      swingT: 0, swingDur: 0, swingCharge: 0, swingHit: false,
     },
   };
 
@@ -85,7 +100,11 @@ export function createCombat(playerSys, cam, scene) {
     } else if (input.punchReleased && !p.dead) {
       const charge = p.charge;
       p.charge = 0;
-      swing(charge);
+      // With something in your hands, PUNCH swings THAT. It used to throw a normal
+      // jab whose damage landed at an abstract point in front of you while the
+      // carry pose held the arms still — and, with a car, the punch hit the car in
+      // your own hands and shot you across the city (see world/traffic.js onPunch).
+      if (!swingCarried(charge)) swing(charge);
     } else {
       p.charge = 0;
     }
@@ -95,7 +114,7 @@ export function createCombat(playerSys, cam, scene) {
       if (ph === 'carrying') beginThrow();
       // pressed mid-lift: remember it and throw the moment the lift lands,
       // rather than eating the input (which is what a dropped frame used to do)
-      else if (ph === 'reaching' || ph === 'lifting') st.carry.wantThrow = true;
+      else if (ph === 'reaching' || ph === 'lifting' || ph === 'swinging') st.carry.wantThrow = true;
       else if (ph === 'idle') tryGrab();
     }
     advanceCarry(dt);
@@ -239,7 +258,10 @@ export function createCombat(playerSys, cam, scene) {
       origin: { x: pr.x, y: pr.y || 0, z: pr.z, yaw: pr.yaw || 0 },
       alive: () => true,
       place: (x, y, z, quat) => reg.setMatrix(pr, _v3.set(x, y, z), quat, scale),
-      release: () => reg.reattach(pr, pr.x, pr.z),
+      // dropped rather than thrown: if it was already lying there, leave it lying
+      release: () => (pr.felled && pr.restQ
+        ? reg.rest(pr, pr.x, pr.y, pr.z, pr.restQ)
+        : reg.reattach(pr, pr.x, pr.z)),
       launch: (from, vx, vy, vz) => {
         const body = createBody({
           kind: 'thrown',
@@ -256,13 +278,42 @@ export function createCombat(playerSys, cam, scene) {
             const ai = activeBodies.indexOf(b);
             if (ai >= 0) activeBodies.splice(ai, 1);
             if (b.pileCell >= 0) { removePile(b.pileCell, b.pileAmount); b.pileCell = -1; }
-            if (b.dead) reg.hide(pr);            // fell out of the world
-            else reg.reattach(pr, b.x, b.z, b.ry);
+            if (b.dead) { reg.hide(pr); return; }        // fell out of the world
+            landProp(reg, pr, b, cfg, height, radius);
           },
         });
         armProjectile(body, Math.max(radius * 1.6, 1.2));
       },
     };
+  }
+
+  // What a thrown prop does when it stops moving. It used to snap upright at
+  // baseHeight — a 6m tree standing on the crosswalk it had just been hurled
+  // across. Now it either breaks (the two props with a good break already
+  // authored in world/destruction.js) or it lies down, in a clean pose derived
+  // from the heading it came to rest on rather than from the raw tumble Euler,
+  // which after a few seconds of integration is a long way from anything stable.
+  function landProp(reg, pr, b, cfg, height, radius) {
+    // A hydrant is bolted to a main: hit the road at speed and it shears off and
+    // lets go, which world/destruction.js already knows how to stage. Everything
+    // else is more interesting lying in the street than exploded into four boxes —
+    // a felled tree across the carriageway is the whole point of throwing it.
+    const hard = (b.peak2 || 0) > 380;               // ~19 m/s: a real throw
+    if (hard && pr.type === 'prop_hydrant') {
+      pr.x = b.x; pr.z = b.z; pr.y = groundHeight(b.x, b.z);
+      pr.alive = true;                                // hitProp refuses a detached prop
+      hitProp(pr, b.vx || Math.sin(p.yaw), b.vz || Math.cos(p.yaw), 8);
+      return;
+    }
+    // upright enough to have landed on its feet? then it did.
+    _q.setFromEuler(TUMBLE.set(b.rx, b.ry, b.rz));
+    _v.set(0, 1, 0).applyQuaternion(_q);
+    if (_v.y > 0.82 && !cfg.tall) { reg.reattach(pr, b.x, b.z, b.ry); return; }
+    // lay it along the heading it stopped on, resting on its side
+    EU.set(0, b.ry, -Math.PI / 2);
+    _q.setFromEuler(EU);
+    const lie = Math.min(radius, height * 0.5);
+    reg.rest(pr, b.x, groundHeight(b.x, b.z) + lie, b.z, _q);
   }
 
   function beginCarry(handle) {
@@ -282,7 +333,7 @@ export function createCombat(playerSys, cam, scene) {
     EU.set(0, o.yaw || 0, 0);
     c.fromQ.setFromEuler(EU);
     c.pos.copy(c.from); c.quat.copy(c.fromQ);
-    c.phase = 'reaching'; c.t = REACH_T; c.elapsed = 0; c.released = false; c.strideT = 0;
+    c.phase = 'reaching'; c.t = REACH_T; c.elapsed = 0; c.released = false; c.strideT = 0; c.smoothY = 0;
     c.wantThrow = false;
     pose.set('reach', 0.9, 16);
     p.carrySlow = CARRY_SLOW[c.style];
@@ -306,10 +357,117 @@ export function createCombat(playerSys, cam, scene) {
     } else if (c.phase === 'lifting' && c.t <= 0) {
       c.phase = 'carrying';
       if (c.wantThrow) { c.wantThrow = false; beginThrow(); }
+    } else if (c.phase === 'swinging') {
+      c.swingT += dt;
+      if (c.swingT >= SWING_WIND && pose.pose !== 'swing_follow') pose.set('swing_follow', 1, 42);
+      if (!c.swingHit && c.swingT >= SWING_WIND + SWING_STRIKE * SWING_AT) {
+        c.swingHit = true;
+        swingImpact();
+      }
+      if (c.swingT >= c.swingDur) {
+        if (!st.carried) { c.phase = 'idle'; pose.set(null, 0, 12); setGrabLabel('GRAB'); p.carrySlow = 1; }
+        else if (c.wantThrow) { c.wantThrow = false; beginThrow(); }
+        else { c.phase = 'carrying'; pose.set(c.style, 0.85, 12); }
+      }
     } else if (c.phase === 'throwing') {
       if (!c.released && c.t <= THROW_T - RELEASE_AT) release();
       if (c.t <= 0) { c.phase = 'idle'; pose.set(null, 0, 12); }
     }
+  }
+
+  // ---- swinging the load ----------------------------------------------------
+
+  // How much weapon the thing in your hands actually is: how far it reaches past
+  // the fists, and how hard it lands. Read off the same numbers the carry uses.
+  function loadBulk(h) {
+    if (!h) return { r: 0.5, heft: 1 };
+    if (h.kind === 'prop' && h.prop) {
+      const cfg = PROP_TYPES[h.prop.type];
+      const sc = h.prop.s || 1;
+      return {
+        r: Math.max(cfg.r, cfg.h * 0.34) * sc,
+        heft: clamp(cfg.mass / 200, 0.55, 2.4),
+      };
+    }
+    if (h.kind === 'debris') return { r: Math.max(h.size || 0.5, 0.4), heft: clamp((h.size || 0.5) * 1.6, 0.5, 1.8) };
+    if (h.car) return { r: 1.9, heft: 2.4 };
+    if (h.monster) return { r: 1.4, heft: 2.0 };
+    return { r: 0.55, heft: 0.9 };            // a person
+  }
+
+  function swingCarried(charge) {
+    const c = st.carry;
+    if (!st.carried || c.phase !== 'carrying') return false;
+    c.phase = 'swinging';
+    c.swingT = 0;
+    c.swingCharge = charge;
+    c.swingHit = false;
+    c.swingDur = SWING_WIND + SWING_STRIKE + SWING_RECOVER;
+    pose.set('swing_wind', 1, 26);
+    playerSys.p.loco.playOneshot('punch', { timeScale: 2.3, fade: 0.05 });
+    cam.shake(0.04 + charge * 0.06);
+    return true;
+  }
+
+  function swingImpact() {
+    const c = st.carry;
+    const h = st.carried;
+    if (!h) return;
+    const charge = c.swingCharge;
+    const bulk = loadBulk(h);
+    // the hit happens where the LOAD is, not where a fist would be
+    const reach = 1.35 + bulk.r * 0.95 + charge * 0.9;
+    const f = forwardPoint(reach, c.style === 'carry_overhead' ? 1.05 : 1.30);
+    const radius = 0.95 + bulk.r * 1.15 + charge * 2.4;
+    const impulse = (10 + charge * 26) * bulk.heft;
+
+    punchSound(Math.min(1, charge + 0.25));
+    const destroyed = removeSphere(f.x, f.y, f.z, radius, { impulse, fragMult: 1 + charge * 2.4, byPlayer: true });
+    st.hooks.npcs?.damageRadius(f.x, f.z, radius, 'swung');
+    // never the thing being swung: a held monster is skipped here, a held car by
+    // world/traffic.js, a held person by ai/npc.js, and a held prop is detached so
+    // nearestProp already cannot see it
+    if (!h.monster) st.hooks.monsters?.onPunch(f, radius, impulse, charge);
+    st.hooks.cars?.onPunch(f, radius, impulse, charge);
+    const propHit = nearestProp(f.x, f.z, Math.max(radius, 1.6));
+    if (propHit) {
+      hitProp(propHit, Math.sin(p.yaw), Math.cos(p.yaw), impulse * 0.7);
+      emit(EV.PROP_DESTROYED, { type: propHit.type });
+    }
+    wakeRadius(f.x, f.z, radius * 0.95, impulse * 0.4);
+
+    const heavy = charge > 0.5 || bulk.heft > 1.8;
+    burstDust(f.x, f.y - 0.5, f.z, heavy ? 14 : 6, 0x9a92a8, heavy ? 6 : 4);
+    if (destroyed || propHit) burstSparks(f.x, f.y, f.z, 8);
+    cam.shake(0.18 + charge * 0.35);
+    emit(EV.FEAT, { type: 'swing', x: f.x, z: f.z, magnitude: 20 + charge * 22 + bulk.heft * 8 });
+    if (charge >= 0.95) { game.slowmo = 0.3; st.slowmoT = 0.35; }
+
+    damageLoad(h, charge, bulk, destroyed || !!propHit);
+  }
+
+  // A car folds, a tree snaps, a hydrant lets go. Swinging something into a wall
+  // costs you the thing you swung — which is the whole reason to have a throw as
+  // well as a swing.
+  function damageLoad(h, charge, bulk, connected) {
+    if (h.car) {
+      h.car.squash = Math.max(0.55, (h.car.squash ?? 1) - (connected ? 0.14 : 0.05));
+      h.car.hp -= connected ? 1 : 0;
+      return;
+    }
+    if (h.kind !== 'prop' || !h.prop) return;
+    const pr = h.prop;
+    const frail = PROP_TYPES[pr.type].mass < 260;
+    if (!connected || !(frail || charge > 0.55)) return;
+    // break it where it actually is — in your hands, not back where it grew
+    const c = st.carry;
+    pr.x = c.pos.x; pr.z = c.pos.z; pr.y = c.pos.y;
+    pr.alive = true;                                   // hitProp refuses a detached prop
+    st.carried = null;                                  // release() must not put it back
+    hitProp(pr, Math.sin(p.yaw), Math.cos(p.yaw), 10 + charge * 12);
+    p.carrySlow = 1;
+    cam.st.dist = 6.2;
+    setGrabLabel('GRAB');
   }
 
   function beginThrow() {
@@ -379,6 +537,11 @@ export function createCombat(playerSys, cam, scene) {
           _v.copy(c.anchor).sub(_v2);
           if (_v.lengthSq() > 1e-6) c.anchor.addScaledVector(_v.normalize(), GRIP_REACH);
         }
+        // take the stride out of the grip height, and give it a floor
+        const floor = groundHeight(p.x, p.z) + GRIP_MIN_H;
+        const wantY = Math.max(c.anchor.y, floor);
+        c.smoothY = c.smoothY ? damp(c.smoothY, wantY, GRIP_SMOOTH, dt) : wantY;
+        c.anchor.y = c.smoothY;
         onHands = true;
       }
     } else if (p.bones.lHand && p.bones.rHand) {
@@ -422,7 +585,9 @@ export function createCombat(playerSys, cam, scene) {
       b.x = b.px = c.pos.x; b.y = b.py = c.pos.y; b.z = b.pz = c.pos.z;
       b.onMove?.(b);
     } else {
-      h.place?.(c.pos.x, c.pos.y, c.pos.z, c.quat, c.elapsed);
+      // the carrier's speed goes with the transform: a victim needs to know
+      // whether to hang or to trail (ai/npc.js), and a load needs the stride sway
+      h.place?.(c.pos.x, c.pos.y, c.pos.z, c.quat, p.speed);
     }
   }
 
@@ -433,6 +598,7 @@ export function createCombat(playerSys, cam, scene) {
     body.onMove = (b) => {
       prevMove?.(b);
       const speed2 = b.vx * b.vx + b.vy * b.vy + b.vz * b.vz;
+      if (speed2 > (b.peak2 || 0)) b.peak2 = speed2;   // how hard it lands, see landProp
       if (speed2 > 90) {
         const hit = removeSphere(b.x, b.y, b.z, blastR, { impulse: 10, fragMult: 1.4, byPlayer: true, silent: true });
         if (hit) {
@@ -464,7 +630,9 @@ export function createCombat(playerSys, cam, scene) {
       c.pos.lerpVectors(c.from, c.anchor, e);
       c.pos.y += Math.sin(e * Math.PI) * LIFT_ARC[c.style];   // the arc sells the lift
       c.quat.copy(c.fromQ).slerp(c.anchorQ, e);
-    } else if (c.phase === 'carrying') {
+    } else if (c.phase === 'carrying' || c.phase === 'swinging') {
+      // during a swing the load simply rides the hands, which the swing poses are
+      // already throwing through the arc — updateAnchor reads them every frame
       c.pos.copy(c.anchor);
       c.quat.copy(c.anchorQ);
     }
@@ -482,12 +650,21 @@ export function createCombat(playerSys, cam, scene) {
     return true;
   };
 
+  window.__test.swing = () => ({
+    phase: st.carry.phase,
+    t: +st.carry.swingT.toFixed(3),
+    hit: st.carry.swingHit,
+    charge: +st.carry.swingCharge.toFixed(2),
+    holding: st.carried?.kind ?? null,
+  });
+
   window.__test.carry = () => ({
     phase: st.carry.phase,
     style: st.carry.style,
     kind: st.carried?.kind ?? null,
     prop: st.carried?.prop ? { type: st.carried.prop.type, idx: st.carried.prop.idx } : null,
     label: document.getElementById('btn-grab')?.textContent,
+    t: +st.carry.t.toFixed(3), elapsed: +st.carry.elapsed.toFixed(3),
     pos: [+st.carry.pos.x.toFixed(2), +st.carry.pos.y.toFixed(2), +st.carry.pos.z.toFixed(2)],
   });
 
