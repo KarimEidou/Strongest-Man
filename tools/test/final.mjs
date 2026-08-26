@@ -34,13 +34,23 @@ const shot = (name) => page.screenshot({ path: join(here, 'shots', `final_${name
 // software rasterizer wall-clock and sim time diverge badly, so wait on the
 // simulation clock rather than a stopwatch.
 const simElapsed = () => page.evaluate('window.__test.simTime()');
+// Every caller ignored the return value, so an assertion whose setup depended on
+// sim time advancing would run anyway when this gave up — and "0 shops closed"
+// reads exactly like a regression instead of like a starved game loop. Under CPU
+// contention (another headless browser on the same four cores) that is precisely
+// what happened. Now a timeout is loud.
+const simTimeouts = [];
 async function waitSim(seconds, capMs = 180000) {
   const from = await simElapsed();
   const t0 = Date.now();
   for (;;) {
     await page.waitForTimeout(250);
-    if ((await simElapsed()) - from >= seconds) return true;
-    if (Date.now() - t0 > capMs) return false;
+    const got = (await simElapsed()) - from;
+    if (got >= seconds) return true;
+    if (Date.now() - t0 > capMs) {
+      simTimeouts.push({ wanted: seconds, got: +got.toFixed(2), afterMs: Date.now() - t0 });
+      return false;
+    }
   }
 }
 
@@ -504,20 +514,36 @@ results.grounding = await page.evaluate(() => {
   window.__test.spawnMonster(0, 8, 26);
   window.__test.spawnMonster(1, -6, 24);
   window.__test.step(1.2);
-  let worstHigh = 0, worstLow = 0;
-  for (let i = 0; i < 120; i++) {
+  // What "floating" means has to be said carefully. The instantaneous peak gap
+  // is NOT it: a monster stepping off a kerb, or off a 1m rubble cell, is
+  // legitimately in the air for the moment before it lands, and how big that gap
+  // gets is set by whatever it stepped off — so an instantaneous ceiling tests
+  // where the monsters happened to wander, which is why this read 0.129 twice
+  // and 0.399 once on identical code. The invariant is that a gap must CLOSE:
+  // nothing may stay off the ground, and nothing may sink into it.
+  let worstHigh = 0, worstLow = 0, worstRun = 0;
+  const run = new Map();
+  for (let i = 0; i < 600; i++) {
     window.__test.step(1 / 60);
     for (const f of window.__test.monsterFeet()) {
       if (f.gap > worstHigh) worstHigh = f.gap;
       if (f.gap < worstLow) worstLow = f.gap;
+      const r = f.gap > 0.12 ? (run.get(f.id) || 0) + 1 : 0;
+      run.set(f.id, r);
+      if (r > worstRun) worstRun = r;
     }
   }
   const people = window.__test.npcFeet();
   return {
     monsterHighest: +worstHigh.toFixed(3),
     monsterDeepest: +worstLow.toFixed(3),
+    longestHoverSeconds: +(worstRun / 60).toFixed(3),
     people,
-    ok: worstHigh < 0.25 && worstLow > -0.06 && people.highest < 0.6 && people.deepest > -0.2,
+    // 0.3s is comfortably longer than the 0.16s a 0.28m drop takes and far
+    // shorter than the 10s a real float lasts. 1.2m is taller than any single
+    // step in the city, so exceeding it means something is genuinely airborne.
+    ok: worstRun / 60 < 0.3 && worstHigh < 1.2 && worstLow > -0.06
+      && people.highest < 0.6 && people.deepest > -0.2,
   };
 });
 
@@ -788,6 +814,9 @@ results.wallAgreement = await page.evaluate(async () => {
 // core/debug.js accumulates all of them into that frame's window. `maxSimMs` is
 // still the true worst single system pass, and drawCalls/triangles are unaffected.
 results.perf = await page.evaluate('window.__perf');
+// If any of these fired, the assertions after them were measuring a world that
+// had not moved. Treat the run as inconclusive rather than as a result.
+if (simTimeouts.length) results.simStarved = { timeouts: simTimeouts, ok: false };
 
 console.log(JSON.stringify(results, null, 1));
 if (errors.length) {

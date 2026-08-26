@@ -124,7 +124,7 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
       x: sx, z: sz, y: groundHeight(sx, sz), px: sx, pz: sz,
       py: groundHeight(sx, sz),
       yaw: facing, visYaw: facing,
-      speed: 0, targetSpeed: 0, cruise: kindIdx === 0 ? 2.4 : 3.1,
+      speed: 0, targetSpeed: 0, vy: 0, cruise: kindIdx === 0 ? 2.4 : 3.1,
       hp: MAX_HP, knowledge: 0,
       state: 'arrive',       // arrive|rampage|attack_player|eat|realize|flee|rage|dead
       stateT: 0, swingT: 0, wreckT: 0, flinchT: 0,
@@ -303,16 +303,30 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
       } else { m.px = m.x; m.pz = m.z; }
       // Follow the surface rather than snap to it. Kerbs are 12cm, rubble piles
       // step in 1m cells, and a three-metre creature teleporting up one of those
-      // between two frames reads as a glitch; damped, it walks up them. Anything
-      // bigger than a step (a spawn, a crater opening underneath) is taken whole.
+      // between two frames reads as a glitch.
       const gy = groundHeight(m.x, m.z);
       m.py = m.y;
-      // Rising ground wins outright — a kerb or a rubble pile coming up under the
-      // feet must never be allowed to come THROUGH them, which is what damping
-      // both ways cost: a lag of one time constant is 10cm of shin through the
-      // pavement every time one stepped up. Falling ground is damped, so walking
-      // off a kerb is a step down rather than a teleport.
-      m.y = gy >= m.y || gy < m.y - 0.9 ? gy : damp(m.y, gy, 14, dt);
+      if (gy >= m.y || gy < m.y - 0.9) {
+        // Rising ground wins outright — a kerb or a rubble pile coming up under
+        // the feet must never be allowed to come THROUGH them, which is what
+        // damping both ways cost: a lag of one time constant is 10cm of shin
+        // through the pavement every time one stepped up. A drop bigger than a
+        // step (a spawn, a crater opening underneath) is taken whole as well.
+        m.y = gy;
+        m.vy = 0;
+      } else {
+        // Ground fell away under it: so does the monster. This was an
+        // exponential ease toward the new height, which took about as long as
+        // gravity would — 0.28m in 0.3s, measured — but ran the curve backwards,
+        // fastest at the top and slowest at the ground, so one stepping off a
+        // kerb looked lowered on a wire rather than dropped. Falling covers the
+        // same 0.28m in 0.16s and, more to the point, looks like a step down.
+        // Slightly stronger than real gravity: these things are heavy and a
+        // floaty one is the exact complaint this whole path exists to answer.
+        m.vy = (m.vy || 0) - 22 * dt;
+        m.y += m.vy * dt;
+        if (m.y <= gy) { m.y = gy; m.vy = 0; }
+      }
     }
   }
 
@@ -552,10 +566,16 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
   window.__test.monsterFeet = () => monsters.filter((m) => !m.dead).map((m) => {
     const sole = footBoneY(m.root) - m.soleDrop;
     return {
-      kind: m.base,
+      // `id` and `state` because two monsters of the same kind are common and a
+      // bare `kind` cannot tell them apart — a probe that groups by it silently
+      // interleaves two of them and reports a ground profile belonging to
+      // neither. `state` so a failure says what the thing was DOING when it
+      // hovered, which is the whole question.
+      id: m.id, kind: m.base, state: m.state,
       gap: +(sole - groundHeight(m.x, m.z)).toFixed(3),
       h: +m.targetH.toFixed(2),
       footY: +m.footY.toFixed(3),
+      x: +m.x.toFixed(2), z: +m.z.toFixed(2),
     };
   });
   window.__test.monsterStats = () => monsters.map((m) => ({
