@@ -738,11 +738,24 @@ results.armedCarry = await page.evaluate(() => {
 results.wallAgreement = await page.evaluate(async () => {
   const C = await import('/Strongest-Man/js/physics/collide.js');
   const B = window.__buildingsReg;
-  const iw = B.iwalls.find((w) => !w.gone && w.floor === 0);
-  const thinX = iw.sx < iw.sz;
-  const ox = thinX ? iw.x - 3 : iw.x, oz = thinX ? iw.z : iw.z - 3;
+  // The wall has to be one this ray can actually reach: its building still
+  // standing (`gone` is per-wall, and the assertions above level two buildings),
+  // and the 3m stand-off INSIDE its own footprint, or the shot crosses the outer
+  // shell first and stops there — correctly, but not at the wall under test.
+  const reachable = (w) => {
+    if (w.gone || w.floor !== 0) return false;
+    const b = B.buildings[w.bId];
+    if (!b || b.collapsed) return false;
+    const s = b.spec, thin = w.sx < w.sz;
+    const x = thin ? w.x - 3 : w.x, z = thin ? w.z : w.z - 3;
+    return x > s.x0 + 0.4 && x < s.x1 - 0.4 && z > s.z0 + 0.4 && z < s.z1 - 0.4;
+  };
+  const iw = B.iwalls.find(reachable);
+  const thinX = iw && iw.sx < iw.sz;
+  const ox = iw ? (thinX ? iw.x - 3 : iw.x) : 0, oz = iw ? (thinX ? iw.z : iw.z - 3) : 0;
   const dx = thinX ? 1 : 0, dz = thinX ? 0 : 1;
-  const iHit = C.rayWorld(ox, 1.2, oz, dx, 0, dz, 6);
+  const iHit = iw ? C.rayWorld(ox, 1.2, oz, dx, 0, dz, 6) : null;
+  const wantIDist = iw ? 3 - (thinX ? iw.sx : iw.sz) / 2 : 0;
   let door = null;
   for (const b of B.buildings) {
     if (b.collapsed) continue;
@@ -764,7 +777,9 @@ results.wallAgreement = await page.evaluate(async () => {
     interior: iHit ? { kind: iHit.kind, dist: +iHit.dist.toFixed(2) } : null,
     doorway: through ? { kind: through.kind, dist: +through.dist.toFixed(2) } : 'clear',
     aboveDoor: above ? { kind: above.kind, dist: +above.dist.toFixed(2) } : 'clear',
-    ok: iHit?.kind === 'wall' && Math.abs(iHit.dist - 3) < 0.4 && !through && above?.kind === 'wall',
+    wantIDist: +wantIDist.toFixed(2),
+    ok: !!iw && iHit?.kind === 'wall' && Math.abs(iHit.dist - wantIDist) < 0.05
+      && !through && above?.kind === 'wall',
   };
 });
 
