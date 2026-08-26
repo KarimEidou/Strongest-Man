@@ -9,11 +9,12 @@ const DIST = 6.2;
 // -0.18 was fine while the only reach was a fist. A gun has to be able to point
 // at the head of a 3.4m monster standing three metres away, which is 34 degrees
 // up, and at the top of a building. Going this far up swings the eye BELOW the
-// look point, so the ground clamp below the occlusion query is what makes it
-// safe. player/weapons.js repeats these two numbers, because recoil writes the
-// pitch directly.
+// look point, so the ground constraint below the occlusion query is what makes
+// it safe. player/weapons.js repeats these two numbers, because recoil writes
+// the pitch directly.
 const MIN_PITCH = -0.50, MAX_PITCH = 0.98;
 const EYE_CLEAR = 0.35;         // how far the camera stays off the pavement
+const MIN_DIST = 1.6;           // closest the ground may pull the boom in
 const SHOULDER = 0.55;
 const HEAD = 1.55;
 
@@ -82,12 +83,28 @@ export function createCamera() {
 
     let allowed = wanted;
     if (st.occlusionQuery && !st.noOcclusion) allowed = st.occlusionQuery(look, eye, wanted);
+    // Aiming up swings the eye down and, past about -0.20, under the street. The
+    // occlusion query only knows about walls, so the floor needs saying — and it
+    // has to be said as a DISTANCE, not as a height.
+    //
+    // Raising eye.y on its own moves the eye without moving `look`, which tilts
+    // what lookAt() produces away from st.curPitch. The SHOT is built purely from
+    // st.curPitch (player/weapons.js aimAngles) and the reticle is a div pinned
+    // at 50%/50%, so the two have to agree or the crosshair lies: with the height
+    // clamp, aiming 29 degrees up put the screen centre at 12 and the round at
+    // 29, and a 9-degree assist cone cannot cover a 16-degree error.
+    // Shortening the boom instead slides the eye along the very same ray, so the
+    // view direction IS the aim direction at every pitch and the camera simply
+    // dollies in when he looks up — which is what a shoulder camera should do.
+    const gy = Math.max(groundHeight(look.x, look.z), groundHeight(eye.x, eye.z));
+    if (sp < -1e-3) allowed = Math.min(allowed, Math.max(MIN_DIST, (gy + EYE_CLEAR - look.y) / sp));
     st.curDist = damp(st.curDist, allowed, allowed < st.curDist ? 60 : 6, dt);
     eye.copy(look).addScaledVector(off, st.curDist / wanted);
-    // Aiming up swings the eye down and, past about -0.3, under the street. The
-    // occlusion query only knows about walls, so the floor needs saying.
-    const floor = groundHeight(eye.x, eye.z) + EYE_CLEAR;
-    if (eye.y < floor) eye.y = floor;
+    // Last resort, on ground steep enough that even MIN_DIST does not clear it:
+    // lift the eye AND the look point by the same amount. Translating both ends
+    // leaves look-eye — and therefore the aim — exactly as it was; it only pans.
+    const under = groundHeight(eye.x, eye.z) + EYE_CLEAR - eye.y;
+    if (under > 0) { eye.y += under; look.y += under; }
 
     // trauma shake (decays, squared falloff feels right)
     if (st.trauma > 0) {

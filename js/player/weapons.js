@@ -106,37 +106,77 @@ const _muz = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _e = new THREE.Euler(0, 0, 0, 'YXZ');
 
-// Ray vs upright cylinder (centre x/z, base y, radius r, height h). Returns the
-// distance along the ray to the first entry point, or -1.
+// Ray vs upright cylinder (centre x/z, BASE y, radius r, height h). Returns the
+// distance to the first point inside the solid, 0 if the origin is already
+// inside it, or -1.
+//
+// Written as an interval intersection — clip [0, maxT] by the quadratic's roots,
+// then by the two cap planes — rather than as "take the near root, or the far
+// one if the near one is behind". That older shape overwrote the ENTRY root with
+// the EXIT root whenever the origin sat inside the infinite cylinder in x/z, and
+// then clipped that far-side value against the caps, so a shot taken from
+// directly above a monster (inside its radius, past its head) missed it
+// outright. A 40k-case fuzz against a brute-force sampler put the old form at
+// 1108/1120 wrong for origins inside the solid and 297/1189 for origins inside
+// the radius but beyond a cap; it was exact everywhere else, which is why it
+// survived this long.
 function rayCylinder(ox, oy, oz, dx, dy, dz, cx, cy, cz, r, h, maxT) {
   const mx = ox - cx, mz = oz - cz;
   const a = dx * dx + dz * dz;
   const b = mx * dx + mz * dz;
   const c = mx * mx + mz * mz - r * r;
-  let t;
+  let t0 = 0, t1 = maxT;
   if (a < 1e-8) {
-    // straight up or down: only a hit if we start inside the disc
-    if (c > 0) return -1;
-    t = dy > 0 ? (cy - oy) / dy : (cy + h - oy) / dy;
-    return t >= 0 && t <= maxT ? t : -1;
+    if (c > 0) return -1;               // parallel to the axis and outside it
+  } else {
+    const disc = b * b - a * c;
+    if (disc < 0) return -1;
+    const sq = Math.sqrt(disc);
+    const ta = (-b - sq) / a, tb = (-b + sq) / a;
+    if (ta > t0) t0 = ta;
+    if (tb < t1) t1 = tb;
+    if (t0 > t1) return -1;
   }
-  const disc = b * b - a * c;
-  if (disc < 0) return -1;
-  const sq = Math.sqrt(disc);
-  t = (-b - sq) / a;
-  if (t < 0) t = (-b + sq) / a;         // started inside the cylinder
-  if (t < 0 || t > maxT) return -1;
-  const y = oy + dy * t;
-  if (y >= cy && y <= cy + h) return t;
-  // entered beside the cap: clip against the end planes instead
-  if (Math.abs(dy) < 1e-6) return -1;
-  const t0 = (cy - oy) / dy, t1 = (cy + h - oy) / dy;
-  const lo = Math.min(t0, t1), hi = Math.max(t0, t1);
-  const tt = Math.max(t, lo);
-  if (tt > hi || tt > maxT || tt < 0) return -1;
-  const px = ox + dx * tt - cx, pz = oz + dz * tt - cz;
-  return px * px + pz * pz <= r * r ? tt : -1;
+  if (Math.abs(dy) < 1e-8) {
+    if (oy < cy || oy > cy + h) return -1;
+  } else {
+    let ta = (cy - oy) / dy, tb = (cy + h - oy) / dy;
+    if (ta > tb) { const s = ta; ta = tb; tb = s; }
+    if (ta > t0) t0 = ta;
+    if (tb < t1) t1 = tb;
+    if (t0 > t1) return -1;
+  }
+  return t0 <= maxT ? t0 : -1;
 }
+
+// Ray vs the car's own oriented box (centre x/z, BASE y, yaw, half-extents).
+// Same interval clip, in the car's frame.
+//
+// A car is 1.76 x 4.4 x 1.7 m, so no single radius describes it: taking the
+// LARGER half-axis, as one cylinder round the footprint did, wrapped a 1.39m
+// bullet volume round a body 0.88m wide. collide.js pushes the player out to
+// only hw + r = 1.28m laterally, so a man standing at the side of a parked car
+// was always INSIDE its hit volume, and with pierce 0 every shot he fired down
+// the street stopped in the paintwork of the car beside him.
+function rayCarBox(ox, oy, oz, dx, dy, dz, c, maxT) {
+  const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);   // +Z-forward convention
+  const rx = fz, rz = -fx;
+  const mx = ox - c.x, my = oy - (c.y + CAR_H * 0.5), mz = oz - c.z;
+  const o = [mx * rx + mz * rz, my, mx * fx + mz * fz];
+  const d = [dx * rx + dz * rz, dy, dx * fx + dz * fz];
+  const half = [c.hw, CAR_H * 0.5, c.hl];
+  let t0 = 0, t1 = maxT;
+  for (let i = 0; i < 3; i++) {
+    if (Math.abs(d[i]) < 1e-8) { if (Math.abs(o[i]) > half[i]) return -1; continue; }
+    let ta = (-half[i] - o[i]) / d[i], tb = (half[i] - o[i]) / d[i];
+    if (ta > tb) { const s = ta; ta = tb; tb = s; }
+    if (ta > t0) t0 = ta;
+    if (tb < t1) t1 = tb;
+    if (t0 > t1) return -1;
+  }
+  return t0 <= maxT ? t0 : -1;
+}
+const CAR_H = 1.7;
 
 export function createWeapons(player, cam, combat) {
   const p = player.p;
@@ -238,8 +278,13 @@ export function createWeapons(player, cam, combat) {
   // ---- aiming -------------------------------------------------------------
   // The camera looks from behind along -off (engine/camera.js), so the way the
   // player is pointing is the camera yaw turned round, with the pitch negated.
+  // Scratch, like every other vector in this file: updateStance() asks twice per
+  // fixed step and runs through the whole reload branch as well.
+  const _aim = { yaw: 0, pitch: 0 };
   function aimAngles() {
-    return { yaw: cam.st.curYaw + Math.PI, pitch: -cam.st.curPitch };
+    _aim.yaw = cam.st.curYaw + Math.PI;
+    _aim.pitch = -cam.st.curPitch;
+    return _aim;
   }
 
   function aimDir(out) {
@@ -313,9 +358,7 @@ export function createWeapons(player, cam, combat) {
     const cars = st.hooks.cars?.list || [];
     for (const c of cars) {
       if (!c.alive || c.mode === 'held') continue;
-      // a car is wider than it is tall; one cylinder round its footprint is
-      // close enough for a bullet and far cheaper than an oriented box
-      const t = rayCylinder(ox, oy, oz, dx, dy, dz, c.x, c.y, c.z, Math.max(c.hw, c.hl) * 0.82, 1.7, range);
+      const t = rayCarBox(ox, oy, oz, dx, dy, dz, c, range);
       if (t >= 0) hits.push({ t, kind: 'car', obj: c });
     }
     hits.sort(byT);
@@ -360,8 +403,7 @@ export function createWeapons(player, cam, combat) {
     burstSparks(x, y, z, kind === 'ground' ? 4 : 7);
     burstDust(x, y, z, kind === 'ground' ? 5 : 3, 0x9aa3bd, 2.2);
     if (kind === 'prop' && world.prop) {
-      hitProp(world.prop, dx, dz, gun.dmg * 0.35);
-      emit(EV.PROP_DESTROYED, { type: world.prop.type });
+      hitProp(world.prop, dx, dz, gun.dmg * 0.35);   // emits PROP_DESTROYED itself
     } else if (kind === 'wall' && (gun.blast || gun.dmg >= 25)) {
       // Only a heavy round takes a cell out of a facade. A pistol leaves sparks
       // and dust, which is both what it would do and what stops an SMG held on a
@@ -579,6 +621,26 @@ export function createWeapons(player, cam, combat) {
     cam.st.pitch = cam.st.curPitch = -Math.atan2(dy, flat);
     p.yaw = p.visYaw = Math.atan2(dx, dz);
     return { yaw: +cam.st.curYaw.toFixed(3), pitch: +cam.st.curPitch.toFixed(3) };
+  };
+  // The reticle is a div pinned at 50%/50%, so the camera's forward direction
+  // and the direction a round leaves in have to be the SAME vector — but they
+  // are derived from opposite ends: the view from lookAt(eye, look), the shot
+  // from cam.st.curPitch. Nothing except a measurement can prove they agree,
+  // and when they silently stopped agreeing (engine/camera.js used to lift the
+  // eye off the pavement without moving `look`) the crosshair pointed 16
+  // degrees below where the bullets went at full elevation.
+  window.__test.aimCheck = () => {
+    const view = cam.camera.getWorldDirection(_v);
+    const deg = (v) => +(Math.asin(clamp(v, -1, 1)) * 180 / Math.PI).toFixed(2);
+    aimDir(_dir);
+    return {
+      pitch: +cam.st.curPitch.toFixed(3),
+      dist: +cam.st.curDist.toFixed(2),
+      eyeY: +cam.camera.position.y.toFixed(3),
+      viewDeg: deg(view.y),
+      aimDeg: deg(_dir.y),
+      divergenceDeg: +(Math.acos(clamp(view.dot(_dir), -1, 1)) * 180 / Math.PI).toFixed(3),
+    };
   };
   window.__test.fireOnce = () => { st.cool = 0; fire(); return st.ammo[st.equipped]; };
   window.__test.muzzle = () => { muzzle(_v); return [+_v.x.toFixed(2), +_v.y.toFixed(2), +_v.z.toFixed(2)]; };

@@ -1,24 +1,42 @@
 // Player health.
 //
 // He is the strongest man in the universe, so the bar is not a difficulty knob —
-// it is the thing that makes the first monster's punch mean something. One
-// monster cannot kill him: MAX is 200, a swing is 9, and out of contact he heals
-// 14/s after a two-second gap, so a lone attacker loses ground. Three of them
-// working at once out-damage the regeneration, and a collapsing building or his
-// own thrown car does not care how strong he is.
+// it is the thing that makes the first monster's punch mean something.
+//
+// MAX is 200 and he heals 26/s once he has been clear for 0.7s. Measured against
+// each attacker's real cadence, over a minute apiece:
+//
+//   one monster that has NOT realized (9 every 1.2s)   200 -> 191, and holds
+//   two of them                                        floored in ~28s
+//   one that HAS realized, in a rage (13 every 0.9s)   floored inside its window
+//
+// So a monster that still thinks he is prey cannot meaningfully hurt him — it
+// gives back more between swings than it takes with them, which is the joke the
+// whole game is built on. Two of them can. And one that has SEEN what he is and
+// come at him anyway can put him on the floor before its 26 seconds of rage run
+// out, which is the point of the realization being worth anything at all. A
+// collapsing building and his own thrown car do not care how strong he is either.
+//
+// Those numbers are load-bearing on each other, so change none of them alone:
+// the delay in particular has to sit INSIDE a swing cadence or regeneration
+// never runs during a fight at all. It was 2.0s against a 1.2s cadence, which
+// meant `sinceHit` was reset before it could ever reach it — every sentence
+// above was false, and the bar only ever went one way.
 //
 // Going down is a setback, never a game over: he gets up where he fell, at half
 // health, having dropped a tenth of his points. There is no score to protect and
 // no run to lose, so a death screen would only be a wall between the player and
 // the next thing he wanted to hit.
 import { emit, on, EV } from '../core/events.js';
-import { save } from '../core/state.js';
+import { save, persist } from '../core/state.js';
 import { flashVignette } from '../ui/hud.js';
 import { clamp } from '../core/mathx.js';
 
 export const MAX_HP = 200;
-const REGEN = 14;             // hp per second
-const REGEN_DELAY = 2.0;      // seconds of no damage before it starts
+const REGEN = 26;             // hp per second
+const REGEN_DELAY = 0.7;      // seconds of no damage before it starts — must be
+                              // shorter than a monster's swing cadence (1.2s)
+const REGEN_TICK = 0.12;      // matches #hp-fill's width transition in the CSS
 const DOWN_TIME = 2.6;        // seconds on the floor
 const REVIVE_FRACTION = 0.5;
 
@@ -31,6 +49,7 @@ export function createHealth(player, cam) {
     downT: 0,
     lastCause: '',
   };
+  let regenT = REGEN_TICK;     // so the first step of a regen posts immediately
   p.hp = st.hp;
   p.maxHp = MAX_HP;
 
@@ -44,7 +63,18 @@ export function createHealth(player, cam) {
     if (st.hp < st.max && st.sinceHit > REGEN_DELAY) {
       st.hp = Math.min(st.max, st.hp + REGEN * dt);
       p.hp = st.hp;
-      emit(EV.PLAYER_HEALTH, { hp: st.hp, max: st.max, healing: true });
+      // Posted at the rate the bar can actually animate, not once per fixed
+      // step. hud.js setHealth does five DOM writes an event, and #hp-fill and
+      // #hp-ghost carry 0.12s and 0.55s width transitions — emitting at 60Hz
+      // restarted both every 16ms for the whole regen window, so the fill
+      // crawled and the ghost never played at all.
+      regenT += dt;
+      if (regenT >= REGEN_TICK || st.hp >= st.max) {
+        regenT = 0;
+        emit(EV.PLAYER_HEALTH, { hp: st.hp, max: st.max, healing: true });
+      }
+    } else {
+      regenT = REGEN_TICK;
     }
   }
 
@@ -81,6 +111,11 @@ export function createHealth(player, cam) {
     // can be taken back.
     const lost = Math.floor(save.points * 0.1);
     save.points = Math.max(0, save.points - lost);
+    // The readout only ever moves on EV.POINTS, and core/points.js only writes
+    // through on award()'s 2.5s batch timer or on a purchase. Without both of
+    // these the HUD went on showing the old balance until the next kill, and a
+    // reload handed the points straight back.
+    if (lost) { emit(EV.POINTS, { delta: -lost, total: save.points, label: null }); persist(); }
     p.loco?.playOneshot?.('die', { timeScale: 1, clamp: true, hold: true });
     cam.shake(0.9);
     flashVignette(1);
@@ -99,13 +134,15 @@ export function createHealth(player, cam) {
 
   // Debris and thrown props hurt too — the physics world already knows when
   // something heavy lands on you, it just had nothing to tell.
-  on(EV.BUILDING_COLLAPSED, ({ building }) => {
-    if (!building?.spec) return;
-    const s = building.spec;
-    const cx = (s.x0 + s.x1) / 2, cz = (s.z0 + s.z1) / 2;
-    const r = Math.max(s.x1 - s.x0, s.z1 - s.z0) * 0.5 + 6;
-    const d = Math.hypot(p.x - cx, p.z - cz);
-    if (d < r) damage(28 * (1 - d / r), 'rubble', 0.7);
+  // `building` on this event is a numeric spec id (world/city.js), not the
+  // building — `(3)?.spec` is undefined, so this handler returned on every
+  // single collapse and the rubble never touched him. The event already carries
+  // the footprint centre and half-span, which is all that was wanted.
+  on(EV.BUILDING_COLLAPSED, ({ x, z, r }) => {
+    if (x === undefined) return;
+    const reach = (r || 7) + 6;
+    const d = Math.hypot(p.x - x, p.z - z);
+    if (d < reach) damage(28 * (1 - d / reach), 'rubble', 0.7);
   });
 
   window.__test.health = () => ({

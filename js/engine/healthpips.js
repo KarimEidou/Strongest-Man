@@ -22,6 +22,7 @@ const _s = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _c = new THREE.Color();
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+let lastSlot = 0;            // how many pips were live last frame
 
 let mesh = null, camRef = null;
 const seen = new WeakMap();     // monster -> { hp, t }
@@ -91,7 +92,16 @@ export function healthPipsFrame(dt, monsters, maxHp) {
     mesh.instanceColor.setXYZ(slot * 2 + 1, _c.r, _c.g, _c.b);
     slot++;
   }
-  for (let i = slot * 2; i < CAP * 2; i++) mesh.setMatrixAt(i, ZERO);
-  mesh.instanceMatrix.needsUpdate = true;
-  mesh.instanceColor.needsUpdate = true;
+  // Only zero what was live last frame, and only re-upload when something
+  // moved. Most frames nothing in town is hurt: this used to rewrite and
+  // re-upload both instance buffers, all CAP*2 of them, every single frame to
+  // draw nothing. engine/tracers.js already guards its uploads this way.
+  for (let i = slot * 2; i < lastSlot * 2; i++) mesh.setMatrixAt(i, ZERO);
+  if (slot || lastSlot) {
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.instanceColor.needsUpdate = true;
+  }
+  // and stop submitting instances nobody wrote
+  mesh.count = slot * 2;
+  lastSlot = slot;
 }

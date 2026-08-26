@@ -44,8 +44,11 @@ range. Buying one equips it; the weapon strip along the bottom of the HUD
 switches between them and bare hands instantly.
 
 The health bar is not a difficulty knob. Nothing in the city can hurt him except
-a monster's hands, a building coming down on him, and his own explosive rounds —
-one monster loses ground against the regeneration, three do not. Going down is a
+a monster's hands, a building coming down on him, and his own explosive rounds.
+A monster that still thinks he is prey cannot meaningfully hurt him — it gives
+back more between swings than it takes with them. Two of them can. And one that
+has *seen* what he is and comes at him anyway can put him on the floor before its
+rage burns out, which is what makes the realization worth having. Going down is a
 setback and never a game over: he gets up where he fell, at half health, a tenth
 of his spendable points lighter.
 

@@ -636,6 +636,138 @@ results.triggerNotFist = await page.evaluate(() => {
   return { armedCharge, bareCharge, ok: armedCharge === 0 && bareCharge > 0.5 };
 });
 
+// 11b) The crosshair is a div pinned at 50%/50% and the shot comes off
+// cam.st.curPitch, so the camera's forward vector and the bullet direction have
+// to be the same vector at every elevation. They are derived from opposite ends
+// and nothing but a measurement keeps them honest: the camera used to lift its
+// eye off the pavement without moving the look point, which left the reticle
+// pointing 16 degrees below where the rounds went at full up-aim.
+results.aimTruth = await page.evaluate(() => {
+  window.__test.equip('pistol');
+  const seen = [];
+  for (const pitch of [0, -0.15, -0.3, -0.4, -0.5, 0.4, 0.9]) {
+    const m = window.__test.muzzle();
+    window.__test.aimAt(m[0], m[1] - Math.tan(pitch) * 20, m[2] + 20);
+    window.__test.step(0.6);
+    const c = window.__test.aimCheck();
+    seen.push({ aimDeg: c.aimDeg, viewDeg: c.viewDeg, div: c.divergenceDeg, eyeY: c.eyeY, dist: c.dist });
+  }
+  const worst = Math.max(...seen.map((s) => s.div));
+  const lowestEye = Math.min(...seen.map((s) => s.eyeY));
+  // and the eye still clears the pavement while doing it
+  return { seen, worstDivergenceDeg: worst, lowestEye, ok: worst < 0.2 && lowestEye >= 0.34 };
+});
+
+// 11c) One prop, one payout. hitProp() is the single emitter of PROP_DESTROYED;
+// it used to be announced by each of its five callers as well, so the three tall
+// types that emit for themselves paid AWARDS.prop twice and cost double karma.
+// And a building pays 450 exactly once, to the player who levelled it — the
+// generic EV.FEAT handler carries no `byPlayer`, so a monster bulldozing a
+// facade was paying the player for the privilege.
+results.paidOnce = await page.evaluate(async () => {
+  const D = await import('/Strongest-Man/js/world/destruction.js');
+  const reg = window.__propsReg;
+  const pay = (prop) => {
+    const before = window.__test.points().points;
+    window.__test.teleport(prop.x - 1.2, prop.z);
+    window.__test.faceTo(prop.x, prop.z);
+    window.__test.punchAt(prop.x, prop.z, 0);
+    window.__test.step(0.4);
+    return window.__test.points().points - before;
+  };
+  const lamp = pay(reg.all.find((p) => p.type === 'prop_streetlamp' && p.alive));
+  const level = (byPlayer, far) => {
+    const b = window.__buildingsReg.buildings.find((x) => !x.collapsed && !x.falling);
+    const s = b.spec, cx = (s.x0 + s.x1) / 2, cz = (s.z0 + s.z1) / 2;
+    window.__test.teleport(cx + (far ? 60 : 2), cz + (far ? 60 : 2));
+    window.__test.step(0.4);
+    for (let i = 0; i < 400 && window.__test.health().hp < 200; i++) window.__test.step(0.05);
+    const p0 = window.__test.points().points, h0 = window.__test.health().hp;
+    D.collapseBuilding(b, byPlayer);
+    let lowest = h0;
+    for (let i = 0; i < 300; i++) { window.__test.step(1 / 60); lowest = Math.min(lowest, window.__test.health().hp); }
+    return { paid: window.__test.points().points - p0, hpLost: +(h0 - lowest).toFixed(1) };
+  };
+  const mine = level(true, false);
+  const theirs = level(false, true);
+  // AWARDS.prop is 12; the punch can also clip a wall cell or two at 2 apiece.
+  return {
+    lamp, mine, theirs,
+    ok: lamp >= 12 && lamp <= 16 && mine.paid === 450 && theirs.paid === 0 && mine.hpLost > 10,
+  };
+});
+
+// 11d) A holstered gun takes over the JAB, not the load. Gating the whole punch
+// release on `armed` while player/weapons.js separately bails out on carrying()
+// left PUNCH doing nothing at all with a car over his head: no shot, no swing.
+// And going down has to cost him what he is holding — nothing else clears it.
+results.armedCarry = await page.evaluate(() => {
+  const T = window.__test;
+  const npcs = window.__npcs.npcs;
+  for (const c of window.__trafficList) { c.mode = 'held'; c.x = 500; c.z = 500; }
+  let got = false;
+  for (let a = 0; a < 25 && !got; a++) {
+    const n = npcs.find((o) => o.state !== 'dead' && o.state !== 'carried');
+    T.teleport(n.x - Math.sin(n.yaw) * 0.8, n.z - Math.cos(n.yaw) * 0.8);
+    T.faceTo(n.x, n.z); T.step(0.06); T.press('grab'); T.step(0.25);
+    if (T.carry().kind === 'entity') got = true;
+  }
+  if (!got) return { ok: false, why: 'never grabbed' };
+  T.step(1.0);
+  T.equip('pistol'); T.step(0.4);
+  const ammoBefore = T.weapon().ammo;
+  T.press('punchDown'); T.step(0.2); T.press('punchUp');
+  let sawSwing = false;
+  for (let i = 0; i < 40; i++) { T.step(1 / 60); if (T.swing().phase === 'swinging') sawSwing = true; }
+  const ammoAfter = T.weapon().ammo;
+  // now put him on the floor: the victim must not stay welded to his hands
+  const holdingBefore = T.carry().kind;
+  T.hurtPlayer(999); T.step(0.1);
+  const dropped = T.carry().kind === null && T.carry().phase === 'idle';
+  T.step(4);
+  return {
+    sawSwing, ammoBefore, ammoAfter, holdingBefore, dropped,
+    ok: sawSwing && ammoAfter === ammoBefore && holdingBefore === 'entity' && dropped,
+  };
+});
+
+// 11e) Hitscan and movement have to model the same wall. rayWorld resolved door
+// cells with walking semantics OFF, so a bullet could not go through a doorway
+// the player walks through; and it never queried the interior spine walls at
+// all, so a round indoors passed clean through a wall he cannot.
+results.wallAgreement = await page.evaluate(async () => {
+  const C = await import('/Strongest-Man/js/physics/collide.js');
+  const B = window.__buildingsReg;
+  const iw = B.iwalls.find((w) => !w.gone && w.floor === 0);
+  const thinX = iw.sx < iw.sz;
+  const ox = thinX ? iw.x - 3 : iw.x, oz = thinX ? iw.z : iw.z - 3;
+  const dx = thinX ? 1 : 0, dz = thinX ? 0 : 1;
+  const iHit = C.rayWorld(ox, 1.2, oz, dx, 0, dz, 6);
+  let door = null;
+  for (const b of B.buildings) {
+    if (b.collapsed) continue;
+    for (const [key, cell] of b.idx) {
+      if (cell.kind !== 'door' || cell.floor !== 0 || !cell.alive) continue;
+      const [side, col] = key.split(':');
+      const s = b.spec, along = Number(col) * 2 + 1;
+      if (side === 'north') door = { x: s.x0 + along, z: s.z0, dx: 0, dz: 1 };
+      else if (side === 'south') door = { x: s.x0 + along, z: s.z1, dx: 0, dz: -1 };
+      else if (side === 'west') door = { x: s.x0, z: s.z0 + along, dx: 1, dz: 0 };
+      else door = { x: s.x1, z: s.z0 + along, dx: -1, dz: 0 };
+      break;
+    }
+    if (door) break;
+  }
+  const through = C.rayWorld(door.x - door.dx * 2, 1.0, door.z - door.dz * 2, door.dx, 0, door.dz, 4);
+  const above = C.rayWorld(door.x - door.dx * 2, 4.4, door.z - door.dz * 2, door.dx, 0, door.dz, 4);
+  return {
+    interior: iHit ? { kind: iHit.kind, dist: +iHit.dist.toFixed(2) } : null,
+    doorway: through ? { kind: through.kind, dist: +through.dist.toFixed(2) } : 'clear',
+    aboveDoor: above ? { kind: above.kind, dist: +above.dist.toFixed(2) } : 'clear',
+    ok: iHit?.kind === 'wall' && Math.abs(iHit.dist - 3) < 0.4 && !through && above?.kind === 'wall',
+  };
+});
+
 // 12) perf snapshot. NOTE: `simMs` is meaningless after the stepped assertions
 // above — `__test.step()` runs hundreds of fixed steps inside a single frame and
 // core/debug.js accumulates all of them into that frame's window. `maxSimMs` is

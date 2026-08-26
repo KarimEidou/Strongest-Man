@@ -204,7 +204,12 @@ export function cameraAllowed(look, eye, wanted) {
 }
 
 const nearCam = [];
-function pointInWall(x, y, z) {
+// `walkable` picks which semantics the door cells get. The camera occlusion
+// probe wants a doorway to read SOLID — pushing the camera through a door gap is
+// exactly the shot nobody wants — while a bullet has to go through the same
+// doorway the player can walk through, or hitscan and movement disagree about
+// the same square metre of wall.
+function pointInWall(x, y, z, walkable = false) {
   if (!buildGrid) return false;
   buildGrid.query(x, z, T, nearCam);
   for (const b of nearCam) {
@@ -213,13 +218,29 @@ function pointInWall(x, y, z) {
     if (x < s.x0 - T || x > s.x1 + T || z < s.z0 - T || z > s.z1 + T) continue;
     if (y > s.floors * FLOOR_H) continue;
     if (x > s.x0 && x < s.x1) {
-      if (Math.abs(z - s.z0) <= T / 2 && wallSolid(b, 'north', x - s.x0, y, false)) return true;
-      if (Math.abs(z - s.z1) <= T / 2 && wallSolid(b, 'south', x - s.x0, y, false)) return true;
+      if (Math.abs(z - s.z0) <= T / 2 && wallSolid(b, 'north', x - s.x0, y, walkable)) return true;
+      if (Math.abs(z - s.z1) <= T / 2 && wallSolid(b, 'south', x - s.x0, y, walkable)) return true;
     }
     if (z > s.z0 && z < s.z1) {
-      if (Math.abs(x - s.x0) <= T / 2 && wallSolid(b, 'west', z - s.z0, y, false)) return true;
-      if (Math.abs(x - s.x1) <= T / 2 && wallSolid(b, 'east', z - s.z0, y, false)) return true;
+      if (Math.abs(x - s.x0) <= T / 2 && wallSolid(b, 'west', z - s.z0, y, walkable)) return true;
+      if (Math.abs(x - s.x1) <= T / 2 && wallSolid(b, 'east', z - s.z0, y, walkable)) return true;
     }
+  }
+  return false;
+}
+
+// Interior spine walls, which capsuleVsWorld pushes out of but the shell test
+// above knows nothing about. Without this a round fired indoors passed clean
+// through a wall the player cannot walk through.
+const nearRay = [];
+function pointInIWall(x, y, z) {
+  if (!iwallGrid) return false;
+  iwallGrid.query(x, z, 0.1, nearRay);
+  const floor = Math.floor(y / FLOOR_H);
+  for (const iw of nearRay) {
+    if (iw.gone || iw.floor !== floor) continue;
+    if (B.buildings[iw.bId]?.collapsed) continue;
+    if (Math.abs(x - iw.x) < iw.sx / 2 && Math.abs(z - iw.z) < iw.sz / 2) return true;
   }
   return false;
 }
@@ -252,7 +273,7 @@ export function rayWorld(ox, oy, oz, dx, dy, dz, maxDist) {
       const hit = t - RAY_STEP * (1 - f);
       return { dist: hit, kind: 'ground', x: ox + dx * hit, y: g, z: oz + dz * hit, prop: null };
     }
-    if (pointInWall(x, y, z)) return { dist: t, kind: 'wall', x, y, z, prop: null };
+    if (pointInWall(x, y, z, true) || pointInIWall(x, y, z)) return { dist: t, kind: 'wall', x, y, z, prop: null };
     if (propGrid) {
       propGrid.query(x, z, 1.6, nearP);
       for (const p of nearP) {

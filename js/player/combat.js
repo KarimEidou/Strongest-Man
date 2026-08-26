@@ -95,21 +95,33 @@ export function createCombat(playerSys, cam, scene) {
     // session: full-stick sprint became 3.15 m/s, which the locomotion blend
     // reads as a fast walk. That is the "run animation stopped working" report.
     // A gun in his hands makes PUNCH the trigger (player/weapons.js reads the
-    // same input edge), so the charge must not accrue underneath it — a charge
-    // that survives the switch back to fists is a jab the player never asked for,
-    // and it also pins him to 45% movement speed while he shoots.
-    if (input.punchDown && !st.armed?.()) {
+    // same input edge) — but only while his hands are FREE. The weapon system
+    // bails out on `carrying()` too, so gating the whole release branch on
+    // `armed` left the button doing nothing at all with a car over his head: no
+    // shot, and no swing either. What a holstered gun takes over is the JAB, not
+    // the load.
+    const trigger = !!st.armed?.() && !st.carried;
+    if (trigger) {
+      // core/input.js accrues chargeTime with no idea the button is currently a
+      // trigger. Left running, the moment he switched back to fists mid-hold the
+      // whole accrued hold cashed out as a near-full charge in one fixed step —
+      // a jab he never asked for, and 45% movement speed to go with it. Zeroing
+      // it here also keeps the HUD's charge ring empty while he is shooting.
+      input.chargeTime = 0;
+      p.charge = 0;
+    } else if (input.punchDown) {
       p.charge = input.chargeTime > CHARGE_MIN
         ? clamp((input.chargeTime - CHARGE_MIN) / CHARGE_TIME, 0, 1)
         : 0;
-    } else if (input.punchReleased && !p.dead && !st.armed?.()) {
+    } else if (input.punchReleased && !p.dead) {
       const charge = p.charge;
       p.charge = 0;
       // With something in your hands, PUNCH swings THAT. It used to throw a normal
       // jab whose damage landed at an abstract point in front of you while the
       // carry pose held the arms still — and, with a car, the punch hit the car in
       // your own hands and shot you across the city (see world/traffic.js onPunch).
-      if (!swingCarried(charge)) swing(charge);
+      // Armed and carrying: swing the load, never throw a bare jab as well.
+      if (!swingCarried(charge) && !st.armed?.()) swing(charge);
     } else {
       p.charge = 0;
     }
@@ -122,6 +134,11 @@ export function createCombat(playerSys, cam, scene) {
       else if (ph === 'reaching' || ph === 'lifting' || ph === 'swinging') st.carry.wantThrow = true;
       else if (ph === 'idle') tryGrab();
     }
+    // Going down (player/health.js goDown) has to cost him the load. Nothing
+    // else ever clears it: the carry runs off its own phase machine, and p.dead
+    // did not exist when that machine was written, so he used to lie on the
+    // pavement with a taxi still welded to his hands.
+    if (p.dead && st.carry.phase !== 'idle') dropCarried();
     advanceCarry(dt);
 
     // strike lands at the clip's contact moment
@@ -167,7 +184,6 @@ export function createCombat(playerSys, cam, scene) {
     if (pr) {
       hitProp(pr, Math.sin(p.yaw), Math.cos(p.yaw), impulse * 0.8);
       propHits++;
-      emit(EV.PROP_DESTROYED, { type: pr.type });
     }
 
     // entities (installed by later phases)
@@ -437,7 +453,6 @@ export function createCombat(playerSys, cam, scene) {
     const propHit = nearestProp(f.x, f.z, Math.max(radius, 1.6));
     if (propHit) {
       hitProp(propHit, Math.sin(p.yaw), Math.cos(p.yaw), impulse * 0.7);
-      emit(EV.PROP_DESTROYED, { type: propHit.type });
     }
     wakeRadius(f.x, f.z, radius * 0.95, impulse * 0.4);
 

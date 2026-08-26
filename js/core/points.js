@@ -52,9 +52,17 @@ export function initPoints() {
   on(EV.NPC_DIED, ({ cause }) => {
     if (cause === 'player' || cause === 'thrown' || cause === 'swung') award(AWARDS.civilian, 'CIVILIAN');
   });
+  // FEAT is the ambient "something spectacular happened" channel, and a few of
+  // its types are ALSO announced on a dedicated event that this file already
+  // pays for. Those have to be skipped here or they pay twice — and worse than
+  // twice, because the FEAT carries no `byPlayer`: world/destruction.js emits
+  // FEAT 'building' from collapseBuilding() whoever knocked it down, so a
+  // monster smashing through a facade (ai/monster.js removeSphere, byPlayer
+  // false) was paying the player 450 points for the privilege.
+  const OWN_EVENT = new Set(['monster_kill', 'building', 'car']);
   on(EV.FEAT, ({ type }) => {
     const n = AWARDS[type];
-    if (n && type !== 'monster_kill') award(n, null);
+    if (n && !OWN_EVENT.has(type)) award(n, null);
   });
 
   function fixedUpdate(dt) {

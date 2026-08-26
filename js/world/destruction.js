@@ -198,7 +198,10 @@ export function destructionFixed(dt) {
       buildRubbleMound(s);
       burstDust(cx, 1, cz, 40, 0x9a92a8, 9);
       camRef?.shake(0.55);
-      emit(EV.BUILDING_COLLAPSED, { building: s.id, byPlayer: q.byPlayer, occupied: s.occupied || 0, x: cx, z: cz });
+      emit(EV.BUILDING_COLLAPSED, {
+        building: s.id, byPlayer: q.byPlayer, occupied: s.occupied || 0,
+        x: cx, z: cz, r: Math.max(s.x1 - s.x0, s.z1 - s.z0) * 0.5,
+      });
     }
   }
   collapseQueue.length = write;
@@ -282,7 +285,6 @@ export function hitProp(p, dirX, dirZ, power) {
     });
     P.retire(p);   // a felled lamp keeps its mesh but stops blocking walkers
     burstSparks(p.x, 4, p.z, 8);
-    emit(EV.PROP_DESTROYED, { type: p.type });
   } else {
     // bench, dumpster, tree, kiosk: break into parts
     P.hide(p);
@@ -296,6 +298,12 @@ export function hitProp(p, dirX, dirZ, power) {
     if (p.type === 'prop_tree') burstDust(p.x, 2, p.z, 10, 0xd89048, 5);
     else burstDust(p.x, 0.8, p.z, 6, 0x8a86a0, 4);
   }
+  // One emit, here, for every type — and exactly once, because the `p.alive`
+  // guard above already made this function idempotent. It used to be announced
+  // by each of the five callers instead, on top of the emit the lamp branch did
+  // for itself, so a streetlamp, a traffic light or a sign paid AWARDS.prop
+  // twice and cost 1.0 karma instead of 0.5 while the other five types paid once.
+  emit(EV.PROP_DESTROYED, { type: p.type });
   return true;
 }
 
