@@ -100,7 +100,16 @@ results.gossip = await page.evaluate(() => new Promise((res) => {
 
 // 4) debris no-jitter: collapse, wait for settle, then positions must freeze
 await page.evaluate(() => window.__test.collapseBuilding(3));
-await waitSim(14);
+// The 14 seconds here are for the debris to come to rest, and under software
+// rendering the display loop delivers about 8 of them in three wall-clock
+// minutes — so this waited on a clock it could not win and then measured a pile
+// still falling. __test.step exists for this: it pumps the same fixed and frame
+// systems as fast as the CPU will run them. (The real-time settle check below is
+// the assertion and stays on the real loop.) The short wait first is for the
+// dynamic import inside collapseBuilding to resolve, which a synchronous step
+// would otherwise run straight past.
+await page.waitForTimeout(400);
+await page.evaluate(() => window.__test.step(14));
 results.jitter = await page.evaluate(() => new Promise(async (res) => {
   const m = await import('./js/physics/pworld.js');
   const snap = m.sleeping.map((b) => [b.x, b.y, b.z]);
@@ -199,7 +208,8 @@ if (!results.grabProp.skipped) {
     };
   }));
   await page.evaluate(() => window.__test.press('grab'));   // throw it
-  await waitSim(8);
+  await page.evaluate(() => window.__test.step(8));         // long enough to land
+
   results.grabProp.landed = await page.evaluate(() => ({
     alive: window.__grabbed.alive, held: window.__test.carry().kind !== null,
   }));
