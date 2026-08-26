@@ -14,6 +14,7 @@ export const MODELS = {}; // name -> { scene, animations }
 const LIST = [
   'player', 'npc_a', 'npc_b', 'monster_a', 'monster_b',
   'prop_hydrant', 'prop_bench', 'prop_dumpster',
+  'landmark_samosa',
 ];
 const CLIPS = ['clip_run', 'clip_punch', 'clip_die'];
 
