@@ -546,7 +546,10 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
   // read gap 0.000 and h 4.7 on a 3.4m monster whose toes were 0.84m in the air.
   // Now it walks the foot bones — real objects, real world matrices — and drops
   // to the sole through the rig's own constant.
-  window.__test.monsterFeet = () => monsters.map((m) => {
+  // Corpses are excluded: once one is dead it is a rigid body being thrown
+  // around by physics/pworld.js, and a sole offset measured off a walk cycle
+  // says nothing about a ragdoll in mid-air.
+  window.__test.monsterFeet = () => monsters.filter((m) => !m.dead).map((m) => {
     const sole = footBoneY(m.root) - m.soleDrop;
     return {
       kind: m.base,
