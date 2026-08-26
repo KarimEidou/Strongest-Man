@@ -1,8 +1,9 @@
 # Third-party assets
 
-Every model below is by **[Kenney](https://kenney.nl)** and released under
-[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) — public domain,
-free for any use, credit appreciated but not required.
+Every model in the table below is by **[Kenney](https://kenney.nl)** and released
+under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) — public
+domain, free for any use, credit appreciated but not required. One asset in this
+repo is not: see the section after the table.
 
 Imported by `tools/import-models.mjs`, which downloads the original pack from
 kenney.nl, merges it to a single mesh, rescales it to metric game size, grounds
@@ -28,6 +29,19 @@ file in the table.
 | `assets/models/gun_sniper.glb` | blaster-kit | `blaster-e.glb` |
 | `assets/models/gun_cannon.glb` | blaster-kit | `blaster-p.glb` |
 
+## Not from Kenney, and not CC0
+
+`assets/models/landmark_samosa.glb` is a single mesh lifted from
+**["Samosa, Cake Snacks Plate"](https://sketchfab.com/3d-models/samosa-cake-snacks-plate-57baf38756304e7b979372500dac0e91)**
+by **ronchoqa**, licensed
+**[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)** — which, unlike
+everything above, *requires* that attribution. The mesh was extracted from the
+multi-object original, stood upright and re-optimized by
+`tools/optimize-glb.mjs`; nothing else from the source model ships. It is not
+produced by this tool and re-running this tool does not touch it.
+
+## Original work
+
 The characters, monsters, animation clips, hydrant, bench, dumpster, skybox,
 splash and title art are original to this project (Higgsfield SAM 3 + Meshy) and
-are not covered by the above.
+are not covered by any of the above.
