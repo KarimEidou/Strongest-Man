@@ -9,6 +9,7 @@ import { makeWorldMaterial, tagGeometry, faceShade } from '../engine/materials.j
 import { PAL } from '../core/palette.js';
 import { FLOOR_H } from './city.js';
 import { rand, randRange } from '../core/mathx.js';
+import { buildSamosaShell } from './samosa.js';
 
 // Panels are exactly cell-sized: adjacent chunks butt with coincident hidden
 // side faces (opposite normals → always backface-culled, never visible), so
@@ -103,6 +104,7 @@ export function buildBuildings(scene, specs) {
   // count cells per mesh type first
   const placements = { wall: [], window: [], door: [] };
   const slabPlace = [], iwallPlace = [], furnPlace = [];
+  const shells = new Map();   // landmark spec id -> samosa shell
 
   for (const s of specs) {
     const w = s.x1 - s.x0, d = s.z1 - s.z0;
@@ -118,16 +120,37 @@ export function buildBuildings(scene, specs) {
     const doorCol = { north: -1, south: -1, east: -1, west: -1 };
     doorCol[s.front] = Math.floor(sideCols[s.front] / 2);
 
+    // Landmarks swap the flat facade for a sliced GLB shell. The cell grid stays
+    // stock — cells simply aren't created where the shell has no crust, and
+    // collide.js/destruction.js already treat a missing cell as open air.
+    let shell = null, crustKind = null;
+    if (s.landmark === 'samosa') {
+      shell = buildSamosaShell(s, s.floors);
+      shell.chunkKeys = [];
+      crustKind = `crust:${s.id}`;
+      placements[crustKind] = [];
+      shells.set(s.id, shell);
+    }
+
     for (const side of SIDES) {
       const n = sideCols[side];
       for (let col = 0; col < n; col++) {
         for (let floor = 0; floor < s.floors; floor++) {
+          const key = `${side}:${col}:${floor}`;
           let kind = 'wall';
-          const storefront = floor === 0 && (s.type === 'shop' || s.type === 'diner') && side === s.front;
-          if (floor === 0 && col === doorCol[side]) kind = 'door';
-          else if (storefront) kind = 'window';
-          else if (floor > 0 && col > 0 && col < n - 1 && rand() < 0.62) kind = 'window';
-          else if (floor > 0 && rand() < 0.25) kind = 'window';
+          if (shell) {
+            const isDoor = floor === 0 && col === doorCol[side];
+            if (!isDoor && !shell.ranges.has(key)) continue;   // open air outside the crust
+            kind = isDoor ? 'door' : crustKind;
+            if (isDoor) shell.hideKey(key);                    // cut the doorway out of the pastry
+            else shell.chunkKeys.push(key);
+          } else {
+            const storefront = floor === 0 && (s.type === 'shop' || s.type === 'diner') && side === s.front;
+            if (floor === 0 && col === doorCol[side]) kind = 'door';
+            else if (storefront) kind = 'window';
+            else if (floor > 0 && col > 0 && col < n - 1 && rand() < 0.62) kind = 'window';
+            else if (floor > 0 && rand() < 0.25) kind = 'window';
+          }
 
           const cell = {
             bId: s.id, side, col, floor, kind,
@@ -137,7 +160,7 @@ export function buildBuildings(scene, specs) {
           };
           positionCell(s, side, col, cell);
           placements[kind].push(cell);
-          b.idx.set(`${side}:${col}:${floor}`, cell);
+          b.idx.set(key, cell);
           reg.cells.push(cell);
           b.aliveCount++;
           if (floor === 0) { b.groundTotal++; b.groundAlive++; }
@@ -145,15 +168,36 @@ export function buildBuildings(scene, specs) {
       }
     }
 
-    // slabs: one per floor 1..F-1 plus roof at F
+    // slabs: one per floor 1..F-1 plus roof at F. Landmark slabs follow the shell's
+    // cross-section instead of the lot rectangle, or the filling pokes out of the crust.
     for (let f = 1; f <= s.floors; f++) {
+      let px = (s.x0 + s.x1) / 2, pz = (s.z0 + s.z1) / 2, sx = w - 0.5, sz = d - 0.5;
+      if (shell) {
+        // A slab sits on the boundary between bands f-1 and f. Below the samosa's
+        // waist the shape widens with height and below-band is the tighter fit; above
+        // it narrows and above-band is. Taking the narrower of the two is exactly the
+        // crust's cross-section at that height either way — anything looser and the
+        // slab spears out through the pastry.
+        const lo = shell.floorSpan[f - 1], hi = shell.floorSpan[f];
+        if (!hi) continue;                       // above the tip — and no flat roof on a samosa
+        const minX = Math.max(lo ? lo.minX : hi.minX, hi.minX);
+        const maxX = Math.min(lo ? lo.maxX : hi.maxX, hi.maxX);
+        const minZ = Math.max(lo ? lo.minZ : hi.minZ, hi.minZ);
+        const maxZ = Math.min(lo ? lo.maxZ : hi.maxZ, hi.maxZ);
+        px = (minX + maxX) / 2; pz = (minZ + maxZ) / 2;
+        // the cross-section is a lens, not a rectangle: pull in hard so the corners
+        // stay buried in the crust
+        sx = Math.max(0.5, (maxX - minX) * 0.62);
+        sz = Math.max(0.5, (maxZ - minZ) * 0.62);
+      }
       slabPlace.push({
         bId: s.id, floor: f, alive: true,
-        x: (s.x0 + s.x1) / 2, y: f * CELL_H - 0.14, z: (s.z0 + s.z1) / 2,
-        sx: w - 0.5, sy: 0.28, sz: d - 0.5,
+        x: px, y: f * CELL_H - 0.14, z: pz,
+        sx, sy: 0.28, sz,
         roof: f === s.floors,
       });
     }
+    if (shell) continue;   // no spine walls or office furniture inside a samosa
     // interior spine wall per floor (along long axis)
     for (let f = 0; f < s.floors; f++) {
       const along = w >= d ? 'x' : 'z';
@@ -231,7 +275,8 @@ export function buildBuildings(scene, specs) {
   scene.remove(reg.meshes.slab);
   reg.meshes.slab = makeInstanced(
     faceShade(unitGeo(0xffffff, 1)), floorSlabPlace, 'floorSlabs',
-    (p, c) => c.setHex(0x7d735c),
+    // punching into a samosa should show spiced potato, not office carpet
+    (p, c) => c.setHex(specs[p.bId].landmark ? 0xc9a03e : 0x7d735c),
     (p) => { Q.identity(); M.compose(V.set(p.x, p.y, p.z), Q, S.set(p.sx, p.sy, p.sz)); },
   );
   reg.meshes.roof = makeInstanced(
@@ -261,12 +306,25 @@ export function buildBuildings(scene, specs) {
   reg.furns = furnPlace.map((p, i) => ({ ...p, idx: i }));
   for (const fu of reg.furns) reg.buildings[fu.bId].furnIds.push(fu);
 
+  // landmark shells: one plain mesh each, keyed like an instanced archetype so
+  // destroyCell -> hideInstance(cell.kind, cell.idx) needs no special case
+  for (const [id, sh] of shells) {
+    sh.mesh.userData.hideChunk = (idx) => sh.hideKey(sh.chunkKeys[idx]);
+    scene.add(sh.mesh);
+    reg.meshes[`crust:${id}`] = sh.mesh;
+  }
+
   // ---- mutation API (used by destruction in P4)
   const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
   reg.hideInstance = (meshName, idx) => {
     const im = reg.meshes[meshName];
-    im.setMatrixAt(idx, ZERO);
-    im.instanceMatrix.needsUpdate = true;
+    if (!im) return;
+    if (im.isInstancedMesh) {
+      im.setMatrixAt(idx, ZERO);
+      im.instanceMatrix.needsUpdate = true;
+    } else {
+      im.userData.hideChunk(idx);   // landmark crust: collapse one cell's triangles
+    }
   };
   reg.destroyCell = (cell) => {
     if (!cell.alive) return false;
