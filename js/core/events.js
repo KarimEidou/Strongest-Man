@@ -16,6 +16,15 @@ export const EV = {
   HYDRANT_BURST: 'hydrantBurst',    // {x, z}
   PROP_DESTROYED: 'propDestroyed',  // {type}
   PLAYER_THREW: 'playerThrew',      // {what:'car'|'npc'|'monster'|'prop'|'debris'}
+  POINTS: 'points',                 // {delta, total, label}
+  PLAYER_HURT: 'playerHurt',        // {amount, hp, max, cause}
+  PLAYER_HEALTH: 'playerHealth',    // {hp, max, healing}
+  PLAYER_DOWN: 'playerDown',        // {cause, lostPoints}
+  PLAYER_REVIVED: 'playerRevived',  // {hp, max}
+  WEAPON_CHANGED: 'weaponChanged',  // {id, gun, ammo}
+  WEAPON_FIRED: 'weaponFired',      // {id, ammo, mag, hit}
+  WEAPON_RELOAD: 'weaponReload',    // {id, time}
+  WEAPON_BOUGHT: 'weaponBought',    // {id, price}
   GAME_STATE: 'gameState',          // {state:'title'|'playing'|'paused'|'settings'}
   SETTINGS_CHANGED: 'settingsChanged', // {settings}
 };

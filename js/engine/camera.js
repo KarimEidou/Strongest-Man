@@ -3,9 +3,17 @@
 import * as THREE from 'three';
 import { clamp, damp, dampAngle, shortAngle } from '../core/mathx.js';
 import { consumeLook } from '../core/input.js';
+import { groundHeight } from '../physics/heightfield.js';
 
 const DIST = 6.2;
-const MIN_PITCH = -0.18, MAX_PITCH = 0.98;
+// -0.18 was fine while the only reach was a fist. A gun has to be able to point
+// at the head of a 3.4m monster standing three metres away, which is 34 degrees
+// up, and at the top of a building. Going this far up swings the eye BELOW the
+// look point, so the ground clamp below the occlusion query is what makes it
+// safe. player/weapons.js repeats these two numbers, because recoil writes the
+// pitch directly.
+const MIN_PITCH = -0.50, MAX_PITCH = 0.98;
+const EYE_CLEAR = 0.35;         // how far the camera stays off the pavement
 const SHOULDER = 0.55;
 const HEAD = 1.55;
 
@@ -76,6 +84,10 @@ export function createCamera() {
     if (st.occlusionQuery && !st.noOcclusion) allowed = st.occlusionQuery(look, eye, wanted);
     st.curDist = damp(st.curDist, allowed, allowed < st.curDist ? 60 : 6, dt);
     eye.copy(look).addScaledVector(off, st.curDist / wanted);
+    // Aiming up swings the eye down and, past about -0.3, under the street. The
+    // occlusion query only knows about walls, so the floor needs saying.
+    const floor = groundHeight(eye.x, eye.z) + EYE_CLEAR;
+    if (eye.y < floor) eye.y = floor;
 
     // trauma shake (decays, squared falloff feels right)
     if (st.trauma > 0) {

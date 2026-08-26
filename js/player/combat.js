@@ -61,6 +61,7 @@ export function createCombat(playerSys, cam, scene) {
   const p = playerSys.p;
   const pose = p.poseLayer;
   const st = {
+    armed: null,        // () => true while a weapon is out; installed by main.js
     swing: null,        // pending strike {t, charge}
     slowmoT: 0,
     carried: null,      // active carry handle, or null
@@ -93,11 +94,15 @@ export function createCombat(playerSys, cam, scene) {
     // p.charge pinned at 1 and the player at 45% speed for the rest of the
     // session: full-stick sprint became 3.15 m/s, which the locomotion blend
     // reads as a fast walk. That is the "run animation stopped working" report.
-    if (input.punchDown) {
+    // A gun in his hands makes PUNCH the trigger (player/weapons.js reads the
+    // same input edge), so the charge must not accrue underneath it — a charge
+    // that survives the switch back to fists is a jab the player never asked for,
+    // and it also pins him to 45% movement speed while he shoots.
+    if (input.punchDown && !st.armed?.()) {
       p.charge = input.chargeTime > CHARGE_MIN
         ? clamp((input.chargeTime - CHARGE_MIN) / CHARGE_TIME, 0, 1)
         : 0;
-    } else if (input.punchReleased && !p.dead) {
+    } else if (input.punchReleased && !p.dead && !st.armed?.()) {
       const charge = p.charge;
       p.charge = 0;
       // With something in your hands, PUNCH swings THAT. It used to throw a normal
@@ -537,8 +542,13 @@ export function createCombat(playerSys, cam, scene) {
           _v.copy(c.anchor).sub(_v2);
           if (_v.lengthSq() > 1e-6) c.anchor.addScaledVector(_v.normalize(), GRIP_REACH);
         }
-        // take the stride out of the grip height, and give it a floor
-        const floor = groundHeight(p.x, p.z) + GRIP_MIN_H;
+        // Take the stride out of the grip height, and give it a floor — measured
+        // under the LOAD as well as under him. A dangling victim trails behind
+        // at a sprint, so the ground beneath them can be most of a metre higher
+        // than the ground beneath him (his own rubble, usually), and ai/npc.js
+        // then lifts the body up off the fist to save its knees: the hand ends
+        // up half a metre from the throat it is supposedly holding.
+        const floor = Math.max(groundHeight(p.x, p.z), groundHeight(c.pos.x, c.pos.z)) + GRIP_MIN_H;
         const wantY = Math.max(c.anchor.y, floor);
         c.smoothY = c.smoothY ? damp(c.smoothY, wantY, GRIP_SMOOTH, dt) : wantY;
         c.anchor.y = c.smoothY;

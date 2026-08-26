@@ -14,13 +14,17 @@ import { removeSphere } from '../world/destruction.js';
 import { burstBlood, burstDust } from '../engine/particles.js';
 import { addBlob } from '../engine/blobshadows.js';
 import { addBloodDecal } from '../world/debris.js';
-import { flashVignette } from '../ui/hud.js';
 import { emit, on, EV } from '../core/events.js';
 import { save } from '../core/state.js';
 import { rand, randRange, damp, dampAngle, clamp } from '../core/mathx.js';
 
 const scratch = [];
-const MAX_HP = 12;
+// Hit points on the same scale as everything that can spend them: a jab is 10,
+// a full charge 60, a pistol round 14, a sniper round 130. It used to be 12,
+// with a jab worth 1 — fine while fists were the only weapon, and hopeless the
+// moment a gun needed to deal a number between "nothing" and "half a monster".
+export const MONSTER_MAX_HP = 120;
+const MAX_HP = MONSTER_MAX_HP;
 
 // Ids have to outlive the array: despawn() splices, so `monsters.length` handed
 // a fresh monster the id of one still walking around. Invisible at a cap of 2,
@@ -48,7 +52,10 @@ export function bangMaterial() {
   return bangMat;
 }
 
-export function createMonsters(scene, npcSys, player, cam) {
+// `hurtPlayer(amount, cause, severity)` is player/health.js's damage entry; it
+// arrives as a plain function rather than as the health system so this file
+// never grows a reason to read the player's hit points.
+export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
   const monsters = [];
   const sys = { monsters };
   // characters cast from their real mesh at the top tier — a boxy proxy under
@@ -120,7 +127,7 @@ export function createMonsters(scene, npcSys, player, cam) {
       speed: 0, targetSpeed: 0, cruise: kindIdx === 0 ? 2.4 : 3.1,
       hp: MAX_HP, knowledge: 0,
       state: 'arrive',       // arrive|rampage|attack_player|eat|realize|flee|rage|dead
-      stateT: 0, swingT: 0, wreckT: 0,
+      stateT: 0, swingT: 0, wreckT: 0, flinchT: 0,
       target: null, heldNpc: null,
       walk, dead: false,
       footY: info.footY, soleDrop: info.soleDrop, targetH: info.targetH,
@@ -152,6 +159,7 @@ export function createMonsters(scene, npcSys, player, cam) {
     for (const m of monsters) {
       if (m.dead) { updateDead(m, dt); continue; }
       m.stateT -= dt; m.swingT -= dt; m.wreckT -= dt;
+      if (m.flinchT > 0) m.flinchT -= dt;
       const pd = Math.hypot(player.p.x - m.x, player.p.z - m.z);
 
       // witnessing a feat is the other way a monster learns what he is
@@ -220,10 +228,12 @@ export function createMonsters(scene, npcSys, player, cam) {
           m.targetSpeed = pd > 2.4 ? m.cruise * 1.5 : 0;
           if (pd <= 2.8 && m.swingT <= 0) {
             m.swingT = 1.2;
-            // the hit lands... and does nothing. every first hit teaches them.
-            cam.shake(0.15);
-            flashVignette(0.5);
+            // The hit lands. It teaches them what he is — and it is the ONLY
+            // thing in the city that can hurt him, which is what the health bar
+            // is there to say. One of these is a scratch; three monsters working
+            // at once out-damage the regeneration.
             burstDust(player.p.x, player.p.y + 1.2, player.p.z, 4, 0x9a92a8, 2);
+            hurtPlayer?.(9, 'monster', 0.45);
             m.knowledge = Math.max(m.knowledge, 55);
             realize(m);
           }
@@ -266,8 +276,9 @@ export function createMonsters(scene, npcSys, player, cam) {
           m.targetSpeed = pd > 2.4 ? m.cruise * 2.1 : 0;
           if (pd <= 2.8 && m.swingT <= 0) {
             m.swingT = 0.9;
-            cam.shake(0.22);
-            // futile, forever
+            // Futile, but not free: a raging monster hits harder than a
+            // confident one, and knowing it cannot win does not stop it.
+            hurtPlayer?.(13, 'monster', 0.55);
           }
           if (m.stateT <= 0) enterRampage(m);
           break;
@@ -326,8 +337,29 @@ export function createMonsters(scene, npcSys, player, cam) {
     return best;
   }
 
+  // Leaving `eat` any way other than finishing it has to put the victim down.
+  // ai/npc.js parks a carried person in state 'carried' and stops simulating
+  // them; nothing else ever clears that, so a monster interrupted mid-meal — by
+  // a punch, by a bullet, by dying — used to leave a person frozen in the air
+  // for the rest of the session. They go down and they run, which is what
+  // ai/npc.js does when the PLAYER puts one down (see the carry handle's
+  // release()).
+  function releaseHeld(m) {
+    const t = m.heldNpc;
+    if (!t) return;
+    m.heldNpc = null;
+    m.root.rotation.x = 0;
+    if (t.state !== 'carried') return;
+    t.y = groundHeight(t.x, t.z);
+    t.state = 'panic';
+    t.stateT = 8;
+    t.panicLevel = 1;
+    t.threatX = m.x; t.threatZ = m.z;
+  }
+
   function realize(m) {
     if (m.state === 'realize' || m.dead || m.realized) return;
+    releaseHeld(m);
     m.realized = true;
     m.state = 'realize';
     m.stateT = 1.1;
@@ -338,20 +370,28 @@ export function createMonsters(scene, npcSys, player, cam) {
     emit(EV.SCREAM, { x: m.x, z: m.z, radius: 16 });
   }
 
-  function hurt(m, dmg, dirX, dirZ, impulse) {
+  // `reveal` is whether this particular injury tells the monster WHAT he is. A
+  // fist does: nothing else in the city hits like that, and the realization is
+  // the beat the whole game is built around. A bullet does not — anyone can own
+  // a gun, and having that moment fire on the first pistol round from sixty
+  // metres away would spend it on nothing. Getting shot makes a monster hostile
+  // (see hooks.shoot); it takes closing the distance and being hit by hand to
+  // make one understand.
+  function hurt(m, dmg, dirX, dirZ, impulse, reveal = true) {
     if (m.dead) return;
     m.hp -= dmg;
     burstBlood(m.x, m.y + m.hipsY, m.z, 6);
-    if (m.knowledge < 55 && dmg >= 1) { m.knowledge = 60; realize(m); }
+    if (reveal && m.knowledge < 55 && dmg >= 8) { m.knowledge = 60; realize(m); }
     if (m.hp <= 0) {
       die(m, dirX, dirZ, impulse);
-    } else if (dmg >= 3) {
+    } else if (dmg >= 30) {
       m.x += dirX * 1.5; m.z += dirZ * 1.5; // heavy knockback
     }
   }
 
   function die(m, dirX = 0, dirZ = 0, impulse = 18) {
     if (m.dead) return;
+    releaseHeld(m);
     m.dead = true;
     m.state = 'dead';
     m.bang.visible = false;
@@ -413,24 +453,52 @@ export function createMonsters(scene, npcSys, player, cam) {
       );
       m.visYaw = dampAngle(m.visYaw, m.yaw, 10, dt);
       m.root.rotation.y = m.visYaw;
-      m.walk.setEffectiveTimeScale(clamp(m.speed / 1.6, 0.35, 2.1));
+      // a flinch reads as the walk stumbling, which costs nothing and is
+      // instantly legible at any distance
+      m.walk.setEffectiveTimeScale(m.flinchT > 0 ? 0.12 : clamp(m.speed / 1.6, 0.35, 2.1));
       m.mixer.update(dt);
     }
   }
 
   const hooks = {
+    // The weapon raycast needs the live set; handing it the array rather than a
+    // copy is deliberate — it is read once per shot and never retained.
+    list: () => monsters,
+    // A round found this one. Same damage path as a fist, plus a flinch: a
+    // monster that takes fire and shows nothing for it reads as invulnerable,
+    // which is the player's job, not its.
+    shoot(m, dmg, dirX, dirZ, knock = 6) {
+      if (!m || m.dead) return;
+      const d = Math.hypot(dirX, dirZ) || 1;
+      hurt(m, dmg, dirX / d, dirZ / d, knock, false);
+      if (m.dead) return;
+      m.flinchT = 0.18;
+      m.speed *= 0.7;
+      // Shoot one and it stops eating whoever it was eating and comes for you.
+      // That is the loop the guns are for: open at range, it closes, and when it
+      // finally lands a hand on you it finds out what it has been fighting.
+      // A monster that has already realized is left alone — `rage` is already
+      // charging the player, and `flee` has made its decision.
+      if (!m.realized && m.state !== 'grabbed') {
+        releaseHeld(m);
+        m.state = 'attack_player';
+        m.stateT = 14;
+        m.target = null;
+        m.yaw = Math.atan2(player.p.x - m.x, player.p.z - m.z);
+      }
+    },
     onPunch(f, radius, impulse, charge) {
       for (const m of [...monsters]) {
         const dx = m.x - f.x, dz = m.z - f.z;
         const d = Math.hypot(dx, dz);
         if (d > Math.max(radius, 2.8)) continue;
-        hurt(m, charge > 0.55 ? 6 : 1, dx / (d || 1), dz / (d || 1), impulse);
+        hurt(m, charge > 0.55 ? 60 : 10, dx / (d || 1), dz / (d || 1), impulse);
       }
     },
     onProjectile(b) {
       for (const m of [...monsters]) {
         const dx = m.x - b.x, dz = m.z - b.z;
-        if (dx * dx + dz * dz < 4) hurt(m, 2, dx, dz, 10);
+        if (dx * dx + dz * dz < 4) hurt(m, 20, dx, dz, 10);
       }
     },
     tryGrab(p) {
@@ -465,7 +533,10 @@ export function createMonsters(scene, npcSys, player, cam) {
     spawn,
   };
 
-  window.__test.spawnMonster = (kind = 0, x = 40, z = 40) => { spawn(kind, x, z); return monsters.length; };
+  // Returns the new monster's ID, not the count: a test that wants to shoot ONE
+  // of them has to be able to name it, and the array is being spliced by the
+  // director the whole time.
+  window.__test.spawnMonster = (kind = 0, x = 40, z = 40) => spawn(kind, x, z).id;
   // #13 regression probe: soles must sit on the ground, not above it.
   //
   // This used to be a Box3 over m.root, which is worthless here for two separate
@@ -485,7 +556,8 @@ export function createMonsters(scene, npcSys, player, cam) {
     };
   });
   window.__test.monsterStats = () => monsters.map((m) => ({
-    id: m.id, state: m.state, hp: m.hp, x: +m.x.toFixed(1), z: +m.z.toFixed(1), know: m.knowledge,
+    id: m.id, state: m.state, hp: m.hp, dead: !!m.dead,
+    x: +m.x.toFixed(1), z: +m.z.toFixed(1), know: m.knowledge,
   }));
 
   // `player` rides along so the director can bias spawn edges toward the side of

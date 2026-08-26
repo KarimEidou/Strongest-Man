@@ -19,14 +19,48 @@ home indicator, and — after the first launch — works with no connection at a
 | Input | Action |
 |---|---|
 | Left half of screen | Floating joystick — walk / jog / sprint by stick distance |
-| Swipe on right half | Look around (sensitivity in Settings) |
+| Swipe on right half | Look around (sensitivity in Settings) — this is also how you aim |
 | PUNCH tap | Jab — or, with something in your hands, swing it at what is in front of you |
 | PUNCH hold | Charge — a full charge levels a building, or a car |
+| FIRE | The same button, with a weapon out. Tap for semi-auto, hold for full-auto |
+| Weapon strip (bottom centre) | FISTS, or any gun the armoury has sold you |
 | GRAB | Grab cars, props, rubble, people, bodies, weakened monsters; press again to throw |
 | JUMP | Jump |
 | TALK | Start a conversation with whoever is in front of you — type and they answer. Press again to end it |
+| SHOP | The armoury. Spend points on guns |
 
-Everything works simultaneously — move, look and punch at once.
+Everything works simultaneously — move, look and shoot at once.
+
+## Points, health and the armoury
+
+The city pays for spectacle. A monster is worth 300, a levelled building 450, a
+wrecked car 90, and every wall cell you take out is worth something; killing
+townsfolk costs you. Points are spendable and persist between sessions — the
+lifetime total never goes down.
+
+**SHOP** opens the armoury: six weapons, from a free sidearm to a 15,000-point
+explosive cannon, each with its own damage, rate of fire, spread, magazine and
+range. Buying one equips it; the weapon strip along the bottom of the HUD
+switches between them and bare hands instantly.
+
+The health bar is not a difficulty knob. Nothing in the city can hurt him except
+a monster's hands, a building coming down on him, and his own explosive rounds —
+one monster loses ground against the regeneration, three do not. Going down is a
+setback and never a game over: he gets up where he fell, at half health, a tenth
+of his spendable points lighter.
+
+## Guns
+
+Hitscan, so the frame you tap the thing you were pointing at takes the hit, with
+a tracer drawn from the muzzle to wherever the round stopped. Muzzle flash,
+impact flashes and sparks, blood, and heavy rounds chip the facade behind what
+they hit. Aim comes off the camera — where you are looking is where it goes —
+with generous assist onto anything near the crosshair, because this is a game
+played with a thumb.
+
+Shooting a monster does **not** give it the realization. Anyone can own a gun.
+It makes it hostile: it drops whoever it was eating and comes for you, and finds
+out what it has been fighting when it finally lands a hand on you.
 
 ## Live NPC dialogue (optional)
 
@@ -71,7 +105,10 @@ clouds, and sun shafts. **Auto** measures the device on first boot.
   behind you. The dead stay down — and can be picked up again.
 - Monsters arrive from the fog, eat pedestrians, and treat you as easy prey.
   Their moment of realization is yours to savor. Protect the city, join the
-  chaos, or flatten all of it — the only judge is the karma meter.
+  chaos, or flatten all of it — the only judge is the karma meter. They carry
+  their health over their heads once something has taken a piece out of them,
+  they flinch when hit, and their hands are the only thing in town that can put
+  you on the floor.
 - Nobody knows your strength until they witness it. Word spreads mouth to
   mouth, and fades. Monsters never get the memo — until they do.
 
@@ -84,23 +121,39 @@ Pure static site — no build step. Vanilla ES modules + three.js (vendored,
 tools/                # dev-only (node)
   make-icons.mjs      # icon set from the source artwork (full-bleed crop)
   optimize-glb.mjs    # Meshy/SAM GLB → compressed game assets
+  import-models.mjs   # third-party CC0 packs → game GLBs (see assets/CREDITS.md)
+  geom-probe.mjs      # where a model's mass sits, for code that hangs a light or
+                      # a lens or a muzzle off one
   process-textures.mjs# skybox seam-blend, splash/title WebP
   gen-sw.mjs          # regenerates sw.js (content-hash precache) — run before commits
   check-rig.mjs       # verifies all rigs share one skeleton
   rigdump.mjs         # bind-pose bone axes — how anim/poses.js targets were authored
   test/serve.mjs      # local server mirroring the Pages subpath
   test/shot.mjs       # Playwright screenshot/assert driver
+  test/probe.mjs      # one-off: boot the game, run a snippet, print the result
+  test/viewer.html    # model viewer — a GLB against a 1.8m reference figure
+  test/modelshot.mjs  # screenshots the viewer, for looking before shipping
   test/final.mjs      # full end-to-end suite (waits on sim time, not wall clock)
   test/bench.mjs      # frame-hitch benchmark: worst-frame, not average fps
 ```
 
-Local dev: `node tools/test/serve.mjs` → http://127.0.0.1:8080/Strongest-Man/
-(desktop keys: WASD move, mouse-drag look, J punch/hold, K jump, L grab, E talk).
+`node tools/import-models.mjs` reproduces every third-party asset in the repo
+from scratch: it scrapes the pack off kenney.nl, merges it to a single mesh,
+rescales it to metric game size, grounds and orients it for this game's
++Z-forward convention, re-encodes the palette atlas as WebP and rewrites
+`assets/CREDITS.md`. Downloads are cached in `tools/.assetcache/`.
 
-3D characters, monsters and several props were generated with Higgsfield
-(SAM 3 3D lift + Meshy auto-rig + Meshy animation library); the skybox, splash
-art, title art and app icon palette come from the same pipeline. Props that
-failed visual QA were replaced with procedural palette geometry.
+Local dev: `node tools/test/serve.mjs` → http://127.0.0.1:8080/Strongest-Man/
+(desktop keys: WASD move, mouse-drag look, J punch/fire, K jump, L grab, E talk,
+Q cycle weapon).
+
+3D characters, monsters, the hydrant, the bench and the dumpster were generated
+with Higgsfield (SAM 3 3D lift + Meshy auto-rig + Meshy animation library); the
+skybox, splash art, title art and app icon palette come from the same pipeline.
+
+Street furniture, the traffic and the weapons are **[Kenney](https://kenney.nl)**
+CC0 packs, imported by `tools/import-models.mjs` — see
+[assets/CREDITS.md](assets/CREDITS.md) for the file-by-file provenance.
 
 ### On-device touch checklist (not coverable by desktop tests)
 
@@ -109,3 +162,7 @@ failed visual QA were replaced with procedural palette geometry.
 - [ ] Nothing interactive under the Dynamic Island or home indicator
 - [ ] Rotate overlay appears in portrait, game resumes in landscape
 - [ ] Offline: airplane mode → app still launches from Home Screen
+- [ ] FIRE held with an auto weapon while the joystick is moving and the other
+      thumb is swiping to aim (3 fingers, all three doing their job)
+- [ ] The weapon strip is reachable without covering the joystick or the
+      buttons, and a tap on it never also drives the character

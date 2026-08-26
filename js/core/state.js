@@ -11,10 +11,15 @@ export const settings = {
   qualityResolved: '',    // what 'auto' measured on this device
   groqKey: '',            // stays on-device; never sent anywhere but api.groq.com
   seenIntro: false,
+  seenArmoury: false,     // the one-time "points buy guns" hint
 };
 
 export const save = {
   karma: 0,
+  points: 0,              // spendable
+  earned: 0,              // lifetime, never spent down — the only real score
+  owned: ['pistol'],      // gun ids unlocked in the shop; the sidearm is free
+  equipped: '',           // '' = bare hands
 };
 
 export const game = {
@@ -31,6 +36,11 @@ export function loadState() {
       const d = JSON.parse(raw);
       Object.assign(settings, d.settings || {});
       Object.assign(save, d.save || {});
+      // An old save has no gun fields at all, and a corrupted one can have the
+      // wrong types; either way the shop must not start from undefined.
+      if (!Array.isArray(save.owned) || !save.owned.length) save.owned = ['pistol'];
+      if (typeof save.points !== 'number' || !isFinite(save.points)) save.points = 0;
+      if (typeof save.earned !== 'number' || !isFinite(save.earned)) save.earned = 0;
     }
     settings.groqKey = localStorage.getItem('sm_groq_key') || '';
   } catch { /* first run / private mode */ }

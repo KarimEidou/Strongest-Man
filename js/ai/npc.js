@@ -484,6 +484,17 @@ export function createNPCs(scene, city, player) {
   sys.speak = (n, seconds) => { n.speakT = seconds; n.speakPhase = 0; };
 
   const hooks = {
+    // Live set for the weapon raycast (player/weapons.js). Read once per shot.
+    list: () => npcs,
+    // A round found a person. There is no wounded state for a townsperson and
+    // there should not be one: a bullet from the strongest man in the universe
+    // is not survivable, and the whole cost of the shot is what the city thinks
+    // of you afterwards (ai/karma.js, ai/reputation.js).
+    shoot(n, dmg, dirX, dirZ) {
+      if (!n || n.state === 'dead') return;
+      const d = Math.hypot(dirX, dirZ) || 1;
+      kill(n, 'player', 8 + dmg * 0.25, dirX / d, dirZ / d);
+    },
     onPunch(f, radius, impulse, charge) {
       const r = Math.max(radius, 1.6);
       neighbors(f.x, f.z, r, scratch);

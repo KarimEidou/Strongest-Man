@@ -59,6 +59,16 @@ buildClipBank();
 const player = createPlayer(scene, cam);
 cam.st.occlusionQuery = (look, eye, wanted) => cameraAllowed(look, eye, wanted);
 
+const { createHealth } = await import('./player/health.js');
+const { initPoints } = await import('./core/points.js');
+const health = createHealth(player, cam);
+const points = initPoints();
+// One damage entry point, handed to whatever can hurt him rather than exported
+// as a system — nothing outside player/health.js should be able to read his hit
+// points, and everything that can take them needs exactly this signature.
+player.hurt = (n, cause, severity) => health.damage(n, cause, severity);
+fixedSystems.push(profile('health', (dt) => { health.fixedUpdate(dt); points.fixedUpdate(dt); }));
+
 loadingProgress(0.92, 'destruction…');
 const { initDebris, debrisFrame } = await import('./world/debris.js');
 const { initParticles, particlesFrame } = await import('./engine/particles.js');
@@ -66,22 +76,37 @@ const { initDestruction, destructionFixed } = await import('./world/destruction.
 const { initBlobShadows, addBlob, blobFrame } = await import('./engine/blobshadows.js');
 const { createCombat } = await import('./player/combat.js');
 
+const { initTracers, tracersFrame } = await import('./engine/tracers.js');
+const { initHealthPips, healthPipsFrame } = await import('./engine/healthpips.js');
+const { createWeapons } = await import('./player/weapons.js');
+
 initDebris(scene);
 initParticles(scene);
 initDestruction(scene, buildingsReg, propsReg, cam);
 initBlobShadows(scene);
+initTracers(scene, cam.camera);
+initHealthPips(scene, cam.camera);
 const combat = createCombat(player, cam, scene);
+const weapons = createWeapons(player, cam, combat);
+// PUNCH is one button doing two jobs. combat asks the weapon system whether
+// there is something in his hands before it throws a jab, so the two can never
+// both fire off the same tap.
+combat.st.armed = () => weapons.armed;
 addBlob(player.p, 0.75);
 window.__buildingsReg = buildingsReg;
 window.__propsReg = propsReg;
 
 fixedSystems.push(profile('player', (dt) => player.fixedUpdate(dt)));
+fixedSystems.push(profile('weapons', (dt) => weapons.fixedUpdate(dt)));
 fixedSystems.push(profile('combat', (dt) => combat.fixedUpdate(dt)));
 fixedSystems.push(profile('destruction', (dt) => destructionFixed(dt)));
 fixedSystems.push(profile('physics', (dt) => physicsStep(dt)));
 frameSystems.push(profile('player.frame', (dt, alpha) => player.frameUpdate(dt, alpha)));
 frameSystems.push(profile('combat.frame', (dt) => combat.frameUpdate(dt)));
-frameSystems.push(profile('fx.frame', (dt) => { debrisFrame(dt); particlesFrame(dt); blobFrame(); }));
+// After combat, and it has to be: combat owns pose.update(), and the aim twists
+// are applied ON TOP of the pose it writes rather than under it.
+frameSystems.push(profile('weapons.frame', (dt) => weapons.frameUpdate(dt)));
+frameSystems.push(profile('fx.frame', (dt) => { debrisFrame(dt); particlesFrame(dt); tracersFrame(dt); blobFrame(); }));
 window.__bodyStats = bodyStats;
 
 loadingProgress(0.96, 'people…');
@@ -93,14 +118,17 @@ const traffic = createTraffic(scene, propsReg, npcs.hooks, player, cam);
 setCars({ list: traffic.list });
 combat.st.hooks.npcs = npcs.hooks;
 combat.st.hooks.cars = traffic.hooks;
+weapons.st.hooks.npcs = npcs.hooks;
+weapons.st.hooks.cars = traffic.hooks;
 
 const { installPanic } = await import('./ai/panic.js');
-const { createMonsters } = await import('./ai/monster.js');
+const { createMonsters, MONSTER_MAX_HP } = await import('./ai/monster.js');
 const { createDirector } = await import('./ai/director.js');
 const panic = installPanic(npcs, buildingsReg, city);
-const monsters = createMonsters(scene, npcs, player, cam);
+const monsters = createMonsters(scene, npcs, player, cam, player.hurt);
 const director = createDirector(monsters);
 combat.st.hooks.monsters = monsters.hooks;
+weapons.st.hooks.monsters = monsters.hooks;
 
 const { initKarma } = await import('./ai/karma.js');
 const { initReputation } = await import('./ai/reputation.js');
@@ -132,6 +160,11 @@ const { initCityLights } = await import('./engine/citylights.js');
 const cityLights = initCityLights(propsReg);
 frameSystems.push(profile('citylights', () => cityLights.frameUpdate(cam.camera)));
 
+const { initShop } = await import('./ui/shop.js');
+const { bindWeapons } = await import('./ui/hud.js');
+initShop(points, weapons);
+bindWeapons(weapons);
+
 const { initBubbles } = await import('./dialogue/bubbles.js');
 const { initDialogue } = await import('./dialogue/talk.js');
 initBubbles(cam.camera);
@@ -147,7 +180,10 @@ const { initAudio } = await import('./engine/audio.js');
 const { initOutfit } = await import('./player/outfit.js');
 initAudio();
 initOutfit(player);
-frameSystems.push(profile('chars.frame', (dt, alpha) => { npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha); }));
+frameSystems.push(profile('chars.frame', (dt, alpha) => {
+  npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha);
+  healthPipsFrame(dt, monsters.monsters, MONSTER_MAX_HP);
+}));
 if (flags.time >= 0) game.timeOfDay = flags.time;
 fixedSystems.push((dt) => {
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;

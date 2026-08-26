@@ -61,8 +61,10 @@ export function createPlayer(scene, cam) {
   };
 
   function fixedUpdate(dt) {
-    // camera-relative move intent
-    const mx = input.moveX, mz = input.moveZ;
+    // camera-relative move intent. None of it while he is on the floor: the
+    // death clip is playing and the controller sliding him around under it is
+    // the difference between "knocked down" and "bug".
+    const mx = p.dead ? 0 : input.moveX, mz = p.dead ? 0 : input.moveZ;
     const mag = Math.min(1, Math.hypot(mx, mz));
     let target = 0;
     if (mag > 0.02) {
@@ -83,7 +85,7 @@ export function createPlayer(scene, cam) {
 
     // vertical
     const g = groundHeight(p.x, p.z);
-    if (input.jumpPressed && p.grounded) { p.vy = JUMP_V; p.grounded = false; }
+    if (input.jumpPressed && p.grounded && !p.dead) { p.vy = JUMP_V; p.grounded = false; }
     p.vy += -22 * dt;
 
     p.px = p.x; p.py = p.y; p.pz = p.z;

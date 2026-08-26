@@ -2,8 +2,8 @@
 //  - left half of the screen: floating virtual joystick (movement)
 //  - right half: swipe to look (camera), simultaneous with everything else
 //  - DOM action buttons manage their own pointers and set flags here
-//  - desktop testing: WASD move, mouse-drag look, J punch (hold=charge),
-//    K jump, L grab/throw, E interact
+//  - desktop testing: WASD move, mouse-drag look, J punch/fire (hold=charge or
+//    full-auto), K jump, L grab/throw, E interact, Q cycle weapon
 import { settings, game } from './state.js';
 import { clamp } from './mathx.js';
 
@@ -17,6 +17,7 @@ export const input = {
   jumpPressed: false,
   grabPressed: false,
   interactPressed: false,
+  weaponCycle: false,           // desktop only: Q steps through the armoury
   anyTouch: false,
   // true while a text field has focus (the conversation panel). The world keeps
   // simulating; only the controls go quiet, so a typed sentence never also
@@ -30,7 +31,7 @@ const state = {
   keys: new Set(),
   mouseLook: false,
   pendingPunchDown: false, pendingPunchUp: false,
-  pendingJump: false, pendingGrab: false, pendingInteract: false,
+  pendingJump: false, pendingGrab: false, pendingInteract: false, pendingCycle: false,
 };
 
 const STICK_R = 56;
@@ -110,6 +111,7 @@ export function initInput(surface, stick, nub) {
     if (e.code === 'KeyK') state.pendingJump = true;
     if (e.code === 'KeyL') state.pendingGrab = true;
     if (e.code === 'KeyE') state.pendingInteract = true;
+    if (e.code === 'KeyQ') state.pendingCycle = true;
   });
   window.addEventListener('keyup', (e) => {
     // A RELEASE is processed even while typing. Returning first used to strand
@@ -155,6 +157,7 @@ if (typeof window !== 'undefined') {
         if (btn === 'jump') state.pendingJump = true;
         if (btn === 'grab') state.pendingGrab = true;
         if (btn === 'interact') state.pendingInteract = true;
+        if (btn === 'cycle') state.pendingCycle = true;
       };
     }
   });
@@ -167,8 +170,9 @@ export function pollInput(dt) {
     input.lookDX = 0; input.lookDY = 0;
     input.punchPressed = input.punchReleased = false;
     input.jumpPressed = input.grabPressed = input.interactPressed = false;
+    input.weaponCycle = false;
     state.pendingPunchDown = state.pendingPunchUp = false;
-    state.pendingJump = state.pendingGrab = state.pendingInteract = false;
+    state.pendingJump = state.pendingGrab = state.pendingInteract = state.pendingCycle = false;
     // Typing cancels a held charge outright: no finger is on the button any
     // more, so leaving punchDown set would keep accruing chargeTime the instant
     // focus is released — and pin the player to 45% speed with it.
@@ -187,6 +191,7 @@ export function pollInput(dt) {
   input.jumpPressed = state.pendingJump; state.pendingJump = false;
   input.grabPressed = state.pendingGrab; state.pendingGrab = false;
   input.interactPressed = state.pendingInteract; state.pendingInteract = false;
+  input.weaponCycle = state.pendingCycle; state.pendingCycle = false;
 
   if (state.keys.size) {
     let kx = 0, kz = 0;

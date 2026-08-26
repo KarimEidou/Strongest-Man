@@ -16,7 +16,7 @@ const page = await browser.newPage({ viewport: { width: 956, height: 440 }, devi
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
-await page.goto('http://127.0.0.1:8080/Strongest-Man/?autoplay=1&seed=42', { waitUntil: 'load' });
+await page.goto(`http://127.0.0.1:8080/Strongest-Man/${process.env.URLQ || '?autoplay=1&seed=42'}`, { waitUntil: 'load' });
 try {
   await page.waitForFunction(() => window.__ready === true, null, { timeout: Number(process.env.BOOT_MS || 120000) });
 } catch (e) {

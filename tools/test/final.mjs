@@ -485,6 +485,148 @@ results.nightShot = await (async () => {
 })();
 await page.evaluate(() => { window.__test.setTimeOfDay(0.7); });
 
+// 21) Grounding. The #13 probe used to measure the same REST box the sole
+// offset was computed from, so it read a perfect 0.000 through a bug that had
+// monster_a's toes 0.84m in the air. It walks the foot bones now, so this is a
+// real assertion: over a full stride nothing may hover more than a boot's
+// thickness, and nothing may sink through the pavement at all.
+results.grounding = await page.evaluate(() => {
+  window.__test.teleport(2.5, 20);
+  window.__test.spawnMonster(0, 8, 26);
+  window.__test.spawnMonster(1, -6, 24);
+  window.__test.step(1.2);
+  let worstHigh = 0, worstLow = 0;
+  for (let i = 0; i < 120; i++) {
+    window.__test.step(1 / 60);
+    for (const f of window.__test.monsterFeet()) {
+      if (f.gap > worstHigh) worstHigh = f.gap;
+      if (f.gap < worstLow) worstLow = f.gap;
+    }
+  }
+  const people = window.__test.npcFeet();
+  return {
+    monsterHighest: +worstHigh.toFixed(3),
+    monsterDeepest: +worstLow.toFixed(3),
+    people,
+    ok: worstHigh < 0.25 && worstLow > -0.06 && people.highest < 0.6 && people.deepest > -0.2,
+  };
+});
+
+// 22) Guns. Equip, aim, fire: rounds leave the magazine, land on ONE named
+// monster, take it down, and the city pays for it. Tracking by id matters —
+// monsterStats() keeps a corpse in the list for eighteen seconds, and the
+// director is spawning its own the whole time.
+results.gunfire = await page.evaluate(() => {
+  window.__test.grantPoints(20000);
+  window.__test.shop.buy('rifle');
+  window.__test.shop.close();
+  window.__test.equip('rifle');
+  window.__test.teleport(2.5, 20);
+  const id = window.__test.spawnMonster(0, 7, 32);
+  window.__test.step(0.5);
+  const before = window.__test.points().points;
+  const magFull = window.__test.weapon().ammo;
+  const find = () => window.__test.monsterStats().find((x) => x.id === id);
+  const startHp = find().hp;
+  for (let i = 0; i < 12; i++) {
+    const m = find();
+    if (!m || m.dead) break;
+    window.__test.aimAt(m.x, 1.7, m.z);
+    window.__test.fireOnce();
+    window.__test.step(0.14);
+  }
+  const w = window.__test.weapon();
+  const after = find();
+  const gained = window.__test.points().points - before;
+  return {
+    magFull, ammoLeft: w.ammo, fired: w.fired, hit: w.hit,
+    startHp, endHp: after ? after.hp : null, dead: after ? after.dead : true, gained,
+    ok: w.fired >= 4 && w.hit >= 3 && w.ammo < magFull
+      && (!after || after.dead) && gained >= 300,
+  };
+});
+
+// 23) The magazine runs out and refills itself.
+results.reload = await page.evaluate(() => {
+  window.__test.equip('pistol');
+  const mag = window.__test.weapon().mag;
+  for (let i = 0; i < mag + 1; i++) { window.__test.fireOnce(); window.__test.step(0.02); }
+  const dry = window.__test.weapon();
+  window.__test.step(1.6);
+  const full = window.__test.weapon();
+  return { dry: dry.ammo, reloading: dry.reloading, after: full.ammo, ok: dry.reloading === true && full.ammo === mag };
+});
+
+// 24) Health: it drops, it bottoms out, he gets up, it comes back.
+results.health = await page.evaluate(() => {
+  const start = window.__test.health();
+  window.__test.hurtPlayer(150);
+  const hurt = window.__test.health();
+  window.__test.hurtPlayer(80);
+  const down = window.__test.health();
+  window.__test.step(3.0);
+  const up = window.__test.health();
+  window.__test.step(9.0);
+  const healed = window.__test.health();
+  return {
+    start: start.hp, hurt: hurt.hp, down: down.hp, up: up.hp, healed: healed.hp,
+    ok: hurt.hp === start.hp - 150 && down.down === true && up.down === false
+      && up.hp > 0 && healed.hp > up.hp,
+  };
+});
+
+// 25) A monster that gets close takes something off him. This is the whole
+// reason the bar exists — before guns, its hit did nothing at all. Measured as
+// the MINIMUM over the window, because regeneration puts it back: fourteen a
+// second against a nine-point swing is a fight the monster loses on its own.
+results.monsterHurts = await page.evaluate(() => {
+  window.__test.equip('none');
+  window.__test.teleport(30, 30);
+  window.__test.step(0.4);
+  window.__test.spawnMonster(0, 31.5, 31.5);
+  const before = window.__test.health().hp;
+  let low = before;
+  for (let i = 0; i < 480; i++) {
+    window.__test.step(1 / 60);
+    low = Math.min(low, window.__test.health().hp);
+  }
+  return { before, lowest: +low.toFixed(1), ok: low < before };
+});
+
+// 26) The shop takes points, and only points it has.
+results.shop = await page.evaluate(() => {
+  window.__test.setPoints(14999);            // one short of the cannon
+  window.__test.shop.buy('cannon');
+  const poor = window.__test.weapon().owned.includes('cannon');
+  window.__test.setPoints(15000);
+  window.__test.shop.buy('cannon');
+  const w = window.__test.weapon();
+  const left = window.__test.points().points;
+  window.__test.shop.close();
+  return {
+    boughtWhilePoor: poor, pointsLeft: left, owned: w.owned, equipped: w.equipped,
+    ok: poor === false && left === 0 && w.owned.includes('cannon') && w.equipped === 'cannon',
+  };
+});
+
+// 27) One button, two jobs: with a weapon out, PUNCH is the trigger and must not
+// also wind up a charge or throw a jab.
+results.triggerNotFist = await page.evaluate(() => {
+  window.__test.equip('pistol');
+  window.__test.press('punchDown');
+  window.__test.step(0.9);
+  const armedCharge = window.__test.playerStats().charge;
+  window.__test.press('punchUp');
+  window.__test.step(0.2);
+  window.__test.equip('none');
+  window.__test.press('punchDown');
+  window.__test.step(0.9);
+  const bareCharge = window.__test.playerStats().charge;
+  window.__test.press('punchUp');
+  window.__test.step(0.6);
+  return { armedCharge, bareCharge, ok: armedCharge === 0 && bareCharge > 0.5 };
+});
+
 // 12) perf snapshot. NOTE: `simMs` is meaningless after the stepped assertions
 // above — `__test.step()` runs hundreds of fixed steps inside a single frame and
 // core/debug.js accumulates all of them into that frame's window. `maxSimMs` is

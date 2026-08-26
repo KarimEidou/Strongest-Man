@@ -36,6 +36,22 @@
   </div>
   <div id="rep-hint" class="hidden"></div>
 
+  <!-- health + points. Top-left, above the conversation panel, which is pushed
+       down to make room: this is the one readout that has to survive a fight. -->
+  <div id="vitals">
+    <div id="hp-wrap" aria-label="health">
+      <div id="hp-bar"><div id="hp-fill"></div><div id="hp-ghost"></div></div>
+      <div id="hp-num">200</div>
+    </div>
+    <div id="points-row">
+      <span id="points-val">0</span><span id="points-lbl">PTS</span>
+      <span id="points-pop"></span>
+    </div>
+  </div>
+
+  <!-- crosshair: only drawn with a weapon out -->
+  <div id="reticle" class="hidden"><span></span><span></span><span></span><span></span><b></b></div>
+
   <div id="stick"><div id="stick-nub"></div></div>
 
   <div id="btns">
@@ -45,7 +61,14 @@
     <button id="btn-punch" class="abtn big" aria-label="punch, hold to charge"><span id="charge-ring"></span>PUNCH</button>
   </div>
 
+  <!-- ammo, tucked over the fire button -->
+  <div id="ammo" class="hidden"><span id="ammo-n">0</span><span id="ammo-mag">/0</span><span id="ammo-state"></span></div>
+
+  <!-- weapon rail: bare hands plus whatever the shop has sold you -->
+  <div id="weapons"></div>
+
   <button id="btn-pause" aria-label="pause">II</button>
+  <button id="btn-shop" aria-label="shop">SHOP</button>
 
   <!-- live conversation. Anchored top-left: on iOS the keyboard overlays the
        viewport without resizing it, so a bottom-anchored panel would vanish. -->
@@ -59,6 +82,7 @@
     <div id="chat-hint" class="hidden"></div>
   </div>
   <div id="toast" class="hidden"></div>
+  <div id="down-banner" class="hidden"><b>DOWN</b><span id="down-sub"></span></div>
 </div>
 
 <!-- title / splash -->
@@ -105,11 +129,24 @@
   </div>
 </div>
 
+<!-- shop: spend what the city paid you -->
+<div id="shop-screen" hidden>
+  <div id="shop-panel">
+    <h2>ARMOURY</h2>
+    <div id="shop-balance"><span id="shop-points">0</span> POINTS</div>
+    <div id="shop-list"></div>
+    <div class="srow btnrow">
+      <button id="btn-shop-done" class="mbtn">DONE</button>
+    </div>
+  </div>
+</div>
+
 <!-- pause -->
 <div id="pause-screen" hidden>
   <div id="pause-panel">
     <h2>PAUSED</h2>
     <button id="btn-resume" class="mbtn">RESUME</button>
+    <button id="btn-pause-shop" class="mbtn ghost">ARMOURY</button>
     <button id="btn-pause-settings" class="mbtn ghost">SETTINGS</button>
   </div>
 </div>

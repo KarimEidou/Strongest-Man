@@ -421,6 +421,22 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
   }
 
   const hooks = {
+    // A round found this car. hp is a small integer (2 fresh) because a fist is
+    // the unit it was written for, so gunfire converts: 25 damage is one punch's
+    // worth of sheet metal, and the cannon takes a car out in one.
+    shoot(car, dmg, dirX, dirZ) {
+      if (!car || !car.alive || car.exploded) return;
+      car.lastHitByPlayer = true;
+      car.hp -= dmg / 25;
+      car.squash = Math.max(0.6, car.squash - dmg / 400);
+      burstSparks(car.x, car.y + 0.9, car.z, 5, 0xffd08a);
+      if (car.hp <= 0) {
+        const d = Math.hypot(dirX, dirZ) || 1;
+        car.mode = 'loose';
+        car.vx += (dirX / d) * 3; car.vz += (dirZ / d) * 3;
+        explode(car);
+      }
+    },
     onPunch(f, radius, impulse, charge) {
       for (const car of list) {
         // Never punch the car you are holding. This loop had no mode guard, unlike

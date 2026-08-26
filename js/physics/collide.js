@@ -6,6 +6,7 @@
 // touches a handful of candidates instead of the whole city. Cars are few and
 // move every step, so they stay a linear scan.
 import { MAP_EDGE, FLOOR_H } from '../world/city.js';
+import { groundHeight } from './heightfield.js';
 import { PROP_TYPES } from '../world/props.js';
 import { createGrid } from './spatialgrid.js';
 
@@ -221,6 +222,52 @@ function pointInWall(x, y, z) {
     }
   }
   return false;
+}
+
+// Static-world ray march, for hitscan weapons.
+//
+// Coarse on purpose. The city is 2m wall cells, cylindrical props and an
+// analytic terrain, and a bullet does not need a triangle-exact intersection
+// against any of that — it needs to stop at the right surface and report what it
+// was. The march is also always bounded: player/weapons.js clips maxDist to the
+// nearest ENTITY hit first, so a shot that lands in a monster's chest never pays
+// for the eighty metres of street behind him.
+//
+// STEP is a wall thickness (T = 0.3) rather than something finer because the
+// thinnest thing here is a wall, and stepping finer than the thinnest occluder
+// only buys precision the caller throws away.
+const RAY_STEP = 0.28;
+export function rayWorld(ox, oy, oz, dx, dy, dz, maxDist) {
+  const steps = Math.min(900, Math.ceil(maxDist / RAY_STEP));
+  let py = oy;
+  for (let i = 1; i <= steps; i++) {
+    const t = Math.min(i * RAY_STEP, maxDist);
+    const x = ox + dx * t, y = oy + dy * t, z = oz + dz * t;
+    const g = groundHeight(x, z);
+    if (y <= g) {
+      // Report the CROSSING, not the sample: a shallow shot can be 28cm past
+      // where it actually met the tarmac by the time the sample notices, and an
+      // impact effect that far out reads as a miss.
+      const f = Math.min(Math.max((py - g) / ((py - y) || 1e-6), 0), 1);
+      const hit = t - RAY_STEP * (1 - f);
+      return { dist: hit, kind: 'ground', x: ox + dx * hit, y: g, z: oz + dz * hit, prop: null };
+    }
+    if (pointInWall(x, y, z)) return { dist: t, kind: 'wall', x, y, z, prop: null };
+    if (propGrid) {
+      propGrid.query(x, z, 1.6, nearP);
+      for (const p of nearP) {
+        if (!p.alive) continue;
+        const cfg = PROP_TYPES[p.type];
+        const s = p.s || 1;
+        if (y > (p.y || 0) + cfg.h * s || y < (p.y || 0) - 0.2) continue;
+        const r = cfg.r * s;
+        const ddx = x - p.x, ddz = z - p.z;
+        if (ddx * ddx + ddz * ddz < r * r) return { dist: t, kind: 'prop', x, y, z, prop: p };
+      }
+    }
+    py = y;
+  }
+  return null;
 }
 
 // debris pushout vs walls (installed into pworld): coarse sphere test
