@@ -412,10 +412,20 @@ results.deadStayDead = await page.evaluate(() => {
   const later = window.__test.corpses().find((c) => c.id === victim.id);
   return {
     settled, later,
-    ok: !!later && later.settled && later.stand < 0.9 && later.clear > -0.05
-      && later.idle === 0 && later.held === true
+    groundRoseBy: +(later.ground - settled.ground).toFixed(3),
+    corpseMovedBy: +(later.worldY - settled.worldY).toFixed(3),
+    ok: !!later && later.settled && later.idle === 0 && later.held === true
       && Math.abs(later.scaleY - later.baseY) < 0.001
-      && Math.abs(later.stand - settled.stand) < 0.01,   // did not move again
+      // Lying down, not standing: the body's own vertical extent, which needs no
+      // ground to measure against. A standing man is 1.8m of it; a corpse is 0.4.
+      && later.stand - later.clear < 0.9
+      // And it never moved again — in WORLD space. `stand` and `clear` are both
+      // relative to the ground beneath the body, and the city can raise that: a
+      // building coming down on one buries it under a rubble mound. Measured,
+      // that is ground +0.83m and body +0.00m, but read through `clear` it was
+      // indistinguishable from a corpse falling through the pavement. Only one of
+      // those is a bug, so measure the one that is.
+      && Math.abs(later.worldY - settled.worldY) < 0.05,
   };
 });
 

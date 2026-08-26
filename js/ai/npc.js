@@ -642,6 +642,11 @@ export function createNPCs(scene, city, player) {
     return {
       id: n.id, state: n.state, settled: n.settled,
       stand: +(hi - g).toFixed(3), clear: +(lo - g).toFixed(3),
+      // Both of the above are measured against the ground UNDER the corpse, so
+      // on their own they cannot tell a body that sank from one the city built a
+      // rubble mound on top of. Report the two halves as well.
+      worldY: +lo.toFixed(3), ground: +g.toFixed(3),
+      x: +n.x.toFixed(2), z: +n.z.toFixed(2),
       idle: n.loco.weights().idle, held: n.loco.weights().held,
       scaleY: +n.root.scale.y.toFixed(3), baseY: +n.baseY.toFixed(3),
     };
