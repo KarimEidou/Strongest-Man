@@ -9,14 +9,15 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
 export const MODELS = {}; // name -> { scene, animations }
 
-// Characters, monsters and three props are this project's own lifts. The street
-// furniture, the traffic and the weapons are Kenney CC0 packs brought in by
-// tools/import-models.mjs — see assets/CREDITS.md. Everything here has been
-// merged to a single mesh with a single palette atlas by that tool, which is
-// what staticGeometry() below assumes.
+// Characters, monsters, three props and the samosa landmark are this project's
+// own lifts. The street furniture, the traffic and the weapons are Kenney CC0
+// packs brought in by tools/import-models.mjs — see assets/CREDITS.md.
+// Everything in the second group has been merged to a single mesh with a single
+// palette atlas by that tool, which is what staticGeometry() below assumes.
 const LIST = [
   'player', 'npc_a', 'npc_b', 'monster_a', 'monster_b',
   'prop_hydrant', 'prop_bench', 'prop_dumpster',
+  'landmark_samosa',
   'prop_streetlamp', 'prop_trafficlight', 'prop_sign', 'prop_tree', 'prop_kiosk',
   'car_sedan', 'car_taxi', 'car_van', 'car_police', 'car_wreck',
   'gun_pistol', 'gun_smg', 'gun_rifle', 'gun_shotgun', 'gun_sniper', 'gun_cannon',

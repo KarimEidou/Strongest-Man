@@ -50,7 +50,8 @@ const propsReg = buildProps(scene, city);
 loadingProgress(0.85, 'player…');
 const { initCollide, cameraAllowed, debrisVsWorld } = await import('./physics/collide.js');
 const { buildClipBank } = await import('./anim/retarget.js');
-const { step: physicsStep, bodyStats, setWorldCollider } = await import('./physics/pworld.js');
+const pworld = await import('./physics/pworld.js');
+const { step: physicsStep, bodyStats, setWorldCollider } = pworld;
 const { createPlayer } = await import('./player/player.js');
 
 initCollide(buildingsReg, propsReg);
@@ -108,6 +109,7 @@ frameSystems.push(profile('combat.frame', (dt) => combat.frameUpdate(dt)));
 frameSystems.push(profile('weapons.frame', (dt) => weapons.frameUpdate(dt)));
 frameSystems.push(profile('fx.frame', (dt) => { debrisFrame(dt); particlesFrame(dt); tracersFrame(dt); blobFrame(); }));
 window.__bodyStats = bodyStats;
+window.__pworld = pworld;   // test hook: the live active/sleeping body arrays
 
 loadingProgress(0.96, 'people…');
 const { createNPCs } = await import('./ai/npc.js');

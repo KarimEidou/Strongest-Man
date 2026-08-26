@@ -36,7 +36,25 @@ const JOBS = [
   ['prop_hydrant.glb', 'assets/models/prop_hydrant.glb', { height: 0.85, texSize: 256, ratio: 0.22 }],
   ['prop_bench.glb', 'assets/models/prop_bench.glb', { height: 0.9, texSize: 256, ratio: 0.22 }],
   ['prop_dumpster.glb', 'assets/models/prop_dumpster.glb', { height: 1.35, texSize: 256, ratio: 0.22 }],
+  // Landmark shell: one mesh lifted out of a multi-mesh CC-BY plate of snacks, stood
+  // upright and normalised to 1m tall — world/samosa.js rescales it to the lot at runtime.
+  ['landmark_samosa.glb', 'assets/models/landmark_samosa.glb',
+    { height: 1, texSize: 512, keepMaterial: 'Samosa.001', rotate: [0, 90, 90] }],
 ];
+
+// Euler degrees (three.js XYZ order) -> quaternion, for `rotate`.
+function eulerToQuat([xd, yd, zd]) {
+  const h = Math.PI / 360;
+  const c1 = Math.cos(xd * h), s1 = Math.sin(xd * h);
+  const c2 = Math.cos(yd * h), s2 = Math.sin(yd * h);
+  const c3 = Math.cos(zd * h), s3 = Math.sin(zd * h);
+  return [
+    s1 * c2 * c3 + c1 * s2 * s3,
+    c1 * s2 * c3 - s1 * c2 * s3,
+    c1 * c2 * s3 + s1 * s2 * c3,
+    c1 * c2 * c3 - s1 * s2 * s3,
+  ];
+}
 
 for (const [raw, out, opt] of JOBS) {
   let doc;
@@ -50,6 +68,39 @@ for (const [raw, out, opt] of JOBS) {
     for (const skin of rootNode.listSkins()) skin.dispose();
     for (const tex of rootNode.listTextures()) tex.dispose();
     for (const mat of rootNode.listMaterials()) mat.dispose();
+  }
+
+  if (opt.keepMaterial) {
+    // Lift a single material's geometry out of a multi-mesh source; prune() then drops
+    // the orphaned materials, textures and nodes.
+    for (const mesh of rootNode.listMeshes()) {
+      for (const prim of mesh.listPrimitives()) {
+        if (prim.getMaterial()?.getName() !== opt.keepMaterial) { mesh.removePrimitive(prim); prim.dispose(); }
+      }
+      if (!mesh.listPrimitives().length) mesh.dispose();
+    }
+    // The game renders Lambert with baseColor only (engine/assets.js), so every other
+    // texture is dead weight — drop them and the vertex attributes that fed them.
+    for (const mat of rootNode.listMaterials()) {
+      mat.setNormalTexture(null);
+      mat.setMetallicRoughnessTexture(null);
+      mat.setOcclusionTexture(null);
+      mat.setEmissiveTexture(null);
+    }
+    const KEEP = new Set(['POSITION', 'NORMAL', 'TEXCOORD_0']);
+    for (const mesh of rootNode.listMeshes()) {
+      for (const prim of mesh.listPrimitives()) {
+        for (const sem of prim.listSemantics()) if (!KEEP.has(sem)) prim.setAttribute(sem, null);
+      }
+    }
+  }
+
+  if (opt.rotate) {
+    // Stand the model up before bounds are measured, so `height` grounds the rotated pose.
+    const scene = rootNode.getDefaultScene() ?? rootNode.listScenes()[0];
+    const spin = doc.createNode('rotate').setRotation(eulerToQuat(opt.rotate));
+    for (const child of scene.listChildren()) { scene.removeChild(child); spin.addChild(child); }
+    scene.addChild(spin);
   }
 
   if (opt.height) {

@@ -95,6 +95,9 @@ clouds, and sun shafts. **Auto** measures the device on first boot.
 
 - Dense downtown: four walkable blocks, ~30 buildings with interiors, lane
   traffic with working lights, hydrants, benches, trees, kiosks, dumpsters.
+- Two city blocks are giant samosas — 33m of fried pastry apiece, and every bit
+  as destructible as the offices around them. Punch one and you take a bite out
+  of it; take enough out of the base and it comes down in a shower of crumbs.
 - Everything is destructible: chunked facades, progressive top-down collapse,
   craters, bursting hydrants, felled streetlights, cars that crush and explode.
   What you throw stays where it lands — a tree lies across the carriageway, a
@@ -151,9 +154,18 @@ Q cycle weapon).
 with Higgsfield (SAM 3 3D lift + Meshy auto-rig + Meshy animation library); the
 skybox, splash art, title art and app icon palette come from the same pipeline.
 
+### Third-party assets
+
 Street furniture, the traffic and the weapons are **[Kenney](https://kenney.nl)**
 CC0 packs, imported by `tools/import-models.mjs` — see
 [assets/CREDITS.md](assets/CREDITS.md) for the file-by-file provenance.
+
+The two giant samosa landmarks use a mesh lifted from
+**["Samosa, Cake Snacks Plate"](https://sketchfab.com/3d-models/samosa-cake-snacks-plate-57baf38756304e7b979372500dac0e91)**
+by **ronchoqa**, licensed
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The samosa mesh was
+extracted, stood upright and re-optimized by `tools/optimize-glb.mjs`; nothing
+else from the original model ships.
 
 ### On-device touch checklist (not coverable by desktop tests)
 

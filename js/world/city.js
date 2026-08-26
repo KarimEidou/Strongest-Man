@@ -17,6 +17,14 @@ export const FLOOR_H = 3;
 
 export const BUILDING_TYPES = ['apartment', 'office', 'shop', 'diner', 'library', 'school'];
 
+// Landmarks: two lots per city become giant samosas (world/samosa.js). A single lot
+// tops out around 18m of samosa before the shape has to be stretched into a spire, so
+// a landmark swallows its neighbour and reaches back into the empty block interior.
+export const LANDMARK_DISTRICTS = [0, 3];   // Old Quarter and Harbor End — diagonally opposite
+const LANDMARK_FLOORS = 11;                 // 33m; 10 is stouter, 12 starts to look like a fin
+const LANDMARK_DEPTH = 14;                  // metres, clamped to keep a 1m gap to neighbours
+const LANDMARK_TINT = 0xd08a3c;             // fried-pastry gold; also tints the crumb debris
+
 export function districtOf(x, z) {
   return (x >= 0 ? 1 : 0) + (z >= 0 ? 2 : 0);
 }
@@ -70,6 +78,8 @@ export function buildCitySpec() {
       }
     }
   }
+
+  applyLandmarks(buildings);
 
   // nav lattice: nodes along sidewalk centerlines + crosswalk links
   const SIDE = [-56.75, -6.75, 6.75, 56.75];    // sidewalk centerlines
@@ -137,6 +147,65 @@ export function buildCitySpec() {
   }
 
   return { buildings, nav: { nodes, edges, crossings }, pois };
+}
+
+// Merge one adjacent pair of street-front lots per landmark district into a single big
+// lot. Deterministic and RNG-free on purpose: buildCitySpec's rand() stream must be
+// untouched so the rest of the city generates exactly as before.
+function applyLandmarks(buildings) {
+  for (const district of LANDMARK_DISTRICTS) {
+    const pool = buildings.filter((s) => s.district === district && !s.landmark && !s.absorbed);
+    // widest neighbouring pair sharing a block edge; ties go to the lower id
+    let best = null;
+    for (const a of pool) {
+      for (const b of pool) {
+        if (b.id <= a.id || a.front !== b.front) continue;
+        const horiz = a.front === 'north' || a.front === 'south';
+        const edge = a.front === 'north' ? 'z0' : a.front === 'south' ? 'z1' : a.front === 'west' ? 'x0' : 'x1';
+        if (Math.abs(a[edge] - b[edge]) > 0.01) continue;
+        const gap = horiz ? Math.max(b.x0 - a.x1, a.x0 - b.x1) : Math.max(b.z0 - a.z1, a.z0 - b.z1);
+        if (gap < -0.01 || gap > 4) continue;   // neighbours, not opposite ends of the block
+        const span = horiz ? Math.max(a.x1, b.x1) - Math.min(a.x0, b.x0) : Math.max(a.z1, b.z1) - Math.min(a.z0, b.z0);
+        if (!best || span > best.span + 0.01) best = { a, b, span };
+      }
+    }
+    if (!best) continue;                        // no pair in this district: leave it alone
+    const { a, b } = best;
+    a.x0 = Math.min(a.x0, b.x0); a.x1 = Math.max(a.x1, b.x1);
+    a.z0 = Math.min(a.z0, b.z0); a.z1 = Math.max(a.z1, b.z1);
+    b.absorbed = true;
+
+    // reach back from the street into the block interior, stopping 1m short of anyone else
+    const others = buildings.filter((s) => s !== a && s !== b && !s.absorbed);
+    const room = (limit, grow) => {
+      let v = limit;
+      for (const s of others) {
+        const clash = grow === 'z1' ? (a.x0 < s.x1 && a.x1 > s.x0) && s.z0 >= a.z1
+          : grow === 'z0' ? (a.x0 < s.x1 && a.x1 > s.x0) && s.z1 <= a.z0
+            : grow === 'x1' ? (a.z0 < s.z1 && a.z1 > s.z0) && s.x0 >= a.x1
+              : (a.z0 < s.z1 && a.z1 > s.z0) && s.x1 <= a.x0;
+        if (!clash) continue;
+        const reach = grow === 'z1' ? s.z0 - 1 - a.z0 : grow === 'z0' ? a.z1 - (s.z1 + 1)
+          : grow === 'x1' ? s.x0 - 1 - a.x0 : a.x1 - (s.x1 + 1);
+        v = Math.min(v, reach);
+      }
+      return Math.max(2, 2 * Math.floor(v / 2));   // cells are 2m wide; keep the grid aligned
+    };
+    if (a.front === 'north') a.z1 = a.z0 + room(LANDMARK_DEPTH, 'z1');
+    else if (a.front === 'south') a.z0 = a.z1 - room(LANDMARK_DEPTH, 'z0');
+    else if (a.front === 'west') a.x1 = a.x0 + room(LANDMARK_DEPTH, 'x1');
+    else a.x0 = a.x1 - room(LANDMARK_DEPTH, 'x0');
+
+    a.w = a.x1 - a.x0; a.d = a.z1 - a.z0;
+    a.landmark = 'samosa';
+    a.floors = LANDMARK_FLOORS;
+    a.tint = LANDMARK_TINT;
+  }
+
+  // Drop the absorbed lots and renumber: buildings.js indexes specs by spec.id
+  // (specOf, reg.buildings[cell.bId]), so id must stay equal to the array index.
+  for (let i = buildings.length - 1; i >= 0; i--) if (buildings[i].absorbed) buildings.splice(i, 1);
+  buildings.forEach((s, i) => { s.id = i; });
 }
 
 function pickType() {
