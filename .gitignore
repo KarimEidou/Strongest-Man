@@ -3,3 +3,4 @@ tools/test/shots/
 tools/package-lock.json
 *.log
 .DS_Store
+tools/.assetcache/

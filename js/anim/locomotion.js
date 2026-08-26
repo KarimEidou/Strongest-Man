@@ -13,6 +13,8 @@ const LOCO = [
   { name: 'run', speed: 5.2, native: 5.0 },
 ];
 
+export const LOCO_NAMES = LOCO.map((l) => l.name);
+
 export function createLocomotion(root, opts = {}) {
   const mixer = new THREE.AnimationMixer(root);
   const hips = findBone(root, 'Hips');
@@ -114,6 +116,9 @@ export function createLocomotion(root, opts = {}) {
 
   return {
     mixer, update, playOneshot, reset, weights,
+    // the retargeted clips this graph actually plays — anim/retarget.js
+    // groundOffset() measures the sole against these, not against the bind pose
+    clips: actions.map((a) => a.action.getClip()),
     get busy() { return !!oneshot; },
     get held() { return oneshotHeld; },
     // Duration of the clip a held one-shot is sitting on, so a caller can tell when

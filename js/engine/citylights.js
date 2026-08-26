@@ -21,11 +21,15 @@ const EVERY = 6;              // frames between reselections — the player is s
 
 export function initCityLights(propsReg) {
   const type = propsReg.types.prop_streetlamp;
-  // The head hangs ~1.1m out from the pole on the gooseneck (world/procprops.js),
-  // and it is the head the light falls from, not the post.
+  // The head hangs out over the carriageway on the gooseneck, and it is the head
+  // the light falls from, not the post. On the imported lamp
+  // (assets/models/prop_streetlamp.glb) the arm reaches +z 1.66 at y 4.9..5.6;
+  // re-measure with `node tools/geom-probe.mjs assets/models/prop_streetlamp.glb`
+  // if the model is ever swapped.
+  const REACH = 1.40, HEAD_Y = 5.15;
   const lamps = (type?.list || []).map((p) => {
-    const reach = 1.1 * (p.s || 1);
-    return { p, x: p.x + Math.sin(p.yaw) * reach, y: (p.y || 0) + 5.4 * (p.s || 1), z: p.z + Math.cos(p.yaw) * reach, d2: 0 };
+    const s = p.s || 1;
+    return { p, x: p.x + Math.sin(p.yaw) * REACH * s, y: (p.y || 0) + HEAD_Y * s, z: p.z + Math.cos(p.yaw) * REACH * s, d2: 0 };
   });
 
   const slots = worldUniforms.uLamps.value;

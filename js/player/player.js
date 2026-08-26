@@ -21,8 +21,15 @@ export function createPlayer(scene, cam) {
   const root = MODELS.player.scene;
   root.scale.setScalar(PLAYER_SCALE);
   scene.add(root);
-  const footY = groundOffset(root);
   root.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
+  // Locomotion first: the sole offset is measured against the clips that will
+  // actually play (see anim/retarget.js groundOffset), not against a bind pose
+  // Box3 that reports the same rest geometry however the character is posed.
+  // Building the graph does not move a bone — nothing calls mixer.update until
+  // the first frame — so the rig is still at rest for the measurement and for
+  // the pose layer built below it.
+  const loco = createLocomotion(root);
+  const footY = groundOffset(root, loco.clips);
 
   const p = {
     x: 2.5, y: 0, z: 20, yaw: 0,
@@ -31,7 +38,7 @@ export function createPlayer(scene, cam) {
     grounded: true,
     speed: 0,
     root,
-    loco: createLocomotion(root),
+    loco,
     // built here, before any mixer update, so it captures the true bind pose
     poseLayer: createPoseLayer(root),
     bones: {

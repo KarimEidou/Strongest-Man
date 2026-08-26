@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { MODELS } from '../engine/assets.js';
 import { makeCharacterMaterial } from '../engine/materials.js';
-import { clipFor, findBone } from '../anim/retarget.js';
+import { clipFor, findBone, groundOffset, soleDropOf, footBoneY } from '../anim/retarget.js';
 import { neighbors } from './crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { capsuleVsWorld } from '../physics/collide.js';
@@ -77,9 +77,20 @@ export function createMonsters(scene, npcSys, player, cam) {
     // own-property onBeforeCompile that carries the lamp lighting and specular
     const shared = makeCharacterMaterial(mat);
     shared.color.multiplyScalar(1.18);
-    // feet-to-origin offset: the rig's origin is not necessarily its sole, and
-    // planting the root at ground height without this is why monsters hovered
-    k = { scale, shared, targetH, footY: -bbox.min.y * scale };
+    // Feet-to-origin offset. It used to be -bbox.min.y * scale, which is the REST
+    // box: Box3 does not skin, so that number is the same whatever the walk clip
+    // is doing to the legs, and it read a flat 0 for both kinds while the monsters
+    // hovered 0.84 m and 1.32 m off the street. Measured off one full walk cycle
+    // instead (anim/retarget.js), at unit scale, then scaled with the body.
+    const hips = findBone(src, 'Hips');
+    const hipsY = hips ? hips.position.y : 1.4;
+    const walkClip = clipFor(kindIdx === 0 ? 'monster_walk' : 'orc_walk', hipsY);
+    k = {
+      scale, shared, targetH, hipsY,
+      footY: groundOffset(src, [walkClip]) * scale,
+      soleDrop: soleDropOf(src) * scale,
+      walkClip,
+    };
     kindCache[kindIdx] = k;
     return k;
   }
@@ -94,10 +105,8 @@ export function createMonsters(scene, npcSys, player, cam) {
     scene.add(root);
 
     const mixer = new THREE.AnimationMixer(root);
-    const hips = findBone(root, 'Hips');
-    const hipsY = hips ? hips.position.y : 1.4;
-    const walkName = kindIdx === 0 ? 'monster_walk' : 'orc_walk';
-    const walk = mixer.clipAction(clipFor(walkName, hipsY));
+    const hipsY = info.hipsY;
+    const walk = mixer.clipAction(info.walkClip);
     walk.play();
 
     // facing the player from frame one; visYaw starts matched so the model does
@@ -105,7 +114,8 @@ export function createMonsters(scene, npcSys, player, cam) {
     const facing = aimAtPlayer(sx, sz);
     const m = {
       id: nextMonsterId++, base, root, mixer, hipsY,
-      x: sx, z: sz, y: 0, px: sx, pz: sz,
+      x: sx, z: sz, y: groundHeight(sx, sz), px: sx, pz: sz,
+      py: groundHeight(sx, sz),
       yaw: facing, visYaw: facing,
       speed: 0, targetSpeed: 0, cruise: kindIdx === 0 ? 2.4 : 3.1,
       hp: MAX_HP, knowledge: 0,
@@ -113,7 +123,7 @@ export function createMonsters(scene, npcSys, player, cam) {
       stateT: 0, swingT: 0, wreckT: 0,
       target: null, heldNpc: null,
       walk, dead: false,
-      footY: info.footY, targetH: info.targetH,
+      footY: info.footY, soleDrop: info.soleDrop, targetH: info.targetH,
       bang: makeBang(root, info),   // the "!" realization sprite
       body: null,
       scale: kindIdx === 0 ? 1.0 : 1.0,
@@ -280,7 +290,18 @@ export function createMonsters(scene, npcSys, player, cam) {
         const [cx, cz] = capsuleVsWorld(m.x, m.z, m.y + 1.5, 0.8);
         m.x = cx; m.z = cz;
       } else { m.px = m.x; m.pz = m.z; }
-      m.y = groundHeight(m.x, m.z);
+      // Follow the surface rather than snap to it. Kerbs are 12cm, rubble piles
+      // step in 1m cells, and a three-metre creature teleporting up one of those
+      // between two frames reads as a glitch; damped, it walks up them. Anything
+      // bigger than a step (a spawn, a crater opening underneath) is taken whole.
+      const gy = groundHeight(m.x, m.z);
+      m.py = m.y;
+      // Rising ground wins outright — a kerb or a rubble pile coming up under the
+      // feet must never be allowed to come THROUGH them, which is what damping
+      // both ways cost: a lag of one time constant is 10cm of shin through the
+      // pavement every time one stepped up. Falling ground is damped, so walking
+      // off a kerb is a step down rather than a teleport.
+      m.y = gy >= m.y || gy < m.y - 0.9 ? gy : damp(m.y, gy, 14, dt);
     }
   }
 
@@ -387,7 +408,7 @@ export function createMonsters(scene, npcSys, player, cam) {
       }
       m.root.position.set(
         m.px + (m.x - m.px) * alpha,
-        m.y + m.footY,
+        m.py + (m.y - m.py) * alpha + m.footY,
         m.pz + (m.z - m.pz) * alpha,
       );
       m.visYaw = dampAngle(m.visYaw, m.yaw, 10, dt);
@@ -445,10 +466,23 @@ export function createMonsters(scene, npcSys, player, cam) {
   };
 
   window.__test.spawnMonster = (kind = 0, x = 40, z = 40) => { spawn(kind, x, z); return monsters.length; };
-  // #13 regression probe: soles must sit on the ground, not above it
+  // #13 regression probe: soles must sit on the ground, not above it.
+  //
+  // This used to be a Box3 over m.root, which is worthless here for two separate
+  // reasons: Box3 does not skin (a SkinnedMesh reports its REST geometry however
+  // the legs are actually posed) and the realization sprite is a child of the
+  // root, so `h` was measuring to the top of the "!" rather than to the head. It
+  // read gap 0.000 and h 4.7 on a 3.4m monster whose toes were 0.84m in the air.
+  // Now it walks the foot bones — real objects, real world matrices — and drops
+  // to the sole through the rig's own constant.
   window.__test.monsterFeet = () => monsters.map((m) => {
-    const b = new THREE.Box3().setFromObject(m.root);
-    return { kind: m.base, gap: +(b.min.y - groundHeight(m.x, m.z)).toFixed(3), h: +(b.max.y - b.min.y).toFixed(2) };
+    const sole = footBoneY(m.root) - m.soleDrop;
+    return {
+      kind: m.base,
+      gap: +(sole - groundHeight(m.x, m.z)).toFixed(3),
+      h: +m.targetH.toFixed(2),
+      footY: +m.footY.toFixed(3),
+    };
   });
   window.__test.monsterStats = () => monsters.map((m) => ({
     id: m.id, state: m.state, hp: m.hp, x: +m.x.toFixed(1), z: +m.z.toFixed(1), know: m.knowledge,

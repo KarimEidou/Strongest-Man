@@ -6,10 +6,10 @@ import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { MODELS } from '../engine/assets.js';
 import { makeCharacterMaterial } from '../engine/materials.js';
-import { createLocomotion } from '../anim/locomotion.js';
+import { createLocomotion, LOCO_NAMES } from '../anim/locomotion.js';
 import { createPoseLayer } from '../anim/poselayer.js';
 import { VICTIM_POSES, VICTIM_BONE_WEIGHT } from '../anim/poses.js';
-import { groundOffset, findBone } from '../anim/retarget.js';
+import { groundOffset, locoClipsFor, findBone, footBoneY, soleDropOf } from '../anim/retarget.js';
 import { capsuleVsWorld, blockedAt } from '../physics/collide.js';
 import { pickGoal, routeTo } from './schedule.js';
 import { rebuildHash, neighbors } from './crowd.js';
@@ -34,6 +34,17 @@ const DRAG_ON = 4.6, DRAG_OFF = 3.2;   // carrier speed hysteresis: hang <-> dra
 const WHISKER = 1.8;        // how far ahead they look for something to walk round
 const WHISKER_ANG = 0.61;   // ±35°
 
+// Sole offset per base rig, measured once at unit scale off the locomotion
+// clips these bodies actually play. Every bone position scales linearly with the
+// root, so one measurement per rig times the individual's build is exact — and
+// forty-eight skeleton clones stepped through four walk cycles at boot is not.
+const footUnit = {};
+// ...and the rest-pose distance from the lowest foot bone down to the sole, same
+// deal: constant per rig, linear in the body scale. Measured at rest and cached,
+// because measuring it live is meaningless — Box3 does not skin, so soleDropOf()
+// on a walking body mixes a posed bone against a rest box.
+const soleUnit = {};
+
 export function createNPCs(scene, city, player) {
   const npcs = [];
   const sys = { npcs, player, city };
@@ -57,6 +68,11 @@ export function createNPCs(scene, city, player) {
         o.receiveShadow = true;
       }
     });
+    if (footUnit[base] === undefined) {
+      const hb = findBone(root, 'Hips');
+      footUnit[base] = groundOffset(root, locoClipsFor(LOCO_NAMES, hb ? hb.position.y : 1));
+      soleUnit[base] = soleDropOf(root);
+    }
     const h = randRange(0.92, 1.07);
     root.scale.setScalar(h);
     scene.add(root);
@@ -108,7 +124,8 @@ export function createNPCs(scene, city, player) {
       const b = findBone(root, bn);
       if (b) npc.lowBones.push(b);
     }
-    npc.footY = groundOffset(root);
+    npc.footY = footUnit[base] * h;
+    npc.soleUnit = soleUnit[base];
     npc.px = npc.x; npc.pz = npc.z;
     npc.home = pick(city.pois.filter((p) => p.type === 'apartment')) || pick(city.pois);
     npc.district = npc.home.district;
@@ -618,6 +635,23 @@ export function createNPCs(scene, city, player) {
       scaleY: +n.root.scale.y.toFixed(3), baseY: +n.baseY.toFixed(3),
     };
   });
+
+  // #13 regression probe (the townsfolk half): soles on the pavement, over a
+  // whole stride rather than at one instant. Measured off the foot BONES and the
+  // rig's own sole drop — a Box3 over a SkinnedMesh reports rest geometry however
+  // the legs are posed, so it cannot see this class of bug at all. Cowering
+  // squashes scale.y, so the drop is re-measured per body rather than cached.
+  window.__test.npcFeet = () => {
+    let worstLow = Infinity, worstHigh = -Infinity, lowId = -1, highId = -1, n = 0;
+    for (const o of npcs) {
+      if (o.state === 'dead' || o.state === 'carried' || o.state === 'hide') continue;
+      const gap = footBoneY(o.root) - o.soleUnit * o.root.scale.y - groundHeight(o.x, o.z);
+      n++;
+      if (gap < worstLow) { worstLow = gap; lowId = o.id; }
+      if (gap > worstHigh) { worstHigh = gap; highId = o.id; }
+    }
+    return { n, deepest: +worstLow.toFixed(3), deepestId: lowId, highest: +worstHigh.toFixed(3), highestId: highId };
+  };
 
   // #5 regression probe: how many townsfolk are standing inside a building
   window.__test.npcsInsideBuildings = () => {

@@ -4,21 +4,11 @@
 // spawning a clone).
 import * as THREE from 'three';
 import { staticGeometry } from '../engine/assets.js';
-import { makeWorldMaterial, tagGeometry, SURF } from '../engine/materials.js';
-import { streetlampGeo, trafficLightGeo, signGeo, treeGeo, kioskGeo } from './procprops.js';
+import { makeWorldMaterial, tagGeometry, faceShade, SURF } from '../engine/materials.js';
 import { ROAD, WALK, BLOCKS, MAP_EDGE } from './city.js';
 import { baseHeight } from '../physics/heightfield.js';
 import { createGrid } from '../physics/spatialgrid.js';
 import { rand, pick } from '../core/mathx.js';
-
-// generated lifts that passed visual QA use their GLB; the rest are procedural
-const PROC_GEO = {
-  prop_streetlamp: streetlampGeo,
-  prop_trafficlight: trafficLightGeo,
-  prop_sign: signGeo,
-  prop_tree: treeGeo,
-  prop_kiosk: kioskGeo,
-};
 
 const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), V2 = new THREE.Vector3(), S = new THREE.Vector3();
 
@@ -219,28 +209,43 @@ export function buildProps(scene, city) {
     }
   }
 
-  // The generated props that shipped their own texture used to keep the plain
-  // Lambert engine/assets.js gives every GLB — which meant a bench got none of
-  // the procedural surface detail, none of the specular, and, after dark, none of
-  // the streetlamp light that everything around it was catching. They go through
-  // the shared world material too now, keeping their baked texture as the base
-  // map and being tagged with the surface they actually are.
-  const GLB_SURF = { prop_hydrant: SURF.METAL, prop_bench: SURF.WOOD, prop_dumpster: SURF.METAL };
+  // Every prop ships its own baked palette texture, and every one goes through the
+  // shared world material rather than the plain Lambert engine/assets.js hands a
+  // GLB — otherwise a bench gets none of the procedural surface detail, none of
+  // the specular, and, after dark, none of the streetlamp light that everything
+  // around it is catching. The surface id is per TYPE, which is as fine-grained
+  // as a single-material model allows and is enough for the shader to tell a
+  // steel post from a tree.
+  const GLB_SURF = {
+    prop_hydrant: SURF.METAL,
+    prop_bench: SURF.WOOD,
+    prop_dumpster: SURF.METAL,
+    prop_streetlamp: SURF.METAL,
+    prop_trafficlight: SURF.METAL,
+    prop_sign: SURF.METAL,
+    prop_tree: SURF.FOLIAGE,
+    prop_kiosk: SURF.ROOF,
+  };
 
   // ---- build instanced meshes
   const reg = { types: {}, all: [] };
-  const worldMat = makeWorldMaterial();
   const texMat = new Map();     // one material per baked texture, not one per prop
   for (const [type, list] of Object.entries(placements)) {
-    const { geometry, material } = PROC_GEO[type]
-      ? { geometry: PROC_GEO[type](), material: worldMat }
-      : (() => {
-        const g = staticGeometry(type);
-        tagGeometry(g.geometry, 0xffffff, 0, 1, GLB_SURF[type] ?? SURF.CONCRETE);
-        let m = texMat.get(g.material.map);
-        if (!m) { m = makeWorldMaterial({ map: g.material.map || null }); texMat.set(g.material.map, m); }
-        return { geometry: g.geometry, material: m };
-      })();
+    const { geometry, material } = (() => {
+      const g = staticGeometry(type);
+      // Not every lift ships normals — prop_hydrant.glb has position and uv only,
+      // which left it Lambert-shaded off an undefined attribute (flat, and the
+      // one prop the face-shading pass below could not touch).
+      if (!g.geometry.getAttribute('normal')) g.geometry.computeVertexNormals();
+      tagGeometry(g.geometry, 0xffffff, 0, 1, GLB_SURF[type] ?? SURF.CONCRETE);
+      // The palette atlas is flat colour with no shading baked in, so the same
+      // per-face darkening the city's own geometry gets keeps an imported prop
+      // from reading as a sticker beside it.
+      faceShade(g.geometry);
+      let m = texMat.get(g.material.map);
+      if (!m) { m = makeWorldMaterial({ map: g.material.map || null }); texMat.set(g.material.map, m); }
+      return { geometry: g.geometry, material: m };
+    })();
     const im = new THREE.InstancedMesh(geometry, material, Math.max(list.length, 1));
     im.frustumCulled = false;
     im.receiveShadow = true;

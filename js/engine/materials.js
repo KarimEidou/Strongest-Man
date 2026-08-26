@@ -427,6 +427,10 @@ export function faceShade(geo, sunDir = new THREE.Vector3(-0.6, 0.5, -0.35).norm
   const pos = geo.getAttribute('position');
   const nor = geo.getAttribute('normal');
   const col = geo.getAttribute('color');
+  // Nothing to shade BY. Some imported lifts ship position and uv only; the
+  // caller is expected to compute normals first, and shading by a missing
+  // attribute used to be a boot-time crash rather than a no-op.
+  if (!nor || !col || !pos) return geo;
   const N = new THREE.Vector3();
   for (let i = 0; i < pos.count; i++) {
     N.fromBufferAttribute(nor, i);

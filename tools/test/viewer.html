@@ -1,0 +1,75 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>model viewer</title>
+<style>html,body{margin:0;height:100%;background:#1b2233;overflow:hidden}canvas{display:block}
+#lab{position:fixed;left:0;right:0;bottom:0;font:12px monospace;color:#cfe;background:#0008;padding:4px}</style>
+<canvas id="c"></canvas><div id="lab"></div>
+<script type="importmap">{"imports":{"three":"../../vendor/three/three.module.min.js","three/addons/":"../../vendor/three/addons/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+const q = new URLSearchParams(location.search);
+const files = (q.get('m') || '').split(',').filter(Boolean);
+const gap = parseFloat(q.get('gap') || '0');       // 0 = auto
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1b2233);
+scene.add(new THREE.HemisphereLight(0xbcd2ff, 0x6a5a4a, 2.0));
+const sun = new THREE.DirectionalLight(0xfff0dd, 2.2); sun.position.set(-4, 8, 5); scene.add(sun);
+const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.05, 400);
+
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const parts = [];
+let x = 0, maxH = 0.1;
+for (const f of files) {
+  const g = await loader.loadAsync(`../../assets/models/${f}.glb`);
+  const b = new THREE.Box3().setFromObject(g.scene);
+  const w = Math.max(b.max.x - b.min.x, b.max.z - b.min.z);
+  const step = gap || (w + 1.2);
+  g.scene.position.x = x + step / 2;
+  scene.add(g.scene);
+  parts.push({ f, b, w, h: b.max.y - b.min.y });
+  maxH = Math.max(maxH, b.max.y - b.min.y);
+  x += step;
+}
+// 1m reference grid + a 1.8m human-height stick beside each model
+// +X red, +Y green, +Z blue — so a screenshot says which way a model faces
+const ax = new THREE.AxesHelper(2.0);
+ax.material.depthTest = false;
+ax.renderOrder = 9;
+scene.add(ax);
+const grid = new THREE.GridHelper(Math.max(x, 8) + 4, Math.round(Math.max(x, 8) + 4), 0x5a6a8a, 0x303a52);
+grid.position.set(x / 2, 0, 0);
+scene.add(grid);
+for (let i = 0, px = 0; i < parts.length; i++) {
+  const step = gap || (parts[i].w + 1.2);
+  // beside the model, on its own z = 0 plane, so perspective does not lie about
+  // the comparison the stick exists to make
+  const stick = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.8, 0.1), new THREE.MeshBasicMaterial({ color: 0xff5a3c }));
+  const left = px + step / 2 - (parts[i].b.max.x - parts[i].b.min.x) / 2;
+  stick.position.set(left - 0.22, 0.9, 0);
+  scene.add(stick);
+  px += step;
+}
+
+const view = q.get('view') || 'front';
+const dist = parseFloat(q.get('d') || '0') || Math.max(x * 1.15, maxH * 3.0, 4);
+const cx = x / 2;
+if (view === 'front') cam.position.set(cx, maxH * 0.55 + 0.6, dist);
+else if (view === 'side') cam.position.set(cx + dist, maxH * 0.55 + 0.6, 0.001);
+else if (view === 'top') cam.position.set(cx, dist, 0.001);
+else cam.position.set(cx + dist * 0.72, maxH * 0.75 + dist * 0.35, dist * 0.72);
+cam.lookAt(cx, maxH * 0.42, 0);
+
+document.getElementById('lab').textContent = parts
+  .map((p) => `${p.f}  ${(p.b.max.x - p.b.min.x).toFixed(2)}w ${p.h.toFixed(2)}h ${(p.b.max.z - p.b.min.z).toFixed(2)}d  minY ${p.b.min.y.toFixed(2)}`)
+  .join('   |   ') + '   (red stick = 1.8m person)';
+
+renderer.render(scene, cam);
+window.__ready = true;
+</script>

@@ -9,11 +9,17 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
 export const MODELS = {}; // name -> { scene, animations }
 
-// only models that passed visual QA ship; failed lifts were replaced by
-// procedural geometry in world/procprops.js
+// Characters, monsters and three props are this project's own lifts. The street
+// furniture, the traffic and the weapons are Kenney CC0 packs brought in by
+// tools/import-models.mjs — see assets/CREDITS.md. Everything here has been
+// merged to a single mesh with a single palette atlas by that tool, which is
+// what staticGeometry() below assumes.
 const LIST = [
   'player', 'npc_a', 'npc_b', 'monster_a', 'monster_b',
   'prop_hydrant', 'prop_bench', 'prop_dumpster',
+  'prop_streetlamp', 'prop_trafficlight', 'prop_sign', 'prop_tree', 'prop_kiosk',
+  'car_sedan', 'car_taxi', 'car_van', 'car_police', 'car_wreck',
+  'gun_pistol', 'gun_smg', 'gun_rifle', 'gun_shotgun', 'gun_sniper', 'gun_cannon',
 ];
 const CLIPS = ['clip_run', 'clip_punch', 'clip_die'];
 
@@ -50,12 +56,31 @@ export async function loadModels(onProgress) {
   }));
 }
 
-// Extract the merged static geometry of a model (props/cars) with its texture,
-// for building InstancedMesh pools. Assumes single mesh (pipeline enforces it).
+// A quantized attribute (KHR_mesh_quantization, which both asset tools emit)
+// arrives as NORMALIZED integers: the real value is the stored one over the
+// type's range, and the node transform scales it back out. That is fine to draw
+// and fatal to bake into — BufferAttribute.setXYZ re-normalizes on the way in,
+// so writing a value the wrapper node was going to multiply by 8 silently clamps
+// it at the quantization box. It looked like a 5.6m streetlamp collapsing to a
+// 1m stub and a tree turning inside out. Widening to float first costs a few KB
+// of RAM per prop type, once, and makes the bake exact.
+function toFloat(attr) {
+  if (attr.array instanceof Float32Array && !attr.normalized) return attr;
+  const out = new Float32Array(attr.count * attr.itemSize);
+  for (let i = 0; i < attr.count; i++) {
+    for (let c = 0; c < attr.itemSize; c++) out[i * attr.itemSize + c] = attr.getComponent(i, c);
+  }
+  return new THREE.BufferAttribute(out, attr.itemSize);
+}
+
+// Extract the merged static geometry of a model (props/cars/guns) with its
+// texture, for building InstancedMesh pools. Assumes single mesh (both asset
+// pipelines enforce it).
 export function staticGeometry(name) {
   let found = null;
   MODELS[name].scene.traverse((o) => { if (o.isMesh && !found) found = o; });
   const geo = found.geometry.clone();
+  for (const key of Object.keys(geo.attributes)) geo.setAttribute(key, toFloat(geo.attributes[key]));
   found.updateWorldMatrix(true, false);
   geo.applyMatrix4(found.matrixWorld); // bake grounding/scale wrapper nodes
   return { geometry: geo, material: found.material };

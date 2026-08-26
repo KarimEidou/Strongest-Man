@@ -3,8 +3,9 @@
 // with each other, brake for pedestrians, crush/deform when hit, explode with
 // splash damage, and can be grabbed and thrown.
 import * as THREE from 'three';
-import { makeWorldMaterial } from '../engine/materials.js';
-import { carGeo, trafficLensGeo, CAR_CLEARANCE } from './procprops.js';
+import { makeWorldMaterial, tagGeometry, faceShade, SURF } from '../engine/materials.js';
+import { staticGeometry } from '../engine/assets.js';
+import { trafficLensGeo, CAR_CLEARANCE } from './procprops.js';
 import { neighbors } from '../ai/crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { removeSphere, craterAt } from './destruction.js';
@@ -22,18 +23,40 @@ const CIRCUITS = [
   [[-60.5, -2.5], [60.5, -2.5], [60.5, 2.5], [-60.5, 2.5]],
   [[-2.5, 60.5], [-2.5, -60.5], [2.5, -60.5], [2.5, 60.5]],
 ];
-const KINDS = ['sedan', 'taxi', 'van', 'sedan', 'taxi', 'sedan'];
+const KINDS = ['sedan', 'taxi', 'van', 'police', 'taxi', 'sedan'];
 const CAR_COUNT = 12;
+
+// Live lens column on the signal head, in prop-local metres.
+const LENS_TOP = 4.30, LENS_STEP = 0.30, LENS_Z = 0.50;
 
 // every road crossing, not just the middle one
 const JUNCTIONS = [];
 for (const cx of ROAD.centers) for (const cz of ROAD.centers) JUNCTIONS.push({ x: cx, z: cz });
 
+// The imported cars (assets/models/car_*.glb, Kenney CC0) all share one palette
+// atlas, so the whole fleet is one geometry per kind and ONE material. Built
+// once, lazily, because createTraffic runs after the models are loaded but the
+// geometry is wanted by both the traffic pool and the wreck swap.
+const carCache = new Map();
+function carParts(kind) {
+  let hit = carCache.get(kind);
+  if (hit) return hit;
+  const g = staticGeometry(`car_${kind}`);
+  if (!g.geometry.getAttribute('normal')) g.geometry.computeVertexNormals();
+  // Paint, not concrete: SURF.PAINT is the id with the tight specular lobe, and
+  // it is what makes a car read as bodywork under the streetlamps.
+  tagGeometry(g.geometry, 0xffffff, 0, 1, SURF.PAINT);
+  faceShade(g.geometry);
+  hit = { geometry: g.geometry, map: g.material.map || null };
+  carCache.set(kind, hit);
+  return hit;
+}
+
 export function createTraffic(scene, propsReg, npcHooks, player, cam) {
-  const mat = makeWorldMaterial();
+  const mat = makeWorldMaterial({ map: carParts('sedan').map });
   // one scorched material for every wreck: repainting a car used to rewrite and
   // re-upload its whole vertex-colour buffer at the exact moment it exploded
-  const scorchedMat = makeWorldMaterial({ color: 0x4a4a52 });
+  const scorchedMat = makeWorldMaterial({ map: carParts('sedan').map, color: 0x4a4a52 });
   const list = [];
   const lightState = { phase: 'EW', t: 0, amber: false };
 
@@ -63,8 +86,7 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
 
   for (let i = 0; i < CAR_COUNT; i++) {
     const kind = pick(KINDS);
-    const geo = carGeo(kind);
-    const mesh = new THREE.Mesh(geo, mat);
+    const mesh = new THREE.Mesh(carParts(kind).geometry, mat);
     mesh.frustumCulled = false;
     mesh.receiveShadow = true;
     scene.add(mesh);
@@ -78,7 +100,9 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       hp: 2, alive: true, exploded: false,
       mode: 'drive',            // drive | loose | held | flying | wreck
       vx: 0, vz: 0, vy: 0, y: 0, wspin: 0,
-      hw: 1.0, hl: 2.3,
+      // half-extents of the imported body, mirrors excluded (measure with
+      // `node tools/geom-probe.mjs assets/models/car_sedan.glb`)
+      hw: 0.88, hl: 1.70,
       squash: 1,
       panicT: 0,
       reactT: 0,                // drivers are not instantaneous
@@ -100,7 +124,11 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
   lightProps.forEach((p, i) => {
     for (let k = 0; k < 3; k++) {
       LQ.setFromAxisAngle(LV.set(0, 1, 0), p.yaw);
-      const off = new THREE.Vector3(0, 4.08 - k * 0.28, 1.395).applyQuaternion(LQ);
+      // On the imported signal head (assets/models/prop_trafficlight.glb): the
+      // pole is on the prop's origin, the head hangs over +z and its lens face
+      // sits at z 0.45 with the visors reaching 0.65. Re-measure after any model
+      // swap with `node tools/geom-probe.mjs assets/models/prop_trafficlight.glb`.
+      const off = new THREE.Vector3(0, LENS_TOP - k * LENS_STEP, LENS_Z).applyQuaternion(LQ);
       LM.compose(LV.set(p.x + off.x, (p.y || 0) + off.y, p.z + off.z), LQ, LS);
       lensMesh.setMatrixAt(i * 3 + k, LM);
     }
