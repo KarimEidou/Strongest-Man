@@ -840,6 +840,41 @@ results.wallAgreement = await page.evaluate(async () => {
   };
 });
 
+// 11f) The floating joystick is claimed anywhere in the left 44% of the screen
+// and core/input.js listens only on #gl — so any pointer-events element of the
+// HUD sitting in that half is a permanent hole in the stick. The weapon rail is
+// the first one wide enough to matter, and it gets wider every time a gun is
+// added, which is exactly the kind of thing that regresses silently.
+results.railClearsStick = await page.evaluate(() => {
+  window.__test.grantPoints(60000);
+  for (const g of ['smg', 'rifle', 'shotgun', 'sniper', 'cannon']) window.__test.shop.buy(g);
+  window.__test.shop.close();
+  window.__test.step(0.4);
+  const chips = [...document.querySelectorAll('#weapons .wchip')].map((c) => c.getBoundingClientRect());
+  const r = (sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
+  const rail = r('#weapons'), ammo = r('#ammo'), btns = r('#btns');
+  const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const stick = innerWidth * 0.44;
+  const leftmost = Math.min(...chips.map((c) => c.left));
+  // and no touch may land on the bare container between two chips on one row
+  let gapSwallows = false;
+  const byRow = [...chips].sort((a, b) => a.top - b.top || a.left - b.left);
+  for (let i = 0; i + 1 < byRow.length; i++) {
+    if (Math.round(byRow[i].top) !== Math.round(byRow[i + 1].top)) continue;
+    const el = document.elementFromPoint((byRow[i].right + byRow[i + 1].left) / 2, byRow[i].top + 10);
+    if (el && el.id === 'weapons') gapSwallows = true;
+  }
+  return {
+    chips: chips.length, stickEdge: Math.round(stick), leftmostChip: Math.round(leftmost),
+    rows: new Set(chips.map((c) => Math.round(c.top))).size,
+    gapSwallows, hitsAmmo: hit(rail, ammo), hitsBtns: hit(rail, btns),
+    onScreen: rail[0] >= 0 && rail[3] <= innerHeight && rail[1] >= 0,
+    ok: chips.length === 7 && leftmost >= stick && !gapSwallows
+      && !hit(rail, ammo) && !hit(rail, btns)
+      && rail[0] >= 0 && rail[1] >= 0 && rail[3] <= innerHeight,
+  };
+});
+
 // 12) perf snapshot. NOTE: `simMs` is meaningless after the stepped assertions
 // above — `__test.step()` runs hundreds of fixed steps inside a single frame and
 // core/debug.js accumulates all of them into that frame's window. `maxSimMs` is
