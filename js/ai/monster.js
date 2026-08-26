@@ -560,7 +560,11 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
   });
   window.__test.monsterStats = () => monsters.map((m) => ({
     id: m.id, state: m.state, hp: m.hp, dead: !!m.dead,
-    x: +m.x.toFixed(1), z: +m.z.toFixed(1), know: m.knowledge,
+    // `y` is here because tests aim at a monster's HEAD, and `m.y + 2` against
+    // an undefined y is NaN — which reaches cam.st.pitch through __test.aimAt
+    // and blacks the screen for the rest of the run with no error anywhere.
+    x: +m.x.toFixed(1), y: +m.y.toFixed(2), z: +m.z.toFixed(1),
+    h: +m.targetH.toFixed(2), know: m.knowledge,
   }));
 
   // `player` rides along so the director can bias spawn edges toward the side of

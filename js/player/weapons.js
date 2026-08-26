@@ -614,6 +614,10 @@ export function createWeapons(player, cam, combat) {
   // Point the CAMERA at a world point, which is what aiming is: the shot comes
   // off cam.st.curYaw/curPitch, not off the character.
   window.__test.aimAt = (x, y, z) => {
+    // A non-finite target used to flow straight into cam.st.pitch and stay
+    // there: every later frame damped NaN toward NaN, the view matrix went
+    // undefined and the canvas rendered black with nothing logged anywhere.
+    if (![x, y, z].every(Number.isFinite)) throw new Error(`aimAt: bad target ${x},${y},${z}`);
     muzzle(_v);
     const dx = x - _v.x, dy = y - _v.y, dz = z - _v.z;
     const flat = Math.hypot(dx, dz) || 1e-6;
