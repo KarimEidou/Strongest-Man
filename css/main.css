@@ -173,11 +173,23 @@ button { font: inherit; color: inherit; }
 #ammo-state { display: block; font-size: 9px; letter-spacing: 2px; color: var(--orange-bright); min-height: 11px; }
 #ammo.empty #ammo-n { color: #ff7a5a; }
 
+/* core/input.js claims the floating joystick anywhere in the left 44% of the
+   screen, and it only listens on #gl — so ANY pointer-events:auto element of the
+   HUD sitting in that half is a permanent hole in the stick. Centred, this rail
+   grew leftward as guns were bought until 166px of it was inside the joystick
+   zone: a thumb coming down low to run switched him to FISTS mid-fight instead,
+   and a thumb in one of the 6px gaps hit the bare container and did nothing at
+   all. So it is anchored in the LOOK half now and wraps upward rather than
+   inward, and only the chips take pointer events. */
 #weapons {
-  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
-  display: flex; gap: 6px; pointer-events: auto;
+  position: absolute; left: auto; right: 210px; bottom: 8px; transform: none;
+  display: flex; gap: 6px; justify-content: flex-end;
+  flex-wrap: wrap-reverse;              /* a full armoury grows UP, never left */
+  max-width: calc(56% - 220px);
+  pointer-events: none;
 }
 .wchip {
+  pointer-events: auto; flex: none;
   box-sizing: border-box; padding: 5px 9px;
   border-radius: 8px; border: 1.5px solid rgba(234,242,255,0.35);
   background: rgba(13,27,62,0.6);

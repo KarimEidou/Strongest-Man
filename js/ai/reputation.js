@@ -17,10 +17,20 @@ export function initReputation(npcSys, monsterSys, player, city) {
   on(EV.FEAT, ({ type, x, z, magnitude }) => {
     const mag = magnitude ?? FEAT_MAG[type] ?? 20;
     if (mag <= 0) return;
-    // witnesses: NPCs within 30m facing within ~100°
+    // witnesses: NPCs within 30m of the EVENT, facing within ~100°, who can also
+    // see the MAN. That second clause was free until this drop: every melee feat
+    // happens where he is standing, so the two circles coincided and nobody had
+    // to say it. A hitscan weapon separates them — a sniper round left eight
+    // people up to 87m away certain they had SEEN him do something impossible
+    // with his bare hands, which is the one thing the whole premise depends on
+    // them not knowing. It reaches the model verbatim through
+    // dialogue/conversation.js knowledgeLine(), and below -19 karma it panics a
+    // crowd at the sight of a man they never watched do anything.
+    const px = player.p.x, pz = player.p.z;
     neighbors(x, z, 30, scratch);
     for (const n of scratch) {
       if (n.state === 'dead') continue;
+      if ((n.x - px) ** 2 + (n.z - pz) ** 2 > 900) continue;
       const toX = x - n.x, toZ = z - n.z;
       const d = Math.hypot(toX, toZ) || 1;
       const facing = Math.sin(n.yaw) * (toX / d) + Math.cos(n.yaw) * (toZ / d);

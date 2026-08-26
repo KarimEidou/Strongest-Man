@@ -88,6 +88,11 @@ Line:`;
   });
   on(EV.MONSTER_DIED, ({ byPlayer, x, z }) => {
     if (!byPlayer) return;
+    // Thanking him requires him to be there. One of these lines is "Did you see
+    // that?! He took it down with his HANDS!" (dialogue/lines.js) — fine for
+    // every kill in the game until this drop gave him a 220m rifle, after which
+    // a crowd around a corpse was cheering an empty street.
+    if ((player.p.x - x) ** 2 + (player.p.z - z) ** 2 > 900) return;
     neighbors(x, z, 18, scratch);
     let count = 0;
     for (const n of scratch) {
@@ -254,7 +259,17 @@ Line:`;
     if (monster && Math.hypot(monster.x - player.p.x, monster.z - player.p.z) < 45) interrupt();
   });
   on(EV.CAR_EXPLODED, () => { lastEvent = 'a car went up like a bomb'; });
-  on(EV.MONSTER_DIED, () => { lastEvent = 'someone killed a monster with their bare hands'; });
+  // Not any more, it wasn't. This line asserts the one thing the premise depends
+  // on keeping quiet, and after this drop a sniper round at 200m set it. Held
+  // state is an exact proxy at the instant the event fires: combat.js refuses a
+  // swing while a gun is out and weapons.js only fires when one is, so the two
+  // are mutually exclusive — and a throw or a crush happens with empty hands and
+  // correctly keeps the original line.
+  on(EV.MONSTER_DIED, () => {
+    lastEvent = save.equipped
+      ? 'someone shot a monster dead in the street'
+      : 'someone killed a monster with their bare hands';
+  });
   on(EV.NPC_DIED, ({ npc }) => { if (chat.npc === npc) closeChat(false); });
 
   function interrupt() {
@@ -277,6 +292,9 @@ Line:`;
   };
   window.__test.chatState = () => ({
     open: !!chat.npc,
+    // What the town is currently said to be talking about, verbatim — this goes
+    // into the model's system prompt, so it is worth being able to read back.
+    lastEvent,
     live: chat.live,
     hint: chat.hint ? chat.hint.textContent : null,
     hintShown: chat.hint ? !chat.hint.classList.contains('hidden') : false,

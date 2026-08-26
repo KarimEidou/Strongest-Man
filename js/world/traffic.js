@@ -381,9 +381,19 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
   }
 
   function explode(car) {
-    if (car.exploded) { car.mode = 'wreck'; return; }
+    // A burning hulk still has to fall. Forcing 'wreck' here regardless of
+    // altitude takes the car out of the integrator below, which steps only
+    // drive/loose/flying — so one destroyed off the ground hung at that y for the
+    // rest of the session, a taxi parked in the sky, with a live 1.26m collider
+    // on the empty pavement underneath it. Nothing could reach that before:
+    // onPunch skips airborne cars outright. A bullet does not, which makes a gun
+    // the first thing in the game able to kill a car in mid-air. Anything
+    // airborne stays 'loose'; the landing branch already settles an exploded car
+    // into a wreck with its restRoll/restPitch when it touches down.
+    const airborne = car.y > groundHeight(car.x, car.z) + 0.05;
+    if (car.exploded) { car.mode = airborne ? 'loose' : 'wreck'; return; }
     car.exploded = true;
-    car.mode = 'wreck';
+    car.mode = airborne ? 'loose' : 'wreck';
     car.speed = 0;
     burstFire(car.x, car.y + 0.5, car.z, 26);
     burstSmoke(car.x, car.y + 1, car.z, 18);
