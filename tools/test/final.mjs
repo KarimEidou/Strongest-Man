@@ -294,6 +294,14 @@ await page.evaluate(() => {
       for (const n of window.__npcs.npcs) { n.x = n.px = 400 + n.id; n.z = n.pz = 400; }
       window.__test.step(0.2);
     },
+    // Rubble left lying around by an earlier case. tryGrab() in player/combat.js
+    // takes sleeping debris BEFORE props, so a single chunk within ~1.5m of the
+    // reach point silently wins over the prop under test — which made prop cases
+    // depend on where the city happened to put that prop. Park it like the cars.
+    debrisAway() {
+      for (const b of window.__pworld.sleeping) { b.x = b.px = 800; b.z = b.pz = 800; }
+      window.__test.step(0.2);
+    },
   };
 });
 
@@ -391,6 +399,7 @@ results.thrownProps = await page.evaluate(() => {
   window.__fixture.clearCarry();
   window.__fixture.npcsAway();
   window.__fixture.parkCars();
+  window.__fixture.debrisAway();
   const reg = window.__propsReg;
   const out = {};
   for (const type of ['prop_tree', 'prop_bench']) {
