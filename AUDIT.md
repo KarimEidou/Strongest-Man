@@ -44,6 +44,13 @@ numbers are that build's, not the current tree's.
   sans face in two of the three places the game prints them, where an `I` is a
   bare vertical stroke. Both are the same lesson as #107–#113 — the pass is
   worth running every time the pictures change, not once.
+- **And #118 came from a file that would not stop changing.** Re-running the
+  layout suite twice on one build produced two different reports. The cause
+  was a CSS fade measured on the wall clock, and the consequence was that on
+  some runs three overlap assertions were skipped in silence while the suite
+  printed `0 layout failure(s)`. A check that sometimes does not happen looks
+  exactly like a check that passes, which is why the reproducibility of the
+  evidence is treated here as part of the evidence.
 
 **Reading an entry.** *Repro* is the exact steps that produced the behaviour.
 *Expected* and *Actual* are what should happen and what did, with the mechanism.
@@ -56,10 +63,10 @@ The commit named is where the behaviour actually changed.
 | Severity | Count | Meaning |
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
-| Major | 55 | a feature does not work, leaks, or is unusable on the target device |
+| Major | 56 | a feature does not work, leaks, or is unusable on the target device |
 | Minor | 51 | wrong, but survivable |
 | Polish | 4 | correct, and not good enough |
-| **Total** | **114** | from 117 raw findings; 3 were the same defect seen by two sweeps |
+| **Total** | **115** | from 118 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
@@ -74,6 +81,7 @@ The commit named is where the behaviour actually changed.
 | Deploy | 2 |
 | Audio | 1 |
 | Layout | 1 |
+| Tooling | 1 |
 
 ## Resolving commits
 
@@ -102,6 +110,7 @@ The commit named is where the behaviour actually changed.
 | `90ca0e0` | fix(world): open the doors, and photograph the art instead of the man in front of it |
 | `da7578b` | fix(pwa): an update nobody was offered, and a watchdog that called a slow boot a failure |
 | `ff8a4d2` | fix(ui): set the numerals in a serif, and stop the artwork covering the hint |
+| `1bf0dfd` | fix(layout): measure DOM overlays at their settled state, not mid-fade |
 
 ## Index
 
@@ -166,6 +175,7 @@ The commit named is where the behaviour actually changed.
 | 112 | Major | Render | `js/world/buildings.js:61` | Every walkable front door in the city is drawn shut, and the player passes through the leaf | `90ca0e0` |
 | 114 | Major | PWA | `js/main.js:669` | A player who reloads while a new service worker is installing is never offered the update | `da7578b` |
 | 115 | Major | UI | `js/main.js:32` | The boot watchdog measures elapsed time, so a slow but healthy first install is reported to the… | `da7578b` |
+| 118 | Major | Tooling | `tools/capture/layout.mjs:174` | layout.mjs measures DOM overlays on the wall clock, so the #art-prompt overlap assertions silen… | `1bf0dfd` |
 | 7 | Minor | Perf | `js/engine/warmup.js:43` | warmUp disposes three's module-level shared Sprite geometry | `5418f1e` |
 | 8 | Minor | Render | `js/engine/blobshadows.js:25` | Blob-shadow CanvasTexture carries colour but is left at NoColorSpace, so shadows render as ligh… | `5418f1e` |
 | 9 | Minor | Render | `js/engine/godrays.js:40` | God-ray composite adds linear-light values onto an already tone-mapped, sRGB-encoded framebuffer | `9456ab7` |
@@ -939,6 +949,18 @@ The commit named is where the behaviour actually changed.
 **Actual.** BOOT_TIMEOUT_MS was a fixed 90 s from module evaluation with no knowledge of whether anything was happening. That is a claim about how long boot SHOULD take, and it is wrong in the one situation the watchdog exists for — a first install on a slow connection, which is precisely when the page and the precache compete. Telling a player the app failed while it is still loading is a worse lie than the frozen bar the watchdog was added to replace.
 
 **Remedy.** Re-arm on every loadingProgress() call, via a hook overlays.js exposes, so the watchdog measures a STALL. Cleared with the other boot guards on success.
+
+### 118. layout.mjs measures DOM overlays on the wall clock, so the #art-prompt overlap assertions silently did not run on some viewports
+
+**Major · Tooling · `tools/capture/layout.mjs:174` · fixed in `1bf0dfd`**
+
+**Repro.** Run `node tools/capture/layout.mjs` twice and diff screenshots/layout-report.json. Rows flip between `#art-prompt 118.1x48.0` and `#art-prompt: none visible` for the same device and orientation, with no code change in between.
+
+**Expected.** A layout measurement is a pure function of the state, the viewport and the orientation - the same standard the capture harness is held to. Every assertion listed for a state runs every time.
+
+**Actual.** boxes() drops any element at computed opacity 0, and #art-prompt fades in over 0.18s of WALL clock while the museum state's setup advances the SIMULATION by a fixed 0.5s. Two different clocks. Whether the prompt was measured therefore depended on which side of that fade the two settling rAFs landed on, and it varied run to run on the same build. On the runs where it landed at exactly 0, the report said `none visible` and the noOverlap pairs for that state - #art-prompt against #btns, #weapons and #ammo, which are the regression guard for #110 - were skipped without a word. The suite still printed `0 layout failure(s)`, which is the problem: a check that sometimes does not happen reads exactly like a check that passes. capture.mjs already kills CSS transitions in its own addInitScript, for this exact reason and with a comment saying so; layout.mjs never got the same treatment.
+
+**Remedy.** Add `*,*::before,*::after{transition:none!important;animation:none!important;}` to layout.mjs's addInitScript alongside the safe-area variables, so every DOM overlay is measured at its settled state. The prompt is now measured on all ten device/orientation pairs, never `none visible`, and layout-report.json is byte-identical across consecutive runs.
 
 ### 7. warmUp disposes three's module-level shared Sprite geometry
 

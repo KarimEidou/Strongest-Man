@@ -1388,5 +1388,16 @@
   "expected": "A numeral reads as a numeral wherever the game prints it.",
   "actual": "The wall label had already been moved to a serif face for exactly this reason - a Roman \"I\" in Helvetica has no serifs and is a plain vertical stroke, indistinguishable from a divider, a tick or a text cursor - but the same string is printed in two other places, #art-prompt-text and #inspect-title, and both were left on the system sans stack. In the caption it is worst: the numeral sits alone on its own centred line above \"Inder\", with nothing around it to imply it is a number at all.",
   "fix": "Georgia / Times / serif on both, sized up slightly so the numeral holds the line. The \"VIEW\" prefix on the prompt is UI voice rather than part of the title, so its ::before is put back on the project's own sans stack. No webfont: the target device ships both faces."
+ },
+ {
+  "title": "layout.mjs measures DOM overlays on the wall clock, so the #art-prompt overlap assertions silently did not run on some viewports",
+  "severity": "Major",
+  "category": "Tooling",
+  "file": "tools/capture/layout.mjs",
+  "line": 174,
+  "repro": "Run `node tools/capture/layout.mjs` twice and diff screenshots/layout-report.json. Rows flip between `#art-prompt 118.1x48.0` and `#art-prompt: none visible` for the same device and orientation, with no code change in between.",
+  "expected": "A layout measurement is a pure function of the state, the viewport and the orientation - the same standard the capture harness is held to. Every assertion listed for a state runs every time.",
+  "actual": "boxes() drops any element at computed opacity 0, and #art-prompt fades in over 0.18s of WALL clock while the museum state's setup advances the SIMULATION by a fixed 0.5s. Two different clocks. Whether the prompt was measured therefore depended on which side of that fade the two settling rAFs landed on, and it varied run to run on the same build. On the runs where it landed at exactly 0, the report said `none visible` and the noOverlap pairs for that state - #art-prompt against #btns, #weapons and #ammo, which are the regression guard for #110 - were skipped without a word. The suite still printed `0 layout failure(s)`, which is the problem: a check that sometimes does not happen reads exactly like a check that passes. capture.mjs already kills CSS transitions in its own addInitScript, for this exact reason and with a comment saying so; layout.mjs never got the same treatment.",
+  "fix": "Add `*,*::before,*::after{transition:none!important;animation:none!important;}` to layout.mjs's addInitScript alongside the safe-area variables, so every DOM overlay is measured at its settled state. The prompt is now measured on all ten device/orientation pairs, never `none visible`, and layout-report.json is byte-identical across consecutive runs."
  }
 ]

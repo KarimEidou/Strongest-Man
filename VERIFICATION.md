@@ -16,7 +16,7 @@ sentence as the number rather than in a footnote.
 | Screenshots, pre-overhaul build | **90** — the nine scenes that exist in both |
 | Console problems, final | **0** of 622 |
 | Console problems, baseline | **90** of 90 |
-| Layout assertions | **70 checks, 0 failures** |
+| Layout assertions | **70 checks, 0 failures**, report byte-identical across runs |
 | End-to-end suite | **29/29 ok, 0 console errors, 0 page errors** |
 | Service-worker upgrade path | **11/11 checks passed** |
 | Leak check | 20 gallery load/unload cycles + 20 building collapses: **geometry and texture counts flat** |
@@ -203,6 +203,27 @@ and reporting it as the former was a false positive the first version produced.
 **One real failure was caught by this suite and fixed:** at 667×375 the gallery
 prompt ran 229..438 and the ammo readout starts at 413. The prompt now sits above
 the ammo row rather than beside it.
+
+### The report has to be reproducible, and it was not
+
+`screenshots/layout-report.json` used to change between two runs of the same
+build: rows flipped between `#art-prompt 118.1x48.0` and `#art-prompt: none
+visible` for the same device and orientation.
+
+The measurement drops any element at computed opacity 0, and `#art-prompt` fades
+in over 0.18 s of **wall** clock while the museum state advances the
+**simulation** by a fixed 0.5 s. Two clocks. Which side of the fade the settling
+frames landed on decided whether the prompt was measured at all.
+
+The unstable file is the smaller half of it. On the runs that landed at 0, the
+three `noOverlap` pairs for that state — the prompt against `#btns`, `#weapons`
+and `#ammo`, which is the regression guard for `AUDIT.md` #110 — were skipped,
+and the suite still printed `0 layout failure(s)`. **A check that sometimes does
+not happen reads exactly like a check that passes.** `capture.mjs` had killed CSS
+transitions in its own init script since the determinism work in §1; `layout.mjs`
+had not. It does now: the prompt is measured on all ten device/orientation pairs,
+never `none visible`, and consecutive runs produce byte-identical reports
+(`AUDIT.md` #118).
 
 ---
 
