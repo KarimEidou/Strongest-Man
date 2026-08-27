@@ -1,5 +1,7 @@
 # Audit
 
+**Generated — `node tools/audit/build.mjs`. Edit `tools/audit/findings.json`, not this file.**
+
 Every defect found in the pre-overhaul build, what proves it, and the commit
 that resolves it. Nothing here is aspirational: an entry exists because the
 behaviour was reproduced against the running game, and it carries a commit
@@ -17,7 +19,7 @@ numbers are that build's, not the current tree's.
   cycles, `getBoundingClientRect` measured for every control in every state on
   five viewports in both orientations.
 - Console output treated as a defect list. The baseline logs a problem on **every
-  one of its 90 captured screens** (`screenshots/baseline/report.json`).
+  one of its 90 captured screens** (`screenshots/baseline-report.json`).
 - Each candidate reproduced before it was written down, and re-reproduced after
   the fix. Findings that did not survive that step are not in this document.
 - **The screenshots were then reviewed, and reviewing them found more.** Seven
