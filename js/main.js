@@ -307,16 +307,60 @@ const { warmUp } = await import('./engine/warmup.js');
 const { bangMaterial } = await import('./ai/monster.js');
 await warmUp(renderer, scene, cam.camera, [bangMaterial()]);
 
+// Put him somewhere else in one step, with nothing left over from where he was.
+//
+// The four lines that matter are the ones that are easy to leave out. `px`/`pz`
+// are last frame's position and the integrator sweeps between them, so setting
+// only x/z sweeps a capsule across the whole city and collides with everything
+// on the way. `vx`/`vz` carry his old momentum into the new place. And the
+// camera chases `target` through `smoothed`, so without copying the one onto
+// the other it flies across town for a second and arrives after he does.
+//
+// Not to be confused with `__test.teleport` in player/player.js, which sets
+// position and ground height only and is deliberately blunt — the e2e suite
+// uses it to place him for a measurement, where the camera is not the point.
+function warpPlayer(x, z, yaw) {
+  const p = player.p;
+  p.x = x; p.z = z;
+  p.px = x; p.pz = z;
+  p.vx = 0; p.vz = 0;
+  cam.st.target.set(x, 0, z);
+  cam.st.smoothed.copy(cam.st.target);
+  if (yaw !== undefined) { cam.st.yaw = yaw; cam.st.curYaw = yaw; }
+  cam.st.curDist = cam.st.dist;
+  return { x, z };
+}
+
+// The gallery forecourt: 1.6 m outside the door on the road side, facing the
+// facade. Anything he is carrying comes with him — the load is placed at his
+// palms every frame rather than simulated, so it needs no handling here.
+const GALLERY_YAW = Math.PI / 2;
+const toGallery = () => warpPlayer(museum.door.x, museum.door.z, GALLERY_YAW);
+
 // ?warp=museum drops him on the gallery forecourt in one step — the screenshot
 // harness uses it, and so does anyone who does not want to walk there.
-if (flags.warp === 'museum') {
-  player.p.x = museum.door.x; player.p.z = museum.door.z;
-  player.p.px = player.p.x; player.p.pz = player.p.z;
-  cam.st.target.set(player.p.x, 0, player.p.z);
-  cam.st.smoothed.copy(cam.st.target);
-  // eye on the road side, looking west at the facade
-  cam.st.yaw = Math.PI / 2; cam.st.curYaw = cam.st.yaw;
-  cam.st.curDist = cam.st.dist;
+if (flags.warp === 'museum') toGallery();
+
+// The same trip, on a button. Guarded on the two states where it would be
+// wrong rather than merely odd: while he is down, because quick travel is not
+// an escape from a knockout, and while anything but 'playing' is on top,
+// because the HUD is behind a panel then and a stray tap should not move him.
+{
+  const btn = document.getElementById('btn-gallery');
+  // Driven by the three events that can change the answer, not sampled every
+  // frame: writing `disabled` sixty times a second to say the same thing is
+  // work the browser has to do and nothing gets from it.
+  const syncGallery = () => { btn.disabled = game.state !== 'playing' || health.down; };
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (btn.disabled) return;
+    toGallery();
+    toast('CITY GALLERY');
+  });
+  onEvent(EV.GAME_STATE, syncGallery);
+  onEvent(EV.PLAYER_DOWN, syncGallery);
+  onEvent(EV.PLAYER_REVIVED, syncGallery);
+  syncGallery();
 }
 window.__test.museum = () => ({
   door: museum.door,
@@ -329,14 +373,8 @@ window.__test.museum = () => ({
     yaw: +w.yaw.toFixed(4),
   })),
 });
-window.__test.warpTo = (x, z, yaw) => {
-  player.p.x = x; player.p.z = z;
-  player.p.px = x; player.p.pz = z;
-  player.p.vx = 0; player.p.vz = 0;
-  cam.st.target.set(x, 0, z); cam.st.smoothed.copy(cam.st.target);
-  if (yaw !== undefined) { cam.st.yaw = yaw; cam.st.curYaw = yaw; }
-  return { x, z };
-};
+window.__test.warpTo = (x, z, yaw) => warpPlayer(x, z, yaw);
+window.__test.toGallery = () => toGallery();
 window.__test.inspect = (slug) => {
   const w = museum.works.find((k) => k.slug === slug);
   if (!w) return false;

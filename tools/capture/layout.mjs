@@ -64,7 +64,7 @@ const STATES = [
   {
     id: 'hud',
     enter: () => window.__test.hudStress(),
-    controls: ['#btn-punch', '#btn-jump', '#btn-grab', '#btn-interact', '#btn-pause', '#btn-shop', '.wchip'],
+    controls: ['#btn-punch', '#btn-jump', '#btn-grab', '#btn-interact', '#btn-pause', '#btn-shop', '#btn-gallery', '.wchip'],
     // pairs that must not overlap, and why each pair matters
     noOverlap: [
       ['#vitals', '#karma-wrap'],
@@ -74,8 +74,19 @@ const STATES = [
       ['#toast', '#weapons'],
       ['#toast', '#btns'],
       ['#toast', '#karma-wrap'],
+      ['#toast', '#btn-gallery'],
+      // #rep-hint used to sit inside the button row's own vertical band, which
+      // was invisible until a third button filled the middle of it
+      ['#rep-hint', '#btn-gallery'],
+      ['#rep-hint', '#btn-shop'],
+      ['#rep-hint', '#toast'],
       ['#btn-pause', '#btn-shop'],
+      ['#btn-shop', '#btn-gallery'],
       ['#karma-wrap', '#btn-shop'],
+      // the tight one: at 667x375 these clear each other by 16.1px and there is
+      // nowhere else in the top row for a third button to go
+      ['#karma-wrap', '#btn-gallery'],
+      ['#vitals', '#btn-gallery'],
       ['#rep-hint', '#karma-wrap'],
     ],
   },

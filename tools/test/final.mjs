@@ -926,6 +926,62 @@ results.railClearsStick = await page.evaluate(() => {
   };
 });
 
+// 15) the gallery button is a real trip, not a nudge. Placed after everything
+// that measures the world and before the perf snapshot's neighbours, because it
+// deliberately moves him 79 m and leaves him there.
+//
+// The interesting assertions are not "did x change". They are: does he land
+// OUTSIDE the shell rather than inside it, does the old momentum die with the
+// jump, and does the guard actually hold — a disabled button that still moves
+// the player on tap is worse than no guard, because it reads as working.
+results.galleryTravel = await page.evaluate(async () => {
+  const m = window.__test.museum();
+  const btn = document.getElementById('btn-gallery');
+  const dist = (a) => Math.hypot(a.x - m.door.x, a.z - m.door.z);
+
+  window.__test.warpTo(40, -40, 0);
+  window.__test.drive(0, 1);
+  window.__test.step(0.5);
+  const away = window.__test.playerStats();
+
+  window.__test.drive(0, 0);
+  btn.click();
+  const landed = window.__test.playerStats();
+  window.__test.step(0.016);
+  const settled = window.__test.playerStats();
+
+  // and it holds him there rather than depositing him inside a wall
+  window.__test.step(0.6);
+  const after = window.__test.playerStats();
+
+  // the guard: paused, a tap must do nothing at all
+  document.getElementById('btn-pause').click();
+  await new Promise((r) => setTimeout(r, 80));
+  const disabledWhenPaused = btn.disabled === true;
+  window.__test.warpTo(40, -40, 0);
+  btn.click();
+  const afterPausedTap = window.__test.playerStats();
+  document.getElementById('btn-resume')?.click();
+  await new Promise((r) => setTimeout(r, 80));
+
+  const out = {
+    startedAway: dist(away) > 50,
+    landedOnForecourt: dist(landed) < 0.01,
+    outsideTheShell: landed.x > m.bounds.x1,
+    momentumDropped: settled.speed < 0.01,
+    stableAfterStepping: dist(after) < 1.0,
+    disabledWhenPaused,
+    pausedTapDoesNothing: Math.hypot(afterPausedTap.x - 40, afterPausedTap.z + 40) < 0.5,
+    startDist: +dist(away).toFixed(1),
+    landDist: +dist(landed).toFixed(3),
+    x: landed.x, z: landed.z, interiorEastFace: m.bounds.x1,
+  };
+  out.ok = out.startedAway && out.landedOnForecourt && out.outsideTheShell
+    && out.momentumDropped && out.stableAfterStepping
+    && out.disabledWhenPaused && out.pausedTapDoesNothing;
+  return out;
+});
+
 // 12) perf snapshot. NOTE: `simMs` is meaningless after the stepped assertions
 // above — `__test.step()` runs hundreds of fixed steps inside a single frame and
 // core/debug.js accumulates all of them into that frame's window. `maxSimMs` is
