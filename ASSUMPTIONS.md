@@ -182,9 +182,42 @@ measurement, not the measurement.
 
 ## 16. `?capture=1` changes the game, deliberately
 
-Fixed render dt, frozen day cycle, no camera shake. Without it a screenshot is a
-photograph of whatever the machine's load happened to be. The flag is
-test-and-capture only; nothing in normal play sets it.
+Fixed render dt, frozen day cycle, seeded `Math.random`, no camera shake, no
+adaptive half-rate, the shadow map refreshed every frame rather than every third,
+and the frame loop **suspended after its first render** so that everything
+afterwards is driven by `__test.step()` and `__test.renderNow()`. The harness
+additionally disables CSS transitions and animations.
+
+Every one of those is there because a clock that is not the fixed step was
+getting into the pictures. Measured, before they were: up to 142,000 differing
+pixels between two runs of identical code. `VERIFICATION.md` §1 has the table.
+
+The flag is test-and-capture only; nothing in normal play sets it, and the one
+thing it changes that a player could notice — the shadow cadence — is a cost, not
+an appearance.
+
+## 16b. The screenshot matrix is not committed
+
+602 captures, about 600 MB. This repository **is** the deployed site, so
+committing them would put 600 MB into every clone and into the Pages artifact,
+and Git LFS is not a way out — Pages serves the pointer file rather than the
+object, which is a rule in the brief and would break the site besides.
+
+What is committed is `screenshots/{before,after}/` — the subset the documents
+cite, at 1100px WebP, about 2 MB — plus `final-report.json` and
+`baseline-report.json`, which list every one of the 602 with its scene, device,
+orientation and console output. The reports are the audit trail; the images are
+the illustration. `tools/capture/capture.mjs` regenerates the matrix in about an
+hour and a half.
+
+## 16c. The plaques say "Undated", and that is not a placeholder
+
+The four works are photographs of graphite drawings on paper — two of them carry
+Inder's signature. The titles are the game's invention and `docs/MUSEUM.md` says
+so and says what each is drawn from; a title is a reading of an image. A **date**
+is a claim of fact about someone else's work, and it is not known here, so the
+plaques carry the ordinary museum convention for that case rather than a year
+that would be made up. The medium is a description, not a guess.
 
 ## 17. No webfont is bundled
 

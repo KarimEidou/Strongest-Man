@@ -148,6 +148,20 @@ drawings by **Inder**.
 - Rotating to portrait mid-press cleared three input fields by hand, which left
   PUNCH lit orange over a charge that was in fact dead and queued a phantom jab
   for whenever the finger finally lifted.
+- **The loading screen came down before there was anything behind it** — 150 ms
+  after the bar hit 100%, which is boot-complete, not first-frame. Between those
+  two moments sits the most expensive frame the app ever runs, and the player
+  spent all of it looking at an unpainted canvas.
+- **The armed weapon chip could sit off the edge of the rail** with nothing to
+  say it was there. With all seven owned, arming the CANNON put the one thing you
+  most need to see half off the screen.
+- **Five wall-clock timers in the HUD** — the reputation hint, the toast, the
+  points pop, the damage vignette, the hit marker — counted down behind the pause
+  panel. Pausing to read a line destroyed the line.
+- The gallery prompt was drawn on top of the ammo readout at 667×375.
+- The museum plaque was a fixed plate holding four lines that ended 43% of the
+  way down it. It is cut to its text now.
+- A `meta description`, which took the Lighthouse SEO score from 91 to 100.
 
 - **The crosshair was centred on the safe-area box, not the canvas** — 29.5 px
   from the actual point of impact on a notched iPhone, and it flipped sides when
@@ -195,6 +209,28 @@ drawings by **Inder**.
   glazed; the interior is lined floor to ceiling because of it.
 - iOS launch images are not precached — iOS fetches them before any worker
   exists, so they never pass through the fetch handler.
+
+### Verification
+
+- **602 screenshots** of the final build — 31 scenes × 5 iPhone viewports × 2
+  orientations × 2 engines — with **zero console problems**. The pre-overhaul
+  build logs a problem on **all 90** of its captures: 17,795 `GL_INVALID_OPERATION`
+  warnings and 321 aborted model loads across those boots.
+- **70 layout assertions, 0 failures.** Every control measured against 44 pt in
+  both axes, in seven states, on every viewport, in both orientations.
+- **29/29 end-to-end assertions**, waiting on simulation time rather than wall
+  time, with zero console and zero page errors.
+- **11/11 service-worker upgrade checks**, including offline on both sides of the
+  upgrade and exactly one surviving cache.
+- **No leak**: twenty gallery load/unload cycles and twenty building collapses
+  leave `renderer.info.memory` flat.
+- Lighthouse, locally: best practices 100, SEO 100, accessibility 88 with one
+  deliberate exception.
+
+The screenshot harness had to be made deterministic first, and doing so found
+three clocks that were getting into the pictures — the frame loop between boot
+and the shutter, the shadow map's render-frame cadence, and CSS transitions plus
+five `setTimeout`s in the HUD. `VERIFICATION.md` has the numbers.
 
 ### Known gaps
 
