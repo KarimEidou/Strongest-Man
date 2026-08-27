@@ -28,10 +28,27 @@ consumes none of the world seed's random stream itself.
 ### Getting there in one step
 
 ```
+GALLERY (top right)   the same trip, on a button a player can reach
 ?warp=museum          drops the player on the forecourt facing the facade
-window.__test.museum()   the door, the interior bounds and all four works
+window.__test.toGallery()              the button's own action
+window.__test.museum()                 the door, interior bounds, all four works
 window.__test.inspect('the-visitor')   opens inspect mode on one work
 ```
+
+All four go to the same place: `door`, which is `MUSEUM.x1 + 1.6` — 1.6 m
+outside the shell's east wall, on the road side, facing the facade. Because the
+destination is fixed rather than "the nearest entrance", the button doubles as
+the way out when the player is already inside.
+
+`warpPlayer()` in `js/main.js` is the one definition. Setting `x`/`z` alone is
+not a teleport: `px`/`pz` are last frame's position and the integrator sweeps
+between them, so a bare position write drags a capsule across the whole city and
+collides with everything on the way; `vx`/`vz` carry the old momentum into the
+new place; and the camera chases `target` through `smoothed`, so without copying
+one onto the other it flies across town and arrives a second late.
+
+Anything the player is carrying comes with him and needs no handling — the load
+is placed at his palms every frame rather than simulated.
 
 ---
 

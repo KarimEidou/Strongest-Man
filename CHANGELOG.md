@@ -18,6 +18,11 @@ drawings by **Inder**.
   each image's own decoded pixels — nothing cropped, letterboxed, stretched or
   squashed. Real 3D frames with depth, contact shadows, modelled picture lights,
   and a legible plaque beside each one.
+- **A `GALLERY` quick-travel button**, third in the top-right cluster, putting
+  the player on the gallery forecourt from anywhere in the city and doubling as
+  the way out when they are inside. Disabled while down and while any panel is
+  up. The teleport is factored out of the screenshot harness's own warp so there
+  is one definition of what moving the player actually involves.
 - **Inspect mode** — a DOM `<img>` at native aspect with pinch, pan and
   double-tap-to-reset. Freezes the sim, hides the HUD, locks input, and restores
   the camera exactly on exit.
@@ -236,6 +241,10 @@ drawings by **Inder**.
   glazed; the interior is lined floor to ceiling because of it.
 - iOS launch images are not precached — iOS fetches them before any worker
   exists, so they never pass through the fetch handler.
+- The top-centre stack (`#rep-hint`, `#toast`) now begins **below** the
+  top-right button row rather than through the middle of it. It had always
+  overlapped that band vertically; nothing showed until a third button filled
+  the horizontal gap the text was running through.
 
 ### Verification
 
@@ -243,9 +252,9 @@ drawings by **Inder**.
   orientations × 2 engines — with **zero console problems**. The pre-overhaul
   build logs a problem on **all 90** of its captures: 17,795 `GL_INVALID_OPERATION`
   warnings and 321 aborted model loads across those boots.
-- **70 layout assertions, 0 failures.** Every control measured against 44 pt in
+- **74 layout assertions, 0 failures.** Every control measured against 44 pt in
   both axes, in seven states, on every viewport, in both orientations.
-- **29/29 end-to-end assertions**, waiting on simulation time rather than wall
+- **30/30 end-to-end assertions**, waiting on simulation time rather than wall
   time, with zero console and zero page errors.
 - **11/11 service-worker upgrade checks**, including offline on both sides of the
   upgrade and exactly one surviving cache.

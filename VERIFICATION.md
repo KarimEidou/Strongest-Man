@@ -16,8 +16,8 @@ sentence as the number rather than in a footnote.
 | Screenshots, pre-overhaul build | **90** — the nine scenes that exist in both |
 | Console problems, final | **0** of 622 |
 | Console problems, baseline | **90** of 90 |
-| Layout assertions | **70 checks, 0 failures**, report byte-identical across runs |
-| End-to-end suite | **29/29 ok, 0 console errors, 0 page errors** |
+| Layout assertions | **74 checks, 0 failures**, report byte-identical across runs |
+| End-to-end suite | **30/30 ok, 0 console errors, 0 page errors** |
 | Service-worker upgrade path | **11/11 checks passed** |
 | Leak check | 20 gallery load/unload cycles + 20 building collapses: **geometry and texture counts flat** |
 | Lighthouse (local) | performance 33 · accessibility 88 · best practices 100 · **SEO 100** |
@@ -182,7 +182,7 @@ a photograph of a wall.
 node tools/capture/layout.mjs
 ```
 
-**70 checks, 0 failures.** Five devices × two orientations × seven interface
+**74 checks, 0 failures.** Five devices × two orientations × seven interface
 states, with every control's `getBoundingClientRect` measured in each.
 
 What each check enforces:
@@ -351,7 +351,7 @@ which is expected and is why the townsfolk get blob shadows rather than real one
 ### What reviewing them found
 
 The pictures were then opened and looked at, which is §5.7 of the brief and is
-not a formality. Nine defects came out of that pass and only that pass:
+not a formality. Ten defects came out of that pass and only that pass:
 
 | # | What the screenshot showed |
 |---|---|
@@ -364,11 +364,21 @@ not a formality. Nine defects came out of that pass and only that pass:
 | 113 | The four artwork scenes photographing the player's back instead of the artwork |
 | 116 | At 667×375, the artwork drawn across the last word of the gesture hint |
 | 117 | The Roman numerals set in the UI sans face, where an `I` is a bare vertical bar |
+| 119 | The longest reputation string drawn under a HUD control at 667×375 |
 
 \#116 and #117 are the second round: the works were renumbered `I`–`IV` after the
 first pass, the matrix was re-shot, and reading it again found two more. That is
 the argument for the pass in one line — it is worth running every time the
 pictures change, not once.
+
+\#119 makes the same case from the other direction. A quick-travel button added
+to the top-right cluster landed on top of a reputation string that had been
+running through that row the whole time: `#rep-hint` sat ten pixels inside the
+button row's own vertical band, and nothing revealed it while the middle of the
+row was empty. **The overlap was old; only the collision was new.** The layout
+suite had not caught it because the pair was never listed — it asserted
+`#rep-hint` against `#karma-wrap` and nothing else in that band. Four pairs were
+added with the fix.
 
 \#112 is the one worth naming twice. `physics/collide.js` gives every floor-0
 door cell a 1.3 m walkable gap — that is how you get inside any of the thirty
@@ -442,7 +452,7 @@ node tools/test/serve.mjs &
 node tools/test/final.mjs
 ```
 
-**29 assertions, 29 ok. Zero console errors, zero page errors.** Four
+**30 assertions, 30 ok. Zero console errors, zero page errors.** Four
 consecutive runs, to show it stays that way.
 
 The suite also **failed on a failed assertion** for the first time. It used to

@@ -77,6 +77,26 @@ arithmetic in a comment. The bottom-right cluster is the example:
 number with its derivation written down is better than a round number that is
 wrong.
 
+The top edge works the same way, and one rule governs it:
+
+```
+#btn-pause    top 8, right 8,   44 x 44    → the row is 8..52 tall
+#btn-shop     top 8, right 62              (8 + 44 + 8, the cluster gutter)
+#btn-gallery  top 8, right 137             (62 + 67.2 + 7.8, same gutter)
+#karma-wrap   top 8, centred, 200 wide     → ends 16.1px short of #btn-gallery
+                                             at 667x375, the tightest viewport
+#rep-hint     top 56                       (52 + 4, BELOW the row)
+#toast        top 86                       (74 + 12, the gap it always had)
+```
+
+**Nothing in the centre stack may start inside the button row's 8..52 band.**
+`#rep-hint` used to sit at 42, ten pixels inside it, and looked fine for as long
+as the middle of that row was empty — both buttons were pinned to the right edge
+and the longest reputation string stopped short of them. Adding a third button
+filled exactly the gap the text ran through, and it was drawn under a control.
+The overlap was always there; only the collision was new. `layout.mjs` asserts
+the pairs now.
+
 ---
 
 ## Type

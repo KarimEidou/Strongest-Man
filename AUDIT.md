@@ -44,6 +44,12 @@ numbers are that build's, not the current tree's.
   sans face in two of the three places the game prints them, where an `I` is a
   bare vertical stroke. Both are the same lesson as #107–#113 — the pass is
   worth running every time the pictures change, not once.
+- **And #119 came from adding something.** A quick-travel button in the
+  top-right cluster landed on top of a reputation string that had been
+  running through that row all along — `#rep-hint` sat ten pixels inside the
+  buttons' own vertical band, and nothing showed it while the middle of the
+  row was empty. The overlap was old; only the collision was new. It is the
+  argument for measuring a layout rather than looking at it once.
 - **And #118 came from a file that would not stop changing.** Re-running the
   layout suite twice on one build produced two different reports. The cause
   was a CSS fade measured on the wall clock, and the consequence was that on
@@ -64,9 +70,9 @@ The commit named is where the behaviour actually changed.
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
 | Major | 56 | a feature does not work, leaks, or is unusable on the target device |
-| Minor | 51 | wrong, but survivable |
+| Minor | 52 | wrong, but survivable |
 | Polish | 4 | correct, and not good enough |
-| **Total** | **115** | from 118 raw findings; 3 were the same defect seen by two sweeps |
+| **Total** | **116** | from 119 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
@@ -79,8 +85,8 @@ The commit named is where the behaviour actually changed.
 | PWA | 7 |
 | SW | 6 |
 | Deploy | 2 |
+| Layout | 2 |
 | Audio | 1 |
-| Layout | 1 |
 | Tooling | 1 |
 
 ## Resolving commits
@@ -111,6 +117,7 @@ The commit named is where the behaviour actually changed.
 | `da7578b` | fix(pwa): an update nobody was offered, and a watchdog that called a slow boot a failure |
 | `ff8a4d2` | fix(ui): set the numerals in a serif, and stop the artwork covering the hint |
 | `1bf0dfd` | fix(layout): measure DOM overlays at their settled state, not mid-fade |
+| `8d6916e` | feat(hud): a GALLERY button that puts you outside the gallery door |
 
 ## Index
 
@@ -227,6 +234,7 @@ The commit named is where the behaviour actually changed.
 | 113 | Minor | UI | `tools/capture/scenes.mjs:169` | The artwork scenes photographed the player's back instead of the artwork | `90ca0e0` |
 | 116 | Minor | Layout | `css/main.css:814` | Inspect mode's gesture hint is drawn under the artwork at 667x375, and the last word is cut off | `ff8a4d2` |
 | 117 | Minor | UI | `css/main.css:723` | The Roman numerals are set in the UI sans stack in the prompt and the inspect caption, so "I" r… | `ff8a4d2` |
+| 119 | Minor | Layout | `css/main.css:124` | #rep-hint is positioned inside the top-right button row's own vertical band, and is drawn under… | `8d6916e` |
 | 12 | Polish | Render | `js/main.js:331` | Billboards and the sky dome are posed from the previous frame's camera | `9ab347f` |
 | 65 | Polish | HUD | `css/main.css:212` | #down-banner clears the action-button cluster by 0.5px at 667x375 | `5aa9e2e` |
 | 66 | Polish | UI | `css/main.css:441` | Spacing is off the stated 4/8/16/24/32 scale throughout, including a negative-margin hack that … | `f7ff336` |
@@ -1575,6 +1583,18 @@ The commit named is where the behaviour actually changed.
 **Actual.** The wall label had already been moved to a serif face for exactly this reason - a Roman "I" in Helvetica has no serifs and is a plain vertical stroke, indistinguishable from a divider, a tick or a text cursor - but the same string is printed in two other places, #art-prompt-text and #inspect-title, and both were left on the system sans stack. In the caption it is worst: the numeral sits alone on its own centred line above "Inder", with nothing around it to imply it is a number at all.
 
 **Remedy.** Georgia / Times / serif on both, sized up slightly so the numeral holds the line. The "VIEW" prefix on the prompt is UI voice rather than part of the title, so its ::before is put back on the project's own sans stack. No webfont: the target device ships both faces.
+
+### 119. #rep-hint is positioned inside the top-right button row's own vertical band, and is drawn under a control as soon as anything fills the middle of it
+
+**Minor · Layout · `css/main.css:124` · fixed in `8d6916e`**
+
+**Repro.** 667x375, landscape. `window.__test.hudStress()` to get the longest reputation string, then read the line under the karma meter. Also visible in screenshots/final/hud-stress_se3_landscape-*.png.
+
+**Expected.** A readout is never drawn underneath a control. The top-centre stack and the top-right button cluster are different things and should not share vertical space.
+
+**Actual.** The button row runs y 8..52 (top 8, 44pt minimum height). #rep-hint was at top:42, so its band was 42..60 - ten pixels INSIDE the row. That was invisible for as long as the middle of the row was empty: #btn-shop and #btn-pause are both pinned to the right edge and the longest reputation string, 344.5px centred, ends at x=505.8 while the shop starts at 537.8. Adding a third button to the cluster filled exactly the gap the text was running through, and the two overlapped by 56x10px with the last word drawn under the control. Narrowing the text is not available as a fix: to clear the cluster a centred element would need a max-width of 232px, which ellipsises most of the strings. layout.mjs did not catch it because the pair was never listed - the assertion list had #rep-hint against #karma-wrap only.
+
+**Remedy.** Move the centre stack below the row rather than through it: #rep-hint 42 -> 56px, and #toast 72 -> 86px so it keeps the same 12px gap under it; the body.has-update offsets move with them. Then assert it - #rep-hint against #btn-gallery and #btn-shop, #toast against #btn-gallery, and #rep-hint against #toast, on every device in both orientations, so the next control added to that row fails the suite instead of quietly covering a word.
 
 ### 12. Billboards and the sky dome are posed from the previous frame's camera
 
