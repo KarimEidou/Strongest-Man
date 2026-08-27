@@ -64,6 +64,34 @@ drawings by **Inder**.
 - **The torn-jacket flaps rendered at 0.4–0.8 mm.** The armature carries a 0.01
   node scale; the whole sleeper-build reveal had been invisible since it was
   written.
+- The god-ray composite added raw linear values onto an already tone-mapped,
+  sRGB-encoded framebuffer, so every shaft in the game came out redder and
+  darker than the tint the sky was sampled for.
+- **The whole city was drawn behind the opaque title screen**, at full cost,
+  including the shadow and god-ray passes — 97 draw calls a frame on the screen
+  an installed PWA sits on longest. Now 0.
+- The sky dome, the city-light billboards, the monster health pips and every
+  speech bubble were posed from the **previous** frame's camera. The render pass
+  is now producers, then the camera solve, then consumers.
+- Random GLB loads aborted mid-flight on a fraction of boots: three's
+  `FileLoader` composes an `AbortSignal.any` whose controller is collected once
+  the un-referenced loader is, and a collected `AbortController` aborts.
+
+### Fixed — pause, and the frame clock
+
+- **Pausing did not pause anything that runs on a render frame.** Mixers, the
+  pose layer, recoil decay, carry sway, the particle integrators, the hydrant
+  jets and speech-bubble lifetimes all kept advancing against a simulation that
+  had stopped. Pausing mid-collapse returned you to a settled street; pausing to
+  read a line destroyed the line you paused to read.
+- Hit-stop is cleared by a fixed system, which does not run while paused, so
+  pausing inside those 0.45 s latched a 0.25× timescale onto everything that did.
+- **The display-refresh probe measured the boot, not the display.** It counted
+  achieved frames across the first 60 frames of the game — the most expensive
+  frames it ever runs — so a 120 Hz iPhone scored about 40 and the adaptive
+  half-rate could never engage on the only hardware it exists for. It is now an
+  idle rAF burst before the first heavy frame, refined by the shortest delivered
+  interval in each window.
 
 ### Fixed — simulation
 
@@ -78,6 +106,21 @@ drawings by **Inder**.
 - Panic, alert, hide and tumbled timers ran at exactly double speed.
 - An abandoned car permanently deadlocked every car behind it on its circuit.
 - `equip()` dereferenced a null model and left the weapon system half-switched.
+- **Corpse physics bodies were never handed back.** Both call sites nulled the
+  reference the moment a body fell asleep, leaving the body itself in
+  `pworld.sleeping` with nothing pointing at it — one permanent entry per death
+  in a list that every explosion walks, and the pile it raised under the corpse
+  never came down, so the street grew a bump where each body had landed.
+  Re-throwing one corpse then created a fresh body every time, unbounded.
+- **An NPC being eaten never moved.** The monster set the victim's simulation
+  position but not their render transform, so their mesh stood upright at the
+  spot they were taken from for the whole 1.9 seconds.
+- **Shop closure was a dead flag.** Reputation wrote `closed` onto building
+  specs; NPC routing read it on the POI objects, which are built separately and
+  never gained the property. Shops shuttering under a feared strongman had no
+  effect on where anybody went.
+- The monster-spotted bark was a bare `setTimeout` — wall-clock, uncancellable,
+  and holding a monster that might already be dead.
 
 ### Fixed — state, input, audio
 
@@ -101,6 +144,10 @@ drawings by **Inder**.
 - Buying a gun debited before the work that could fail.
 
 ### Fixed — layout, HUD, touch
+
+- Rotating to portrait mid-press cleared three input fields by hand, which left
+  PUNCH lit orange over a charge that was in fact dead and queued a phantom jab
+  for whenever the finger finally lifted.
 
 - **The crosshair was centred on the safe-area box, not the canvas** — 29.5 px
   from the actual point of impact on a notched iPhone, and it flipped sides when
