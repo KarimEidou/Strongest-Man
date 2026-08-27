@@ -10,7 +10,9 @@ permissions:
   id-token: write
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # false, not true: cancel-in-progress can abort a deploy that is already
+  # publishing, and a half-published Pages artifact is worse than a queued one.
+  cancel-in-progress: false
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,6 +21,22 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # sw.js is generated from a hash of every precached byte, and its PRECACHE
+      # list must match the tree exactly: cache.addAll() is all-or-nothing, so
+      # one path that has moved since the last run takes offline play out
+      # entirely and silently. Regenerating here and failing on a diff means the
+      # only way to deploy a stale worker is to change this step.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify sw.js is current
+        run: |
+          node tools/gen-sw.mjs
+          if ! git diff --quiet -- sw.js; then
+            echo "::error::sw.js is stale. Run 'node tools/gen-sw.mjs' and commit the result."
+            git --no-pager diff --stat -- sw.js
+            exit 1
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
