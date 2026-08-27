@@ -22,7 +22,7 @@
     {
       "where": "museum se3 landscape-left",
       "seen": [
-        "#art-prompt: none visible",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -95,7 +95,7 @@
     {
       "where": "museum se3 landscape-right",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -168,7 +168,7 @@
     {
       "where": "museum ip14 landscape-left",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -241,7 +241,7 @@
     {
       "where": "museum ip14 landscape-right",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -314,7 +314,7 @@
     {
       "where": "museum ip16pro landscape-left",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -387,7 +387,7 @@
     {
       "where": "museum ip16pro landscape-right",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt: none visible",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -460,7 +460,7 @@
     {
       "where": "museum ip16promax landscape-left",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -533,7 +533,7 @@
     {
       "where": "museum ip16promax landscape-right",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -606,7 +606,7 @@
     {
       "where": "museum desktop landscape-left",
       "seen": [
-        "#art-prompt: none visible",
+        "#art-prompt 118.1x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -679,7 +679,7 @@
     {
       "where": "museum desktop landscape-right",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt: none visible",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]

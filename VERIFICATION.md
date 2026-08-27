@@ -24,9 +24,10 @@ sentence as the number rather than in a footnote.
 | Physical iPhone | **none available** — see `BLOCKERS.md` §1 |
 
 Every figure above was measured on the tree at the head of this branch. The 622
-captures were taken at `a1fa908`, and `git diff a1fa908..HEAD -- js/ css/
+captures were taken at `ff8a4d2`, and `git diff ff8a4d2..HEAD -- js/ css/
 index.html vendor/ assets/ sw.js manifest.webmanifest` is empty — nothing that
-renders has changed since the shutter.
+renders has changed since the shutter. Everything committed after `ff8a4d2` is
+documentation.
 
 ---
 
@@ -462,12 +463,12 @@ service worker in a real browser:
 | 1b | old build precached | PASS — `sm-a92e24d463` |
 | 2 | old build boots **offline** from its precache | PASS |
 | 4 | the new build reaches a player who had the old one | PASS — 2 reloads (limit 2) |
-| 5 | exactly one cache survives, and it is the new one | PASS — `[sm-21af5f078c]` |
+| 5 | exactly one cache survives, and it is the new one | PASS — `[sm-dd8217b08b]` |
 | 5b | new-build-only assets are in the surviving cache | PASS — 10 matched |
 | 6 | the **new** build boots offline from its precache | PASS |
 | 7 | a newer build is **offered**, not forced | PASS |
 | 7b | accepting the offer lands on the newer build | PASS |
-| 7c | only the newest cache is left | PASS — `[sm-48b2ad2518]` |
+| 7c | only the newest cache is left | PASS — `[sm-84d3cf683f]` |
 | 8 | no uncaught page errors across the whole upgrade | PASS |
 
 Checks 7 and 7b are the distinction that matters: a player who already has the
