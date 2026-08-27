@@ -1,7 +1,7 @@
 // Title, pause, rotate-device, loading and toast overlays. iOS cannot lock
 // orientation for installed web apps, so portrait shows a blocking overlay.
 import { game, setGameState, settings, persist } from '../core/state.js';
-import { input } from '../core/input.js';
+import { input, resetInput } from '../core/input.js';
 import { openSettings } from './settings.js';
 import { VERSION } from '../core/version.js';
 
@@ -67,7 +67,13 @@ export function initOverlays() {
     // delivered to the overlay instead of the surface, so the stick never ends
     // and he resumes at a dead sprint. core/input.js latches these until someone
     // writes them again, so clear them here.
-    if (portrait) { input.moveX = 0; input.moveZ = 0; input.punchDown = false; }
+    //
+    // resetInput(), not a hand-rolled three-field clear. That version left PUNCH
+    // lit orange with input.punchDown false — a charge that looks alive and is
+    // dead — and left pendingPunchUp queued, so the finger lifting later fired a
+    // phantom jab on resume. It also drops the pointer ids, so the stick is not
+    // still claimed by a finger whose pointerup went to the overlay.
+    if (portrait) resetInput();
   };
   const debounced = () => { clearTimeout(t); t = setTimeout(check, 250); check(); };
   addEventListener('resize', debounced);
