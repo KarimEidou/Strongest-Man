@@ -20,6 +20,14 @@ numbers are that build's, not the current tree's.
   one of its 90 captured screens** (`screenshots/baseline/report.json`).
 - Each candidate reproduced before it was written down, and re-reproduced after
   the fix. Findings that did not survive that step are not in this document.
+- **The screenshots were then reviewed, and reviewing them found more.** Five
+  entries here (#107–#111) exist because 602 captures were looked at rather than
+  counted — a museum label with a hole under it, an armed weapon chip half off
+  the screen, a HUD that keeps five wall-clock timers running behind a pause
+  panel, a prompt drawn over the ammo readout on the smallest phone, and a
+  loading screen that comes down five seconds before there is anything behind
+  it. §5.7 of the brief asks for that pass because it is the one that finds
+  these; it is not a formality.
 
 **Reading an entry.** *Repro* is the exact steps that produced the behaviour.
 *Expected* and *Actual* are what should happen and what did, with the mechanism.
@@ -32,19 +40,19 @@ The commit named is where the behaviour actually changed.
 | Severity | Count | Meaning |
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
-| Major | 49 | a feature does not work, leaks, or is unusable on the target device |
-| Minor | 47 | wrong, but survivable |
-| Polish | 3 | correct, and not good enough |
-| **Total** | **103** | from 106 raw findings; 3 were the same defect seen by two sweeps |
+| Major | 52 | a feature does not work, leaks, or is unusable on the target device |
+| Minor | 48 | wrong, but survivable |
+| Polish | 4 | correct, and not good enough |
+| **Total** | **108** | from 111 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
 | Logic | 22 |
+| UI | 17 |
 | Touch | 16 |
 | Render | 15 |
-| UI | 15 |
+| HUD | 13 |
 | Perf | 10 |
-| HUD | 10 |
 | PWA | 6 |
 | SW | 6 |
 | Deploy | 2 |
@@ -71,6 +79,9 @@ The commit named is where the behaviour actually changed.
 | `bbad27f` | fix(sim): corpses leaked bodies, victims never moved, and a whole feature was dead |
 | `58fdadf` | fix(input): rotating to portrait mid-press left a button lit and a jab queued |
 | `f7ff336` | style(css): declare the spacing scale, and drop a negative-margin hack |
+| `b31524c` | fix(hud): a label cut to its text, an armed chip you can see, and no wall clocks |
+| `37f79d9` | fix(hud): the gallery prompt sat on top of the ammo readout on the SE |
+| `42e3709` | fix(boot): the loading screen came down before there was anything behind it |
 
 ## Index
 
@@ -129,6 +140,9 @@ The commit named is where the behaviour actually changed.
 | 104 | Major | Logic | `js/engine/assets.js:41` | Random GLB loads abort mid-flight: three r185 FileLoader drops a source from its AbortSignal.an… | `a57209f` |
 | 105 | Major | Render | `js/engine/shadows.js:118` | Two frames per boot draw every shadow receiver with no depth texture bound — ~170 GL_INVALID_OP… | `a6d17b9` |
 | 106 | Major | Touch | `js/core/input.js:118` | A pointer whose capture is stolen never releases its control: the button stays held and the joy… | `fa6d2a6` |
+| 108 | Major | HUD | `js/ui/hud.js:155` | The armed weapon chip can sit off the edge of the rail with nothing to say it is there | `b31524c` |
+| 110 | Major | HUD | `css/main.css:751` | The gallery prompt is drawn on top of the ammo readout at 667x375 | `37f79d9` |
+| 111 | Major | UI | `js/ui/overlays.js:84` | The loading screen comes down before there is anything behind it | `42e3709` |
 | 7 | Minor | Perf | `js/engine/warmup.js:43` | warmUp disposes three's module-level shared Sprite geometry | `5418f1e` |
 | 8 | Minor | Render | `js/engine/blobshadows.js:25` | Blob-shadow CanvasTexture carries colour but is left at NoColorSpace, so shadows render as ligh… | `5418f1e` |
 | 9 | Minor | Render | `js/engine/godrays.js:40` | God-ray composite adds linear-light values onto an already tone-mapped, sRGB-encoded framebuffer | `9456ab7` |
@@ -176,9 +190,11 @@ The commit named is where the behaviour actually changed.
 | 101 | Minor | Logic | `js/ai/monster.js:186` | A rampaging monster can kill or hijack the NPC in the player's hands — monster.js has no 'carri… | `708a37d` |
 | 102 | Minor | PWA | `js/dialogue/groq.js:223` | The Groq client is never skipped offline — no navigator.onLine check exists anywhere in the app | `708a37d` |
 | 103 | Minor | Logic | `js/dialogue/groq.js:157` | The daily request cap never persists for player conversations — dayCount is only written to loc… | `708a37d` |
+| 109 | Minor | HUD | `js/ui/hud.js:231` | Every timed HUD affordance is on setTimeout, so it counts down behind the pause panel | `b31524c` |
 | 12 | Polish | Render | `js/main.js:331` | Billboards and the sky dome are posed from the previous frame's camera | `9ab347f` |
 | 65 | Polish | HUD | `css/main.css:212` | #down-banner clears the action-button cluster by 0.5px at 667x375 | `5aa9e2e` |
 | 66 | Polish | UI | `css/main.css:441` | Spacing is off the stated 4/8/16/24/32 scale throughout, including a negative-margin hack that … | `f7ff336` |
+| 107 | Polish | UI | `js/world/museum.js:72` | The museum plaque is a fixed plate holding four lines that end 43% of the way down it | `b31524c` |
 
 ---
 
@@ -826,6 +842,42 @@ The commit named is where the behaviour actually changed.
 
 **Remedy.** Listen for lostpointercapture alongside pointerup/pointercancel on every capturing control and the stick, and add a resetInput() that drops the held classes, the pending edges, the axes, the charge and the pointer ids together so state changes can use it.
 
+### 108. The armed weapon chip can sit off the edge of the rail with nothing to say it is there
+
+**Major · HUD · `js/ui/hud.js:155` · fixed in `b31524c`**
+
+**Repro.** Own all six guns, arm the CANNON, capture hud-stress at 852x393: the chip is clipped by the right edge of #weapons and the orange armed border is half off screen. markRail sets the class and returns.
+
+**Expected.** The chip that says what is in your hands is always fully visible.
+
+**Actual.** #weapons is a single nowrap row with overflow-x:auto. With seven chips it is wider than the screen and the scroll position never moves, so whichever chip is armed beyond the fold stays beyond it. Justify-content:flex-end does not help: when the content overflows, the items start at the content-box start and run off the right.
+
+**Remedy.** After marking, scroll the selected chip into view with rail.scrollLeft, with the same 10px slop .wchip::after uses. scrollLeft rather than scrollIntoView, which is entitled to scroll ancestors.
+
+### 110. The gallery prompt is drawn on top of the ammo readout at 667x375
+
+**Major · HUD · `css/main.css:751` · fixed in `37f79d9`**
+
+**Repro.** tools/capture/layout.mjs, museum state, se3 both orientations: #art-prompt 229..438 x 309..357 against #ammo 413..485 x 325..353. 25px of overlap in x, 28 in y.
+
+**Expected.** Nothing in the HUD is drawn over anything else in the HUD.
+
+**Actual.** #art-prompt is centred on the viewport (left 50%, translateX(-50%)) and #ammo is pinned to right:182px. On a 852px screen they clear each other by 68px; on a 667px screen they do not, and the prompt is the wider of the two so narrowing it is not an option — VIEW THE READER does not fit in the 143px that would be needed.
+
+**Remedy.** Above the ammo row rather than beside it: bottom 58px, derived from #ammo at bottom 22 and 28 tall plus the 8px gutter. Still 116px clear of #weapons at bottom 174.
+
+### 111. The loading screen comes down before there is anything behind it
+
+**Major · UI · `js/ui/overlays.js:84` · fixed in `42e3709`**
+
+**Repro.** Instrument #loading-msg and time every rAF from load. Boot phases complete at 2,163 ms; the first frame is presented at 7,404 ms; the overlay hides 150 ms after the bar reaches 100%, i.e. at 2,313 ms. Five seconds of unpainted canvas. The same timer also produced one blank capture in 602: loading_ip14_landscape-left, where the scene made the overlay visible and boot hid it again a moment later.
+
+**Expected.** The loading screen is up until there is a frame behind it.
+
+**Actual.** loadingProgress(1, ...) hid the overlay on a setTimeout, which fires at boot-complete. Boot-complete and first-frame are different moments, and between them sits the most expensive frame the app ever runs: every remaining shader link, every first texture upload, the first shadow map and the first god-ray pass. On this machine that is 5.2 seconds; on a phone it is not free either, and it is worst on the device that can least afford it.
+
+**Remedy.** loadingComplete(), called from inside render() after the frame is drawn, and the only thing in the tree that hides #loading. The bar's last message is "first frame…" rather than "ready", because a screen that says ready while it is not is what makes a slow launch feel broken.
+
 ### 7. warmUp disposes three's module-level shared Sprite geometry
 
 **Minor · Perf · `js/engine/warmup.js:43` · fixed in `5418f1e`**
@@ -1392,6 +1444,18 @@ The commit named is where the behaviour actually changed.
 
 **Remedy.** Persist the counter where it is incremented — call persistCache() (or a small persistDay() that writes only `sm_dlg_day`) from postChat's `finally` block, and consider incrementing only after the fetch resolves so timeouts and network failures do not spend the budget.
 
+### 109. Every timed HUD affordance is on setTimeout, so it counts down behind the pause panel
+
+**Minor · HUD · `js/ui/hud.js:231` · fixed in `b31524c`**
+
+**Repro.** Raise a reputation hint (or a toast, or a points pop), pause within its lifetime, wait, resume. It is gone. repHint sets a 3000 ms setTimeout; toast, the points pop, the damage vignette and the hit marker do the same with 2200, 900/1400, 180 and 200.
+
+**Expected.** A HUD affordance over a pausable game is measured in game time. Pausing to read something does not destroy it.
+
+**Actual.** Five separate wall-clock timers, none of them aware of game.state. It is also the last clock in the game a screenshot could not pin down: whether the reputation hint appeared in a capture depended on whether the machine took more or less than three seconds to get from the scene setup to the shutter — 196,819 differing pixels between two runs of identical code.
+
+**Remedy.** One countdown each, decremented in hudFrame(dt), which frame() hands a zero dt whenever the state is not playing. toastFrame is called from main.js rather than hud.js so the deliberate hud->overlays import break stays broken.
+
 ### 12. Billboards and the sky dome are posed from the previous frame's camera
 
 **Polish · Render · `js/main.js:331` · fixed in `9ab347f`**
@@ -1427,6 +1491,18 @@ The commit named is where the behaviour actually changed.
 **Actual.** Roughly a dozen independent magic numbers, one of which (-10px) is a load-bearing overlap between two sibling boxes.
 
 **Remedy.** Introduce `--s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 32px` in :root and quantise. For the specific hack, delete `#shop-balance`'s negative margin and set `#shop-panel h2 { margin: 0 0 4px; }` instead, and align the top rail on a single `top: 8px`.
+
+### 107. The museum plaque is a fixed plate holding four lines that end 43% of the way down it
+
+**Polish · UI · `js/world/museum.js:72` · fixed in `b31524c`**
+
+**Repro.** screenshots/final/plaque-the-visitor_ip16pro_landscape-left.png at the plaque close-up viewpoint. The plate measures 0.46 x 0.30 m; the text block ends at canvas y=292 of 668, i.e. 43% down, leaving 376 px of blank plate below the last line.
+
+**Expected.** A wall label is cut to its content, like every label in every gallery.
+
+**Actual.** PLAQUE_W and PLAQUE_H were both constants and the canvas height was derived from their ratio, so the plate size had nothing to do with the text drawn on it. It also meant a longer title could run out of plate with no warning.
+
+**Remedy.** Lay the four lines out first, take the canvas height from the last baseline plus a descender and the same padding used at the top, and build the PlaneGeometry from that height. Plate is now 0.46 x 0.161 m and the margins match.
 
 ---
 
