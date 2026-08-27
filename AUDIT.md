@@ -20,6 +20,16 @@ numbers are that build's, not the current tree's.
   one of its 90 captured screens** (`screenshots/baseline/report.json`).
 - Each candidate reproduced before it was written down, and re-reproduced after
   the fix. Findings that did not survive that step are not in this document.
+- **The screenshots were then reviewed, and reviewing them found more.** Seven
+  entries here (#107–#113) exist because 602 captures were looked at rather
+  than counted: a museum label with a hole under it, an armed weapon chip half
+  off the screen, five wall-clock timers running behind the pause panel, a
+  prompt drawn over the ammo readout at 667×375, a loading screen that comes
+  down five seconds before there is anything behind it, a solid wooden door
+  across every entrance the player is meant to walk through, and four scenes
+  whose stated purpose is to show the artwork and which showed the back of the
+  man standing in front of it. §5.7 of the brief asks for that pass because it
+  is the one that finds these; it is not a formality.
 
 **Reading an entry.** *Repro* is the exact steps that produced the behaviour.
 *Expected* and *Actual* are what should happen and what did, with the mechanism.
