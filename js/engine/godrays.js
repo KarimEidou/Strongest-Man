@@ -31,6 +31,13 @@ void main() {
   gl_FragColor = vec4(vec3(acc), 1.0);
 }`;
 
+// The composite is added on top of a framebuffer that has ALREADY been tone
+// mapped and sRGB-encoded, so the shaft colour has to go through the same two
+// steps or it lands in the wrong encoding. uTint is a THREE.Color, i.e. linear
+// working space: sRGB-encoding 0xffd7a8's green takes it from 0.69 to 0.86, and
+// skipping that is why the rays read redder and darker than the tint asks for.
+// three prefixes both pars chunks for a (non-raw) ShaderMaterial — sky.js relies
+// on exactly this.
 const COMPOSITE_FRAG = `
 uniform sampler2D tRays;
 uniform vec3 uTint;
@@ -39,6 +46,8 @@ varying vec2 vUv;
 void main() {
   float r = texture2D(tRays, vUv).r;
   gl_FragColor = vec4(uTint * r * uStrength, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }`;
 
 const QUAD_VERT = `
@@ -46,6 +55,9 @@ varying vec2 vUv;
 void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 
 const NDC = new THREE.Vector3();
+// renderMask runs on every frame the sun is on screen; getClearColor writes into
+// the target it is handed, so allocating one here was a THREE.Color per frame.
+const PREV_CLEAR = new THREE.Color();
 
 export function initGodrays(renderer, camera) {
   const size = renderer.getSize(new THREE.Vector2());
@@ -143,7 +155,7 @@ export function initGodrays(renderer, camera) {
   // MUST run before the main render: renderer.shadowMap.needsUpdate is consumed
   // by whichever render() comes next, so the shadow flag is set between the two.
   function renderMask(scene) {
-    const prevClear = renderer.getClearColor(new THREE.Color());
+    const prevClear = renderer.getClearColor(PREV_CLEAR);
     const prevAlpha = renderer.getClearAlpha();
     scene.add(sunDisc);
     renderer.setRenderTarget(maskRT);
