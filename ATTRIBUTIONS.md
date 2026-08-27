@@ -127,7 +127,13 @@ every first load 30–100 KB, add a request that must work offline, and land the
 game on a licence that has to be tracked, to render a handful of short uppercase
 labels in a face the player's phone already draws better.
 
-The in-world canvas textures (plaques, gallery signage) use the same stack.
+The in-world canvas textures (gallery signage, the plaques' catalogue lines) use
+the same stack. The one departure is the works' numerals — the wall label, the
+proximity prompt and the inspect caption set them in `Georgia, "Times New Roman",
+Times, serif`, because a Roman `I` in San Francisco is a bare vertical stroke and
+does not read as a number. Both faces are pre-installed on the target device and
+the last fallback is the generic platform serif, so this still bundles nothing
+and still adds no request. `docs/STYLE.md` has the reasoning.
 
 ---
 
