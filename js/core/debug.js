@@ -65,10 +65,20 @@ export function addSimTime(ms) {
 }
 
 let frames = 0, tAcc = 0;
+let lastFrameT = 0;
 const window_ = [];
 export function perfFrame(renderer, dt, extra) {
-  frames++; tAcc += dt;
-  window_.push(dt * 1000);
+  // NOT the caller's dt. main.js passes the loop's dt, which core/loop.js has
+  // already clamped to 0.1s — so maxMs could never read above 100 and fps could
+  // never read below 10, which is precisely the range a hitch lives in. A 400 ms
+  // stall from a collapsing tower measured as a flawless 100 ms frame. Measure
+  // the real wall-clock interval here instead; `dt` is still what the SIMULATION
+  // was told, and the two are different numbers on purpose.
+  const now = performance.now();
+  const real = lastFrameT ? (now - lastFrameT) / 1000 : dt;
+  lastFrameT = now;
+  frames++; tAcc += real;
+  window_.push(real * 1000);
   if (tAcc >= 1) {
     const p = window.__perf;
     p.fps = Math.round(frames / tAcc);

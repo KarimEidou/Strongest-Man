@@ -1,7 +1,7 @@
 // Procedural WebAudio SFX — no audio assets, no credits, a few oscillators
 // and filtered noise bursts. iOS unlocks the context on the first touch.
 import { on, EV } from '../core/events.js';
-import { settings } from '../core/state.js';
+import { settings, game } from '../core/state.js';
 
 let ctx = null;
 let noiseBuf = null;
@@ -14,8 +14,32 @@ function ac() {
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  // resume() outside a user gesture is REJECTED on iOS, and an unhandled
+  // rejection here fired on every sound the game tried to make after coming back
+  // from the background. Catching it is not swallowing an error: this call is a
+  // best-effort attempt, and the gesture listener re-armed below is what
+  // actually gets the context back.
+  if (ctx.state !== 'running') ctx.resume().catch(armUnlock);
   return ctx;
+}
+
+// Re-armed, not once-only. The original listener was {once:true}, so after iOS
+// interrupted the context — a call, a background, a Siri invocation — there was
+// nothing left to unlock it and the game was silent for the rest of the session.
+let unlockArmed = false;
+function armUnlock() {
+  if (unlockArmed) return;
+  unlockArmed = true;
+  const go = () => {
+    unlockArmed = false;
+    removeEventListener('pointerdown', go, true);
+    removeEventListener('touchend', go, true);
+    removeEventListener('keydown', go, true);
+    unlockAudio();
+  };
+  addEventListener('pointerdown', go, true);
+  addEventListener('touchend', go, true);
+  addEventListener('keydown', go, true);
 }
 
 function thud(freq = 80, dur = 0.18, gain = 0.5) {
@@ -52,14 +76,42 @@ function noise(dur = 0.4, gain = 0.3, freq = 800, q = 0.6) {
   src.start(t); src.stop(t + dur);
 }
 
-export function unlockAudio() { try { ac(); } catch { /* no audio on this device */ } }
+export function unlockAudio() {
+  try {
+    const a = ac();
+    if (a.state !== 'running') a.resume().catch(armUnlock);
+  } catch { /* no audio on this device */ }
+}
+
+// Everything in this file is a fire-and-forget node graph that disconnects
+// itself when it stops, so "stop the audio" is one suspend on the context.
+export function suspendAudio() {
+  if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
+}
+export function resumeAudio() {
+  if (!ctx) return;
+  if (ctx.state !== 'running') ctx.resume().catch(armUnlock);
+}
 
 // A collapse kills a lot of people at once; each death used to allocate its own
 // oscillator and gain node in the same step.
 let lastDeathThud = 0;
 
 export function initAudio() {
-  window.addEventListener('pointerdown', unlockAudio, { once: true });
+  armUnlock();
+
+  // Silence on the way out and on the way back in. iOS will interrupt the
+  // context itself when the app is backgrounded, but not when the player merely
+  // pauses, and a hydrant hissing behind the pause panel is a bug.
+  addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') suspendAudio();
+    else if (settings.audio && game.state === 'playing') resumeAudio();
+  });
+  addEventListener('pagehide', suspendAudio);
+  on(EV.GAME_STATE, ({ state }) => {
+    if (state === 'playing') { if (settings.audio) resumeAudio(); } else suspendAudio();
+  });
+  on(EV.SETTINGS_CHANGED, () => { if (settings.audio) resumeAudio(); else suspendAudio(); });
 
   on(EV.CHUNK_DESTROYED, ({ count }) => { thud(70, 0.2, Math.min(0.25 + count * 0.03, 0.6)); noise(0.35, 0.25, 900); });
   on(EV.BUILDING_COLLAPSED, () => { thud(46, 1.1, 0.85); noise(1.6, 0.5, 400, 0.4); });

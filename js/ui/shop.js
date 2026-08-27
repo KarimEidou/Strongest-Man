@@ -71,6 +71,7 @@ export function initShop(points, weapons) {
 
       const btn = document.createElement('button');
       btn.className = 'gun-buy';
+      btn.dataset.id = id;
       if (equipped) {
         btn.classList.add('equipped');
         btn.textContent = 'EQUIPPED';
@@ -92,10 +93,22 @@ export function initShop(points, weapons) {
   function buy(id) {
     const g = GUNS[id];
     if (!g || save.owned.includes(id)) return;
+    if (save.points < g.price) return;
+    // Build the gun BEFORE taking the money. buildGun reaches into the model
+    // registry and the weapon pools; if anything in there throws, the old order
+    // had already debited and persisted, so the player was charged for a gun
+    // they did not get and the panel never refreshed to show it.
+    try {
+      weapons.buildGun(id);
+    } catch (err) {
+      console.error(`shop: could not build ${id}`, err);
+      const btn = list.querySelector(`.gun-buy[data-id="${id}"]`);
+      if (btn) { btn.textContent = 'UNAVAILABLE'; btn.disabled = true; }
+      return;
+    }
     if (!points.spend(g.price)) return;
     save.owned.push(id);
     persist();
-    weapons.buildGun(id);
     emit(EV.WEAPON_BOUGHT, { id, price: g.price });
     weapons.equip(id);
     build();

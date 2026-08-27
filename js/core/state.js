@@ -30,20 +30,50 @@ export const game = {
 };
 
 export function loadState() {
+  // The key is read FIRST, in its own try. It used to be read after the save
+  // blob, inside the same try — so a single corrupt character in sm_save_v1
+  // threw before the key was ever loaded, groqKey stayed '', and the next
+  // persist() saw an empty string and called removeItem. One bad byte in an
+  // unrelated key permanently deleted the owner's API key, silently.
   try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const d = JSON.parse(raw);
-      Object.assign(settings, d.settings || {});
-      Object.assign(save, d.save || {});
-      // An old save has no gun fields at all, and a corrupted one can have the
-      // wrong types; either way the shop must not start from undefined.
-      if (!Array.isArray(save.owned) || !save.owned.length) save.owned = ['pistol'];
-      if (typeof save.points !== 'number' || !isFinite(save.points)) save.points = 0;
-      if (typeof save.earned !== 'number' || !isFinite(save.earned)) save.earned = 0;
-    }
     settings.groqKey = localStorage.getItem('sm_groq_key') || '';
-  } catch { /* first run / private mode */ }
+  } catch { /* private mode: storage throws on read */ }
+
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch { return; }
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    Object.assign(settings, d.settings || {});
+    Object.assign(save, d.save || {});
+  } catch {
+    // Keep the bad blob under a different name rather than throwing it away or
+    // leaving it in place to fail again on every launch. It costs a few hundred
+    // bytes and it is the only evidence of what went wrong.
+    try {
+      localStorage.setItem(`${KEY}_corrupt`, raw);
+      localStorage.removeItem(KEY);
+    } catch { /* nothing more to do */ }
+  }
+  // An old save has no gun fields at all, and a corrupted one can have the wrong
+  // types; either way nothing downstream may start from undefined. Settings are
+  // validated too — one bad value used to crash openSettings half way through
+  // filling the panel, and DONE then wrote the half-read state back.
+  if (!Array.isArray(save.owned) || !save.owned.length) save.owned = ['pistol'];
+  save.owned = save.owned.filter((id) => typeof id === 'string');
+  if (!save.owned.length) save.owned = ['pistol'];
+  if (typeof save.points !== 'number' || !isFinite(save.points)) save.points = 0;
+  if (typeof save.earned !== 'number' || !isFinite(save.earned)) save.earned = 0;
+  if (typeof save.karma !== 'number' || !isFinite(save.karma)) save.karma = 0;
+  if (typeof save.equipped !== 'string') save.equipped = '';
+  const sens = Number(settings.lookSensitivity);
+  settings.lookSensitivity = isFinite(sens) ? Math.min(2, Math.max(0.4, sens)) : 1.0;
+  settings.invertY = !!settings.invertY;
+  settings.audio = settings.audio !== false;
+  if (!['high', 'medium', 'low', 'auto'].includes(settings.quality)) settings.quality = 'high';
+  if (!['high', 'medium', 'low', ''].includes(settings.qualityResolved)) settings.qualityResolved = '';
+  settings.seenIntro = !!settings.seenIntro;
+  settings.seenArmoury = !!settings.seenArmoury;
 }
 
 export function persist() {

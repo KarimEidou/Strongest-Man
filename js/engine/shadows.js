@@ -97,10 +97,17 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier, p
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.shadowMap.autoUpdate = false;
     every = t.shadowEvery || 3;
-    if (t.shadowSize) {
-      sun.shadow.mapSize.set(t.shadowSize, t.shadowSize);
+    // Dropping to the low tier used to leave the 3072x3072 depth target
+    // allocated for the rest of the session — 36 MB of VRAM held by a feature
+    // that has just been switched off, on the tier that exists precisely because
+    // the device has none to spare. The old guard was `if (t.shadowSize)`, and
+    // low's shadowSize is 0, so the dispose was skipped exactly when it mattered.
+    const wantSize = t.shadowSize || 0;
+    const sizeChanged = wantSize && wantSize !== sun.shadow.mapSize.x;
+    if (!enabled || sizeChanged) {
       if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
     }
+    if (wantSize) sun.shadow.mapSize.set(wantSize, wantSize);
     sun.castShadow = enabled;
   }
   setTier(tier);

@@ -44,21 +44,36 @@ export function applyQuality(name, ctx) {
   return t;
 }
 
-// Measured once on first boot when quality is 'auto': render a handful of
-// frames from the spawn viewpoint and pick a tier from the median cost.
+// Measured once on first boot when quality is 'auto': how long does a frame from
+// the spawn viewpoint actually cost this GPU?
+//
+// The previous version put `await requestAnimationFrame` INSIDE the timed
+// region, so every sample was render-cost plus a wait for the next vsync — on a
+// 60 Hz display that is ~16.7 ms whatever the GPU is doing, which is past the
+// 13 ms 'medium' threshold. 'auto' could therefore never return anything but
+// 'low', on any hardware, including hardware that runs 'high' at a locked 60.
+//
+// GL commands are queued, so timing a render() on its own measures the driver
+// accepting work rather than doing it. Submit a BATCH, then force a sync by
+// reading one pixel back — the read cannot return until the queue has drained —
+// and divide. Two batches, and only the second is scored: the first pays for
+// pipeline warm-up and any program still compiling.
 export async function probeTier(renderer, scene, camera) {
-  const samples = [];
-  for (let i = 0; i < 24; i++) {
+  const gl = renderer.getContext();
+  const px = new Uint8Array(4);
+  const BATCH = 8;
+  const runBatch = () => {
     const t0 = performance.now();
-    renderer.render(scene, camera);
-    // eslint-disable-next-line no-await-in-loop
-    await new Promise((r) => requestAnimationFrame(r));
-    samples.push(performance.now() - t0);
-  }
-  samples.sort((a, b) => a - b);
-  const med = samples[Math.floor(samples.length / 2)] || 0;
-  if (med < 7.5) return 'high';
-  if (med < 13) return 'medium';
+    for (let i = 0; i < BATCH; i++) renderer.render(scene, camera);
+    renderer.setRenderTarget(null);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);   // sync point
+    return (performance.now() - t0) / BATCH;
+  };
+  runBatch();                                     // warm-up, discarded
+  await new Promise((r) => requestAnimationFrame(r));
+  const perFrame = runBatch();
+  if (perFrame < 7.5) return 'high';
+  if (perFrame < 13) return 'medium';
   return 'low';
 }
 

@@ -45,7 +45,10 @@ export async function warmUp(renderer, scene, camera, extraMaterials = []) {
   for (const o of hidden) o.visible = false;
   for (const o of parked) {
     scene.remove(o);
-    if (o.geometry) o.geometry.dispose();
+    // ONLY the plane this function made. A Sprite's geometry is a module-level
+    // singleton shared by every sprite three will ever create, so disposing it
+    // here took the "!" alert marker and everything else sprite-shaped with it.
+    if (o.isMesh && o.geometry) o.geometry.dispose();
   }
   renderer.info.reset();
 }

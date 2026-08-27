@@ -116,6 +116,10 @@ export function initInput(surface, stick, nub) {
   // ---- desktop fallbacks for development/testing
   window.addEventListener('keydown', (e) => {
     if (e.repeat || input.textFocus) return;
+    // pollInput only runs while 'playing', so an edge queued behind a pause
+    // screen sat in `state` until the resume and then all of them fired on the
+    // first step back: a punch, a jump and a grab the player never asked for.
+    if (game.state !== 'playing') return;
     state.keys.add(e.code);
     if (e.code === 'KeyJ') { state.pendingPunchDown = true; input.punchDown = true; }
     if (e.code === 'KeyK') state.pendingJump = true;

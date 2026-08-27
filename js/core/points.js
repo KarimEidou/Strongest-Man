@@ -72,6 +72,15 @@ export function initPoints() {
     }
   }
 
+  // fixedUpdate only runs while the game is 'playing' (see js/main.js), so a
+  // deferred write scheduled a moment before the player paused, opened the shop
+  // or backgrounded the app would sit at saveT > 0 forever and the award would
+  // be lost with the tab. Every way out of 'playing' flushes it.
+  const flush = () => { if (saveT > 0) { saveT = 0; persist(); } };
+  on(EV.GAME_STATE, ({ state }) => { if (state !== 'playing') flush(); });
+  addEventListener('pagehide', flush);
+  addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+
   // Bought something: spend, and write through immediately — a purchase is the
   // one transaction nobody wants to lose to a killed tab.
   function spend(n) {

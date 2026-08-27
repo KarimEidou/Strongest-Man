@@ -23,13 +23,17 @@ export function initBlobShadows(scene) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 64, 64);
   const tex = new THREE.CanvasTexture(c);
+  // The canvas is painted in sRGB (rgba(8,10,20,...)), so without this three
+  // treats 8/255 as a LINEAR value and the blob comes out at sRGB 0.19 — a
+  // slate-blue smudge rather than a shadow. Tagging it sRGB decodes it to
+  // 0.0024 linear, which is the near-black that was painted.
+  tex.colorSpace = THREE.SRGBColorSpace;
   const g = new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2);
   const m = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
   mesh = new THREE.InstancedMesh(g, m, CAP);
   mesh.renderOrder = 1;
   mesh.frustumCulled = false;
-  const zero = new THREE.Matrix4().makeScale(0, 0, 0);
-  for (let i = 0; i < CAP; i++) mesh.setMatrixAt(i, zero);
+  for (let i = 0; i < CAP; i++) mesh.setMatrixAt(i, ZERO);
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   scene.add(mesh);
 }
@@ -37,12 +41,38 @@ export function initBlobShadows(scene) {
 // src: any object with live .x/.y/.z. Set src.blobOn = false to hide the blob
 // (used for dead monsters and, at higher quality tiers, for characters that get
 // a real shadow instead).
+// Free slots are reused. followers[] used to only ever grow: every monster the
+// director despawned kept its slot for the rest of the session, so after ~90
+// spawns addBlob returned null and nothing new — monster, NPC or the player
+// himself after a scene reload — had a shadow again. The slot INDEX is what is
+// pooled; the instance matrix at that index is zeroed on release so the quad
+// disappears the same frame.
+const freeSlots = [];
+let nextSlot = 0;
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+
 export function addBlob(src, r) {
-  const idx = followers.length;
-  if (idx >= CAP) return null;
+  const idx = freeSlots.length ? freeSlots.pop() : nextSlot++;
+  if (idx >= CAP) { nextSlot = CAP; return null; }
   const f = { src, r, idx };
   followers.push(f);
   return f;
+}
+
+export function removeBlob(f) {
+  if (!f) return;
+  const i = followers.indexOf(f);
+  if (i < 0) return;
+  followers.splice(i, 1);
+  freeSlots.push(f.idx);
+  if (mesh) {
+    mesh.setMatrixAt(f.idx, ZERO);
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
+export function blobStats() {
+  return { active: followers.length, used: nextSlot, free: freeSlots.length, cap: CAP };
 }
 
 export function blobFrame() {

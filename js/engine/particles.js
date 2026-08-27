@@ -45,6 +45,12 @@ function makePoints(scene, cap, size, color, opacity = 1, blending = THREE.Norma
 }
 
 let dust, sparks, blood, water, smoke;
+// Built once at init and iterated every rendered frame. The frame loop used to
+// write `for (const p of [dust, sparks, ...])`, which allocates a five-element
+// array 60 times a second for the life of the session — small, but it is
+// steady-state garbage in the hottest loop in the file, which is exactly the
+// kind that shows up as a GC saw-tooth on a phone.
+const POOLS = [];
 let ring, ring2;
 const RC = new THREE.Color();
 
@@ -54,7 +60,9 @@ export function initParticles(scene) {
   blood = makePoints(scene, 160, 0.3, 0xffffff, 0.95);
   water = makePoints(scene, 480, 0.34, 0xffffff, 0.85);
   smoke = makePoints(scene, 300, 1.1, 0xffffff, 0.55);
-  for (const p of [dust, sparks, blood, water, smoke]) hideAll(p);
+  POOLS.length = 0;
+  POOLS.push(dust, sparks, blood, water, smoke);
+  for (const p of POOLS) hideAll(p);
 
   // shockwave rings (charged punches, explosions)
   const rg = new THREE.RingGeometry(0.86, 1, 40).rotateX(-Math.PI / 2);
@@ -149,7 +157,7 @@ export function particlesFrame(dt) {
     if (j.t > j.dur + 25) jets.splice(jets.indexOf(j), 1);
   }
 
-  for (const p of [dust, sparks, blood, water, smoke]) {
+  for (const p of POOLS) {
     let dirty = false;
     for (let i = 0; i < p.cap; i++) {
       if (p.life[i] <= 0) continue;
