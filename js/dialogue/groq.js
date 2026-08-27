@@ -208,9 +208,17 @@ export function describeError(err) {
   return `Could not reach api.groq.com — ${message || 'request failed'}${FALLBACK_TAIL}`;
 }
 
+// navigator.onLine is a weak signal — true does not prove reachability — but
+// FALSE is definitive, and it is the one the installed PWA hits constantly: this
+// game is precached to play in airplane mode, so a session with no network is a
+// normal session, not an error. Without this every ambient bark and every player
+// line spent its full 15-second timeout failing before falling back to the
+// built-in lines, which reads as the game hanging.
+function offline() { return navigator.onLine === false; }
+
 export function groqAvailable() {
   rollDay();
-  return !!settings.groqKey && !flags.nogroq && !refusedKey()
+  return !!settings.groqKey && !flags.nogroq && !refusedKey() && !offline()
     && performance.now() > barkDisabledUntil && dayCount < DAY_CAP;
 }
 
@@ -223,6 +231,7 @@ export function groqAvailable() {
 export function chatUnavailable() {
   if (flags.nogroq) return `Live dialogue disabled with ?nogroq=1${FALLBACK_TAIL}`;
   if (!settings.groqKey) return 'No API key set — replies come from built-in lines. Add a Groq key in Settings.';
+  if (offline()) return `No network${FALLBACK_TAIL}`;
   rollDay();
   if (dayCount >= DAY_CAP) return `Daily request cap reached (${DAY_CAP})${FALLBACK_TAIL}`;
   const wait = chatDisabledUntil - performance.now();

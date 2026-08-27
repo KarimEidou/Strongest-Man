@@ -12,7 +12,7 @@ import { capsuleVsWorld } from '../physics/collide.js';
 import { createBody } from '../physics/pworld.js';
 import { removeSphere } from '../world/destruction.js';
 import { burstBlood, burstDust } from '../engine/particles.js';
-import { addBlob } from '../engine/blobshadows.js';
+import { addBlob, removeBlob } from '../engine/blobshadows.js';
 import { addBloodDecal } from '../world/debris.js';
 import { emit, on, EV } from '../core/events.js';
 import { save } from '../core/state.js';
@@ -156,7 +156,11 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
   }
 
   function fixedUpdate(dt) {
-    for (const m of monsters) {
+    // Backwards by index, not for...of. despawn() splices this array from inside
+    // updateDead(), and for...of walks by an internal index — so a splice at or
+    // below the cursor skipped the next monster's entire step for that frame.
+    for (let i = monsters.length - 1; i >= 0; i--) {
+      const m = monsters[i];
       if (m.dead) { updateDead(m, dt); continue; }
       m.stateT -= dt; m.swingT -= dt; m.wreckT -= dt;
       if (m.flinchT > 0) m.flinchT -= dt;
@@ -446,6 +450,12 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
 
   function despawn(m) {
     scene.remove(m.root);
+    // The blob-shadow slot has to go back. followers[] in engine/blobshadows.js
+    // only ever grew, so every monster the director despawned kept its slot for
+    // the rest of the session and after ~47 spawns nothing in the game — monster,
+    // townsfolk or the player after a scene reload — got a blob shadow again.
+    removeBlob(m.blob);
+    m.blob = null;
     const i = monsters.indexOf(m);
     if (i >= 0) monsters.splice(i, 1);
   }

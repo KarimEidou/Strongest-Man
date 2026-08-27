@@ -105,6 +105,7 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       hw: 0.88, hl: 1.70,
       squash: 1,
       panicT: 0,
+      abandonT: 0,             // a frightened driver comes back; see scareCars
       reactT: 0,                // drivers are not instantaneous
       carryQuat: null,          // set while a certain someone is holding it
     };
@@ -223,7 +224,12 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       if (car.mode !== 'drive' || car.panicT > 0) continue;
       const d = Math.hypot(car.x - x, car.z - z);
       if (d > radius) continue;
-      if (rand() < 0.35) { car.mode = 'wreck'; car.speed = 0; }   // abandoned mid-lane
+      // Abandoned mid-lane — and 'wreck' is terminal, so everything behind it on
+      // that circuit sat at gapAhead ~= 0 forever and the lane died. The driver
+      // comes back: after abandonT the car rejoins the flow. Long enough that
+      // the abandonment reads (the street genuinely jams while a monster is
+      // through it), short enough that a circuit recovers instead of ending.
+      if (rand() < 0.35) { car.mode = 'wreck'; car.speed = 0; car.abandonT = 26 + rand() * 14; }
       else car.panicT = 15;
     }
   }
@@ -238,6 +244,16 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
       car.px = car.x; car.pz = car.z;
       car.panicT = Math.max(0, car.panicT - dt);
       car.reactT = Math.max(0, car.reactT - dt);
+      // Only a car abandoned by a frightened driver gets a timer; one wrecked by
+      // damage (car.exploded, or thrown off the road) never does, and stays put.
+      if (car.abandonT > 0) {
+        car.abandonT -= dt;
+        if (car.abandonT <= 0 && car.mode === 'wreck' && car.alive && !car.exploded) {
+          car.mode = 'drive';
+          car.speed = 0;
+          car.panicT = 6;      // pulls away sharpish
+        }
+      }
       if (car.mode === 'drive') {
         let target = car.panicT > 0 ? car.cruise * 2.1 : car.cruise;
 

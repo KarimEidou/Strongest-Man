@@ -147,7 +147,11 @@ export function installPanic(npcSys, buildingsReg, city) {
 
   // ---- per-tick brain for panic states (called from npc.think default)
   sys.panicThink = (n, dt) => {
-    n.stateT -= dt;
+    // stateT is NOT decremented here. ai/npc.js already does it once per think()
+    // before dispatching to this function, so doing it again ran every panic,
+    // alert, hide and tumbled timer at exactly double speed: a four-second alert
+    // lasted two, and the whole panic cycle was half as long as every number in
+    // this file says it is.
     switch (n.state) {
       case 'alert': {
         if (n.stateT <= 0) toPanic(n);

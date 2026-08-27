@@ -47,8 +47,15 @@ export function initKarma() {
       if (acc >= 5) {
         acc = 0;
         if (sinceDeed > 60 && save.karma !== 0) {
+          const wasBand = karmaBand();
           save.karma += save.karma > 0 ? -0.04 * 5 : 0.04 * 5;
           if (Math.abs(save.karma) < 0.3) save.karma = 0;
+          // Drift used to change the value silently: the meter and the word in
+          // the HUD both went stale, and because nothing persisted either, the
+          // whole drift was thrown away on the next reload. Fifteen minutes of
+          // good behaviour reverted the moment the player closed the app.
+          emit(EV.KARMA_CHANGED, { value: save.karma, band: karmaBand(), prevBand: wasBand });
+          persist();
         }
       }
     },
