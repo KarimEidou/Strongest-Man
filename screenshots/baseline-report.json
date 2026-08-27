@@ -1,0 +1,4625 @@
+{
+ "ref": "origin/pre-overhaul-2026-08-26",
+ "note": "Console output folded to counts and distinct kinds. Verbatim text was 18358 lines, 2.8 MB of it the same warning repeated; regenerate with tools/capture/baseline.mjs if the exact strings are wanted.",
+ "captures": 90,
+ "capturesWithAProblem": 90,
+ "totalProblems": 18358,
+ "byKind": [
+  {
+   "n": 11921,
+   "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+  },
+  {
+   "n": 4005,
+   "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+  },
+  {
+   "n": 1602,
+   "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+  },
+  {
+   "n": 267,
+   "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+  },
+  {
+   "n": 89,
+   "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+  },
+  {
+   "n": 89,
+   "kind": "[warning] Service Worker registration blocked by Playwright"
+  },
+  {
+   "n": 60,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 60,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 55,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 51,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 48,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 47,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 10,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 9,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 5,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_shotgun.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 5,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_trafficlight.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 4,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_sedan.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 4,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_kiosk.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 4,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/landmark_samosa.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 3,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_sniper.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 3,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_cannon.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 3,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_tree.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 2,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_streetlamp.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 2,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_van.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 2,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_police.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 2,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_taxi.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 1,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_rifle.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 1,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_wreck.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 1,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/anim/clip_punch.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 1,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/anim/clip_die.glb net::ERR_ABORTED"
+  },
+  {
+   "n": 1,
+   "kind": "TimeoutError: page.screenshot: Timeout 30000ms exceeded."
+  },
+  {
+   "n": 1,
+   "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_sign.glb net::ERR_ABORTED"
+  }
+ ],
+ "report": [
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "title",
+   "file": "screenshots/baseline/title_se3_landscape-left.png",
+   "problemCount": 260,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_se3_landscape-left.png",
+   "problemCount": 261,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_se3_landscape-left.png",
+   "problemCount": 255,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_se3_landscape-left.png",
+   "problemCount": 179,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_rifle.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_shotgun.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_sniper.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "street",
+   "file": "screenshots/baseline/street_se3_landscape-left.png",
+   "problemCount": 176,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_se3_landscape-left.png",
+   "problemCount": 177,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_se3_landscape-left.png",
+   "problemCount": 177,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_se3_landscape-left.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-left",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_se3_landscape-left.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "title",
+   "file": "screenshots/baseline/title_se3_landscape-right.png",
+   "problemCount": 260,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_se3_landscape-right.png",
+   "problemCount": 259,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_se3_landscape-right.png",
+   "problemCount": 264,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_streetlamp.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_trafficlight.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_se3_landscape-right.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_sedan.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "street",
+   "file": "screenshots/baseline/street_se3_landscape-right.png",
+   "problemCount": 175,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_se3_landscape-right.png",
+   "problemCount": 181,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_se3_landscape-right.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_se3_landscape-right.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "se3",
+   "orientation": "landscape-right",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_se3_landscape-right.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "title",
+   "file": "screenshots/baseline/title_ip14_landscape-left.png",
+   "problemCount": 261,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_ip14_landscape-left.png",
+   "problemCount": 256,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_ip14_landscape-left.png",
+   "problemCount": 258,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_ip14_landscape-left.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_trafficlight.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "street",
+   "file": "screenshots/baseline/street_ip14_landscape-left.png",
+   "problemCount": 184,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_kiosk.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_ip14_landscape-left.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 109,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_ip14_landscape-left.png",
+   "problemCount": 184,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_ip14_landscape-left.png",
+   "problemCount": 183,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-left",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_ip14_landscape-left.png",
+   "problemCount": 184,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "title",
+   "file": "screenshots/baseline/title_ip14_landscape-right.png",
+   "problemCount": 261,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_ip14_landscape-right.png",
+   "problemCount": 260,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_ip14_landscape-right.png",
+   "problemCount": 261,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_ip14_landscape-right.png",
+   "problemCount": 187,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_van.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_sedan.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_police.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_taxi.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "street",
+   "file": "screenshots/baseline/street_ip14_landscape-right.png",
+   "problemCount": 181,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_ip14_landscape-right.png",
+   "problemCount": 181,
+   "kinds": [
+    {
+     "n": 109,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_ip14_landscape-right.png",
+   "problemCount": 183,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_ip14_landscape-right.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip14",
+   "orientation": "landscape-right",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_ip14_landscape-right.png",
+   "problemCount": 179,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "title",
+   "file": "screenshots/baseline/title_ip16pro_landscape-left.png",
+   "problemCount": 258,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_ip16pro_landscape-left.png",
+   "problemCount": 259,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_ip16pro_landscape-left.png",
+   "problemCount": 256,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_ip16pro_landscape-left.png",
+   "problemCount": 179,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "street",
+   "file": "screenshots/baseline/street_ip16pro_landscape-left.png",
+   "problemCount": 186,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/landmark_samosa.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_ip16pro_landscape-left.png",
+   "problemCount": 184,
+   "kinds": [
+    {
+     "n": 109,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/landmark_samosa.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_trafficlight.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_van.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_police.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_wreck.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_ip16pro_landscape-left.png",
+   "problemCount": 179,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_ip16pro_landscape-left.png",
+   "problemCount": 182,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_shotgun.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_sniper.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_cannon.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-left",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_ip16pro_landscape-left.png",
+   "problemCount": 184,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "title",
+   "file": "screenshots/baseline/title_ip16pro_landscape-right.png",
+   "problemCount": 259,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_shotgun.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_ip16pro_landscape-right.png",
+   "problemCount": 259,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_ip16pro_landscape-right.png",
+   "problemCount": 260,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_ip16pro_landscape-right.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "street",
+   "file": "screenshots/baseline/street_ip16pro_landscape-right.png",
+   "problemCount": 181,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_ip16pro_landscape-right.png",
+   "problemCount": 181,
+   "kinds": [
+    {
+     "n": 109,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_ip16pro_landscape-right.png",
+   "problemCount": 185,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_ip16pro_landscape-right.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16pro",
+   "orientation": "landscape-right",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_ip16pro_landscape-right.png",
+   "problemCount": 183,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "title",
+   "file": "screenshots/baseline/title_ip16promax_landscape-left.png",
+   "problemCount": 260,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_shotgun.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_ip16promax_landscape-left.png",
+   "problemCount": 258,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_ip16promax_landscape-left.png",
+   "problemCount": 258,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_ip16promax_landscape-left.png",
+   "problemCount": 185,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "street",
+   "file": "screenshots/baseline/street_ip16promax_landscape-left.png",
+   "problemCount": 186,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_tree.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_kiosk.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_ip16promax_landscape-left.png",
+   "problemCount": 182,
+   "kinds": [
+    {
+     "n": 109,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_ip16promax_landscape-left.png",
+   "problemCount": 185,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_ip16promax_landscape-left.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-left",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_ip16promax_landscape-left.png",
+   "problemCount": 183,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/anim/clip_punch.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/anim/clip_die.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "title",
+   "file": "screenshots/baseline/title_ip16promax_landscape-right.png",
+   "problemCount": 258,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_ip16promax_landscape-right.png",
+   "problemCount": 259,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_kiosk.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_sedan.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_taxi.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "settings",
+   "file": null,
+   "problemCount": 1,
+   "kinds": [
+    {
+     "n": 1,
+     "kind": "TimeoutError: page.screenshot: Timeout 30000ms exceeded."
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_ip16promax_landscape-right.png",
+   "problemCount": 183,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "street",
+   "file": "screenshots/baseline/street_ip16promax_landscape-right.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_ip16promax_landscape-right.png",
+   "problemCount": 181,
+   "kinds": [
+    {
+     "n": 109,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_ip16promax_landscape-right.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_ip16promax_landscape-right.png",
+   "problemCount": 187,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/car_sedan.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_tree.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_kiosk.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "ip16promax",
+   "orientation": "landscape-right",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_ip16promax_landscape-right.png",
+   "problemCount": 185,
+   "kinds": [
+    {
+     "n": 110,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_sniper.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_cannon.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "title",
+   "file": "screenshots/baseline/title_desktop_landscape-left.png",
+   "problemCount": 255,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_desktop_landscape-left.png",
+   "problemCount": 260,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_desktop_landscape-left.png",
+   "problemCount": 258,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_desktop_landscape-left.png",
+   "problemCount": 175,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "street",
+   "file": "screenshots/baseline/street_desktop_landscape-left.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_desktop_landscape-left.png",
+   "problemCount": 177,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_desktop_landscape-left.png",
+   "problemCount": 177,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_desktop_landscape-left.png",
+   "problemCount": 179,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-left",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_desktop_landscape-left.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "title",
+   "file": "screenshots/baseline/title_desktop_landscape-right.png",
+   "problemCount": 260,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "loading",
+   "file": "screenshots/baseline/loading_desktop_landscape-right.png",
+   "problemCount": 257,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "settings",
+   "file": "screenshots/baseline/settings_desktop_landscape-right.png",
+   "problemCount": 265,
+   "kinds": [
+    {
+     "n": 187,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_dumpster.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_bench.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_cannon.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/gun_shotgun.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "hud-idle",
+   "file": "screenshots/baseline/hud-idle_desktop_landscape-right.png",
+   "problemCount": 180,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_hydrant.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "street",
+   "file": "screenshots/baseline/street_desktop_landscape-right.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "hud-bright",
+   "file": "screenshots/baseline/hud-bright_desktop_landscape-right.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "hud-dark",
+   "file": "screenshots/baseline/hud-dark_desktop_landscape-right.png",
+   "problemCount": 179,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "shop",
+   "file": "screenshots/baseline/shop_desktop_landscape-right.png",
+   "problemCount": 181,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/npc_a.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/landmark_samosa.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_tree.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_trafficlight.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/monster_b.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_sign.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  },
+  {
+   "device": "desktop",
+   "orientation": "landscape-right",
+   "scene": "pause",
+   "file": "screenshots/baseline/pause_desktop_landscape-right.png",
+   "problemCount": 178,
+   "kinds": [
+    {
+     "n": 106,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElements: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 45,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawElementsInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 18,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArraysInstanced: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 3,
+     "kind": "[warning] GL_INVALID_OPERATION: glDrawArrays: Mismatch between texture format and sampler type (signed/unsigned/float/shadow)."
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/player.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/landmark_samosa.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_streetlamp.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[requestfailed] http://127.0.0.1:32837/Strongest-Man/assets/models/prop_trafficlight.glb net::ERR_ABORTED"
+    },
+    {
+     "n": 1,
+     "kind": "[warning] THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+    },
+    {
+     "n": 1,
+     "kind": "[warning] Service Worker registration blocked by Playwright"
+    }
+   ]
+  }
+ ]
+}

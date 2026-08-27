@@ -1,0 +1,735 @@
+{
+  "failures": [],
+  "measured": [
+    {
+      "where": "hud se3 landscape-left",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum se3 landscape-left",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update se3 landscape-left",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause se3 landscape-left",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings se3 landscape-left",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop se3 landscape-left",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat se3 landscape-left",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud se3 landscape-right",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum se3 landscape-right",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update se3 landscape-right",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause se3 landscape-right",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings se3 landscape-right",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop se3 landscape-right",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat se3 landscape-right",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud ip14 landscape-left",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum ip14 landscape-left",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update ip14 landscape-left",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause ip14 landscape-left",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings ip14 landscape-left",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "shop ip14 landscape-left",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat ip14 landscape-left",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud ip14 landscape-right",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum ip14 landscape-right",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update ip14 landscape-right",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause ip14 landscape-right",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings ip14 landscape-right",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "shop ip14 landscape-right",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat ip14 landscape-right",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud ip16pro landscape-left",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum ip16pro landscape-left",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update ip16pro landscape-left",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause ip16pro landscape-left",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings ip16pro landscape-left",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop ip16pro landscape-left",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat ip16pro landscape-left",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud ip16pro landscape-right",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum ip16pro landscape-right",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update ip16pro landscape-right",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause ip16pro landscape-right",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings ip16pro landscape-right",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop ip16pro landscape-right",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat ip16pro landscape-right",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud ip16promax landscape-left",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum ip16promax landscape-left",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update ip16promax landscape-left",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause ip16promax landscape-left",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings ip16promax landscape-left",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop ip16promax landscape-left",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat ip16promax landscape-left",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud ip16promax landscape-right",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum ip16promax landscape-right",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update ip16promax landscape-right",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause ip16promax landscape-right",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings ip16promax landscape-right",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0 (scrolled out)",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0 (scrolled out)",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop ip16promax landscape-right",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0 (scrolled out)"
+      ]
+    },
+    {
+      "where": "chat ip16promax landscape-right",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud desktop landscape-left",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum desktop landscape-left",
+      "seen": [
+        "#art-prompt: none visible",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update desktop landscape-left",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause desktop landscape-left",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings desktop landscape-left",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop desktop landscape-left",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0"
+      ]
+    },
+    {
+      "where": "chat desktop landscape-left",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    },
+    {
+      "where": "hud desktop landscape-right",
+      "seen": [
+        "#btn-punch 86.0x86.0",
+        "#btn-jump 64.0x64.0",
+        "#btn-grab 54.0x54.0",
+        "#btn-interact 54.0x54.0",
+        "#btn-pause 44.0x44.0",
+        "#btn-shop 67.2x44.0",
+        ".wchip 59.3x44.0",
+        ".wchip 67.9x44.0",
+        ".wchip 51.8x44.0",
+        ".wchip 83.0x44.0",
+        ".wchip 59.9x44.0",
+        ".wchip 69.2x44.0",
+        ".wchip 75.9x44.0"
+      ]
+    },
+    {
+      "where": "museum desktop landscape-right",
+      "seen": [
+        "#art-prompt 208.2x48.0",
+        "#btn-punch 86.0x86.0",
+        "#btn-pause 44.0x44.0"
+      ]
+    },
+    {
+      "where": "update desktop landscape-right",
+      "seen": [
+        "#update-banner 294.9x44.0",
+        "#update-dismiss 44.0x44.0"
+      ]
+    },
+    {
+      "where": "pause desktop landscape-right",
+      "seen": [
+        "#btn-resume 220.0x48.0",
+        "#btn-pause-shop 220.0x48.0",
+        "#btn-pause-settings 220.0x48.0"
+      ]
+    },
+    {
+      "where": "settings desktop landscape-right",
+      "seen": [
+        "#btn-settings-done 129.1x48.0",
+        "#btn-groq-test 98.7x44.0",
+        "#set-quality 504.0x44.0",
+        "#set-groq 397.3x44.0",
+        "#set-sens 500.0x44.0",
+        "#set-invy 44.0x44.0",
+        "#set-audio 44.0x44.0"
+      ]
+    },
+    {
+      "where": "shop desktop landscape-right",
+      "seen": [
+        "#btn-shop-done 129.1x48.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0",
+        ".gun-buy 96.0x44.0"
+      ]
+    },
+    {
+      "where": "chat desktop landscape-right",
+      "seen": [
+        "#chat-close: none visible",
+        "#chat-send: none visible",
+        "#chat-input: none visible"
+      ]
+    }
+  ]
+}
