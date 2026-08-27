@@ -106,14 +106,33 @@ export const SCENES = [
   {
     id: 'landmark',
     query: DAY,
-    note: 'The samosa landmark, for asset and signage quality.',
+    note: 'The samosa landmark in its block: 33 m of pastry, the crossroads it '
+      + 'stands on, and the second one on the skyline behind it.',
     // lookFrom, not warpTo. The generator puts the two samosas at (-35.5,-47.5)
     // and (28.5,47.5); the old viewpoint stood at (30,-30) facing PI*0.25, which
     // is 77m from the nearer one and pointed away from it, so this scene spent
     // its life photographing an office wall while its note claimed a landmark.
     // lookFrom aims the camera AT a world point and turns occlusion off, which
     // is what a beauty shot of a 33m object needs.
-    setup: () => window.__test.lookFrom(28.5, 16, 6, 28.5, 12, 47.5),
+    // The south-west samosa (x -54.5..-16.5, z -54.5..-40.5, 11 floors = 33 m),
+    // seen down the diagonal from beyond the road intersection at (-63, -63).
+    // That diagonal is the only line on the grid with clear sight of it: the
+    // roads run at -63/0/63 and every other approach looks across a block full
+    // of offices.
+    setup: () => window.__test.lookFrom(-76, 24, -76, -35.5, 12, -47.5),
+    steps: 30,
+  },
+  {
+    id: 'landmark-sign',
+    query: DAY,
+    note: 'The samosa\'s signage band square on: INDER\'S / BIG SAMOSA, projected '
+      + 'onto the pastry rather than bolted in front of it, and legible.',
+    // The band is projected from whichever side the spec calls `front`, and this
+    // one is north, so it is read from -z. The z=-63 road is only 13.5 m off the
+    // face — far too close for a 33 m object — so the camera stands on the open
+    // ground beyond it. Looking IN from outside the grid is fine: the fog is
+    // distance-based from the camera, not a wall at the map edge.
+    setup: () => window.__test.lookFrom(-35.5, 18, -85, -35.5, 12, -47.5),
     steps: 30,
   },
 
