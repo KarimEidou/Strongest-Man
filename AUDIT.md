@@ -23,7 +23,7 @@ numbers are that build's, not the current tree's.
 - Each candidate reproduced before it was written down, and re-reproduced after
   the fix. Findings that did not survive that step are not in this document.
 - **The screenshots were then reviewed, and reviewing them found more.** Seven
-  entries here (#107–#113) exist because 602 captures were looked at rather
+  entries here (#107–#113) exist because 622 captures were looked at rather
   than counted: a museum label with a hole under it, an armed weapon chip half
   off the screen, five wall-clock timers running behind the pause panel, a
   prompt drawn over the ammo readout at 667×375, a loading screen that comes
@@ -32,6 +32,11 @@ numbers are that build's, not the current tree's.
   whose stated purpose is to show the artwork and which showed the back of the
   man standing in front of it. §5.7 of the brief asks for that pass because it
   is the one that finds these; it is not a formality.
+- **And making a test honest found two more.** #114 and #115 came out of the
+  service-worker upgrade test after its own two defects were corrected: an
+  update offer with a hole in the middle of it, and a boot watchdog that
+  reported a slow first install to the player as a failure. Neither was
+  reachable without driving a real worker through a real deploy.
 
 **Reading an entry.** *Repro* is the exact steps that produced the behaviour.
 *Expected* and *Actual* are what should happen and what did, with the mechanism.
@@ -44,20 +49,20 @@ The commit named is where the behaviour actually changed.
 | Severity | Count | Meaning |
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
-| Major | 53 | a feature does not work, leaks, or is unusable on the target device |
+| Major | 55 | a feature does not work, leaks, or is unusable on the target device |
 | Minor | 49 | wrong, but survivable |
 | Polish | 4 | correct, and not good enough |
-| **Total** | **110** | from 113 raw findings; 3 were the same defect seen by two sweeps |
+| **Total** | **112** | from 115 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
 | Logic | 22 |
-| UI | 18 |
+| UI | 19 |
 | Render | 16 |
 | Touch | 16 |
 | HUD | 13 |
 | Perf | 10 |
-| PWA | 6 |
+| PWA | 7 |
 | SW | 6 |
 | Deploy | 2 |
 | Audio | 1 |
@@ -87,6 +92,7 @@ The commit named is where the behaviour actually changed.
 | `37f79d9` | fix(hud): the gallery prompt sat on top of the ammo readout on the SE |
 | `42e3709` | fix(boot): the loading screen came down before there was anything behind it |
 | `90ca0e0` | fix(world): open the doors, and photograph the art instead of the man in front of it |
+| `da7578b` | fix(pwa): an update nobody was offered, and a watchdog that called a slow boot a failure |
 
 ## Index
 
@@ -149,6 +155,8 @@ The commit named is where the behaviour actually changed.
 | 110 | Major | HUD | `css/main.css:751` | The gallery prompt is drawn on top of the ammo readout at 667x375 | `37f79d9` |
 | 111 | Major | UI | `js/ui/overlays.js:84` | The loading screen comes down before there is anything behind it | `42e3709` |
 | 112 | Major | Render | `js/world/buildings.js:61` | Every walkable front door in the city is drawn shut, and the player passes through the leaf | `90ca0e0` |
+| 114 | Major | PWA | `js/main.js:669` | A player who reloads while a new service worker is installing is never offered the update | `da7578b` |
+| 115 | Major | UI | `js/main.js:32` | The boot watchdog measures elapsed time, so a slow but healthy first install is reported to the… | `da7578b` |
 | 7 | Minor | Perf | `js/engine/warmup.js:43` | warmUp disposes three's module-level shared Sprite geometry | `5418f1e` |
 | 8 | Minor | Render | `js/engine/blobshadows.js:25` | Blob-shadow CanvasTexture carries colour but is left at NoColorSpace, so shadows render as ligh… | `5418f1e` |
 | 9 | Minor | Render | `js/engine/godrays.js:40` | God-ray composite adds linear-light values onto an already tone-mapped, sRGB-encoded framebuffer | `9456ab7` |
@@ -896,6 +904,30 @@ The commit named is where the behaviour actually changed.
 **Actual.** The geometry contradicted the collision on every building in the game that has an interior. From the street the gallery read as closed; from inside, the doorway was a brown rectangle rather than a view of the forecourt.
 
 **Remedy.** Delete the leaf. Nothing has to replace it: the two jambs and the head are already full wall thickness, so removing it leaves a real 0.3 m reveal and the interior is visible through the opening.
+
+### 114. A player who reloads while a new service worker is installing is never offered the update
+
+**Major · PWA · `js/main.js:669` · fixed in `da7578b`**
+
+**Repro.** tools/test/upgrade.mjs step 7, after waitForCache was corrected to wait for a POPULATED cache: the newer build installs and sits waiting, window.__UPGRADE_PROBE__ is already true on the page (network-first navigation served the newer HTML), and #update-banner never becomes visible inside 90 s. Two caches are left behind because the waiting worker never activates.
+
+**Expected.** Whenever a newer worker exists — waiting, or installing right now — the player is offered it.
+
+**Actual.** registerSW ran on `load` and checked `reg.waiting`, then attached an `updatefound` listener. The browser begins fetching the new sw.js on the navigation, BEFORE any page script runs, so there is a third state between those two: the worker is `installing` at the moment the page looks. reg.waiting is empty, updatefound has already fired, and neither path offers anything. The player stays on the old build until something else happens to trigger a check. On a phone — reload, worker starts fetching, page JS attaches a beat later — that is the ordinary case rather than an edge one.
+
+**Remedy.** Watch all three: offer a waiting worker immediately, attach a statechange listener to an installing one, and keep updatefound for workers that have not started. showUpdate is already idempotent, so overlapping paths are harmless.
+
+### 115. The boot watchdog measures elapsed time, so a slow but healthy first install is reported to the player as a failure
+
+**Major · UI · `js/main.js:32` · fixed in `da7578b`**
+
+**Repro.** tools/test/upgrade.mjs, reload into a build whose worker is mid-precache: the page fetches its own ~130 resources while the worker pulls 121 files with `{cache:'reload'}` beside it. Boot passes 90 s while still progressing, and #loading-msg reads "could not start" with a RELOAD button over a boot that has not stopped.
+
+**Expected.** A failure state means boot has failed, not that it is taking a while on a slow device.
+
+**Actual.** BOOT_TIMEOUT_MS was a fixed 90 s from module evaluation with no knowledge of whether anything was happening. That is a claim about how long boot SHOULD take, and it is wrong in the one situation the watchdog exists for — a first install on a slow connection, which is precisely when the page and the precache compete. Telling a player the app failed while it is still loading is a worse lie than the frozen bar the watchdog was added to replace.
+
+**Remedy.** Re-arm on every loadingProgress() call, via a hook overlays.js exposes, so the watchdog measures a STALL. Cleared with the other boot guards on success.
 
 ### 7. warmUp disposes three's module-level shared Sprite geometry
 

@@ -1344,5 +1344,27 @@
   "expected": "A scene whose note says \"head-on: native aspect, even lighting, frame depth, contact shadow\" shows the work.",
   "actual": "The scenes used __test.warpTo, which moves the PLAYER. The camera is a shoulder camera, so the body is always between the lens and whatever the player is facing. plaque-* already had the right treatment (plaqueShot puts the camera on the plate); the artwork shots did not.",
   "fix": "__test.artShot(slug), mirroring plaqueShot: camera on the wall normal at the work's own hanging height, occlusion off, with the camera rig's shoulder and head offsets backed out so the optical centre lands on the picture centre."
+ },
+ {
+  "title": "A player who reloads while a new service worker is installing is never offered the update",
+  "severity": "Major",
+  "category": "PWA",
+  "file": "js/main.js",
+  "line": 669,
+  "repro": "tools/test/upgrade.mjs step 7, after waitForCache was corrected to wait for a POPULATED cache: the newer build installs and sits waiting, window.__UPGRADE_PROBE__ is already true on the page (network-first navigation served the newer HTML), and #update-banner never becomes visible inside 90 s. Two caches are left behind because the waiting worker never activates.",
+  "expected": "Whenever a newer worker exists — waiting, or installing right now — the player is offered it.",
+  "actual": "registerSW ran on `load` and checked `reg.waiting`, then attached an `updatefound` listener. The browser begins fetching the new sw.js on the navigation, BEFORE any page script runs, so there is a third state between those two: the worker is `installing` at the moment the page looks. reg.waiting is empty, updatefound has already fired, and neither path offers anything. The player stays on the old build until something else happens to trigger a check. On a phone — reload, worker starts fetching, page JS attaches a beat later — that is the ordinary case rather than an edge one.",
+  "fix": "Watch all three: offer a waiting worker immediately, attach a statechange listener to an installing one, and keep updatefound for workers that have not started. showUpdate is already idempotent, so overlapping paths are harmless."
+ },
+ {
+  "title": "The boot watchdog measures elapsed time, so a slow but healthy first install is reported to the player as a failure",
+  "severity": "Major",
+  "category": "UI",
+  "file": "js/main.js",
+  "line": 32,
+  "repro": "tools/test/upgrade.mjs, reload into a build whose worker is mid-precache: the page fetches its own ~130 resources while the worker pulls 121 files with `{cache:'reload'}` beside it. Boot passes 90 s while still progressing, and #loading-msg reads \"could not start\" with a RELOAD button over a boot that has not stopped.",
+  "expected": "A failure state means boot has failed, not that it is taking a while on a slow device.",
+  "actual": "BOOT_TIMEOUT_MS was a fixed 90 s from module evaluation with no knowledge of whether anything was happening. That is a claim about how long boot SHOULD take, and it is wrong in the one situation the watchdog exists for — a first install on a slow connection, which is precisely when the page and the precache compete. Telling a player the app failed while it is still loading is a worse lie than the frozen bar the watchdog was added to replace.",
+  "fix": "Re-arm on every loadingProgress() call, via a hook overlays.js exposes, so the watchdog measures a STALL. Cleared with the other boot guards on success."
  }
 ]

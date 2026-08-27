@@ -327,6 +327,35 @@ pressure. Four leaks that this class of test exists to find were fixed
 The baseline cannot be measured this way — it has no gallery to cycle and no test
 hook to do it with — so the "before" column is genuinely absent rather than zero.
 
+### And two more from making a test honest
+
+The service-worker upgrade test failed after the screenshot work, and the reason
+turned out to be two defects in the test sitting on top of two in the product.
+
+The test's: `waitForCache` polled `caches.keys()`, and `caches.open()` creates
+the cache the instant a worker starts installing — so it reloaded mid-precache,
+manufactured a slow-boot condition and then failed on it. And the newer-build
+step did `cp -a` of the whole repository, which since the screenshots landed is
+most of a gigabyte of IO in the middle of a timing-sensitive test.
+
+Underneath them:
+
+- **#114 — an update offer with a hole in the middle.** `register()` resolves
+  whenever it resolves, and the browser has usually already begun fetching the
+  new `sw.js` on the navigation before any page script runs. The code handled a
+  worker that was already *waiting* and one that had not started; it missed one
+  that was *installing* at the moment the page looked, because `reg.waiting` was
+  empty and `updatefound` had already fired. A player who reloads at that moment
+  is never offered the update. On a phone that is the ordinary case.
+- **#115 — a watchdog that reported a healthy boot as a failure.** Ninety seconds
+  measured from module evaluation, with no knowledge of whether anything was
+  happening. It fires in exactly the situation it exists for — a first install
+  where the page and the precache compete for a slow connection — and tells the
+  player the app failed while it is still loading. It measures a stall now.
+
+Neither was reachable without driving a real worker through a real deploy, and
+neither shows up in any screenshot.
+
 ---
 
 ## 7. End to end
