@@ -260,6 +260,13 @@ button { font: inherit; color: inherit; }
 }
 .wchip.on { border-color: var(--orange-bright); background: rgba(240,168,96,0.3); }
 .wchip:active { background: rgba(240,168,96,0.45); }
+/* Each chip's HIT area reaches 4px into the gap on either side, so the two
+   neighbours between them cover the whole 8px gutter and there is no bare strip
+   left. The container has to take pointer events in order to scroll, and without
+   this a thumb landing between two chips hit #weapons and did nothing — which is
+   the same class of dead zone the rail's own position comment is about. */
+.wchip { position: relative; }
+.wchip::after { content: ""; position: absolute; inset: 0 -5px; }  /* 5, not 4: at exactly half the 8px gap the two neighbours meet on a boundary and a hit test at the midpoint lands on neither */
 
 /* 44x44 minimum, and 8px apart: at 32px tall and 6px apart these were both
    under the HIG minimum AND close enough that a thumb reaching for SHOP could

@@ -564,6 +564,15 @@ results.grounding = await page.evaluate(() => {
   // nothing may stay off the ground, and nothing may sink into it.
   let worstHigh = 0, worstLow = 0, worstRun = 0;
   const run = new Map();
+  // Same treatment for the townsfolk, and for the same reason the comment above
+  // gives. `people.highest` was a single instantaneous reading at the end of the
+  // loop, and two rampaging monsters send people through the air constantly — so
+  // it caught whoever happened to be mid-flight on the last frame and read 0.418
+  // on one run and 1.662 on the next from identical code. A person in the air
+  // after being hit by a monster is correct; a person who never comes down is
+  // not, so this tracks per-id run lengths too.
+  const pRun = new Map();
+  let worstPeopleRun = 0;
   for (let i = 0; i < 600; i++) {
     window.__test.step(1 / 60);
     for (const f of window.__test.monsterFeet()) {
@@ -573,18 +582,28 @@ results.grounding = await page.evaluate(() => {
       run.set(f.id, r);
       if (r > worstRun) worstRun = r;
     }
+    const air = new Set(window.__test.npcAirborne(0.6));
+    for (const id of air) {
+      const r = (pRun.get(id) || 0) + 1;
+      pRun.set(id, r);
+      if (r > worstPeopleRun) worstPeopleRun = r;
+    }
+    for (const id of [...pRun.keys()]) if (!air.has(id)) pRun.set(id, 0);
   }
   const people = window.__test.npcFeet();
   return {
     monsterHighest: +worstHigh.toFixed(3),
     monsterDeepest: +worstLow.toFixed(3),
     longestHoverSeconds: +(worstRun / 60).toFixed(3),
+    longestPersonAirborneSeconds: +(worstPeopleRun / 60).toFixed(3),
     people,
     // 0.3s is comfortably longer than the 0.16s a 0.28m drop takes and far
     // shorter than the 10s a real float lasts. 1.2m is taller than any single
     // step in the city, so exceeding it means something is genuinely airborne.
+    // 1.5s for a person: a monster's swing throws someone a good way, and the
+    // arc has to be allowed to finish.
     ok: worstRun / 60 < 0.3 && worstHigh < 1.2 && worstLow > -0.06
-      && people.highest < 0.6 && people.deepest > -0.2,
+      && worstPeopleRun / 60 < 1.5 && people.deepest > -0.2,
   };
 });
 
@@ -772,14 +791,24 @@ results.armedCarry = await page.evaluate(() => {
   const T = window.__test;
   const npcs = window.__npcs.npcs;
   for (const c of window.__trafficList) { c.mode = 'held'; c.x = 500; c.z = 500; }
+  // Iterate CANDIDATES, not attempts. This used to re-pick npcs.find(...) every
+  // round, which returns the FIRST match every time — so if that one happened to
+  // be unreachable (hiding inside a building, standing where the teleport lands
+  // the player in a wall) all twenty-five attempts targeted the same person and
+  // the assertion failed with "never grabbed" while grabbing worked perfectly.
+  // What this test is about is PUNCH with a gun holstered and someone in his
+  // hands; which someone is not the point.
+  const tried = [];
   let got = false;
-  for (let a = 0; a < 25 && !got; a++) {
-    const n = npcs.find((o) => o.state !== 'dead' && o.state !== 'carried');
+  const candidates = npcs.filter((o) => o.state !== 'dead' && o.state !== 'carried');
+  for (const n of candidates) {
+    if (got || tried.length >= 25) break;
     T.teleport(n.x - Math.sin(n.yaw) * 0.8, n.z - Math.cos(n.yaw) * 0.8);
     T.faceTo(n.x, n.z); T.step(0.06); T.press('grab'); T.step(0.25);
+    tried.push(n.state);
     if (T.carry().kind === 'entity') got = true;
   }
-  if (!got) return { ok: false, why: 'never grabbed' };
+  if (!got) return { ok: false, why: 'never grabbed', tried: tried.slice(0, 10), candidates: candidates.length };
   T.step(1.0);
   T.equip('pistol'); T.step(0.4);
   const ammoBefore = T.weapon().ammo;

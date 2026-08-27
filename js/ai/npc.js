@@ -669,6 +669,21 @@ export function createNPCs(scene, city, player) {
     return { n, deepest: +worstLow.toFixed(3), deepestId: lowId, highest: +worstHigh.toFixed(3), highestId: highId };
   };
 
+  // Who is off the ground RIGHT NOW, by id. npcFeet() above returns the single
+  // worst gap at one instant, which is not an invariant: two rampaging monsters
+  // send townsfolk through the air constantly, and a person mid-flight has a
+  // perfectly legitimate 1.6m gap. What is NOT legitimate is a gap that never
+  // closes, and that needs per-id run lengths rather than a snapshot.
+  window.__test.npcAirborne = (threshold = 0.6) => {
+    const out = [];
+    for (const o of npcs) {
+      if (o.state === 'dead' || o.state === 'carried' || o.state === 'hide') continue;
+      const gap = footBoneY(o.root) - o.soleUnit * o.root.scale.y - groundHeight(o.x, o.z);
+      if (gap > threshold) out.push(o.id);
+    }
+    return out;
+  };
+
   // #5 regression probe: how many townsfolk are standing inside a building
   window.__test.npcsInsideBuildings = () => {
     let inside = 0;
