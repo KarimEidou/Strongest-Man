@@ -81,6 +81,29 @@ export function loadingProgress(frac, msg) {
   if (frac >= 1) setTimeout(() => { el('loading').hidden = true; }, 150);
 }
 
+// Boot threw, rejected, or simply never finished. #loading is opaque, covers
+// everything and takes pointer events, so without this the player is left
+// looking at a frozen progress bar with no error, no retry and no way back —
+// and on an installed PWA there is not even a URL bar to reload from.
+let bootFailed = false;
+export function loadingFailed(reason) {
+  if (bootFailed) return;
+  bootFailed = true;
+  const box = el('loading');
+  box.hidden = false;
+  el('loading-msg').textContent = 'could not start';
+  el('loading-bar').style.opacity = '0.25';
+  const err = el('loading-error');
+  err.hidden = false;
+  el('loading-error-msg').textContent = String(reason || 'Unknown error').slice(0, 220);
+  const retry = el('btn-retry');
+  retry.addEventListener('click', () => {
+    retry.disabled = true;
+    retry.textContent = 'RELOADING…';
+    location.reload();
+  }, { once: true });
+}
+
 let toastTimer = 0;
 export function toast(text, ms = 2200) {
   const t = el('toast');
@@ -88,6 +111,37 @@ export function toast(text, ms = 2200) {
   t.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
+}
+
+// A new build is installed and waiting. The worker deliberately did not take
+// over on its own (see the note in js/main.js), so this is the only way the
+// player gets it — one tap, one reload, and nothing is pulled out from under a
+// session that is mid-fight. Idempotent: a second updatefound while the banner
+// is already up does not stack another one.
+let updateShown = false;
+export function showUpdate(accept) {
+  if (updateShown) return;
+  updateShown = true;
+  const b = el('update-banner');
+  const x = el('update-dismiss');
+  b.hidden = false;
+  x.hidden = false;
+  // has-update steps the top-centre stack down, so the karma meter is not
+  // covered for as long as the banner is up.
+  document.body.classList.add('has-update');
+  const close = () => {
+    b.hidden = true;
+    x.hidden = true;
+    document.body.classList.remove('has-update');
+  };
+  x.addEventListener('click', (e) => { e.preventDefault(); close(); }, { once: true });
+  b.addEventListener('click', (e) => {
+    e.preventDefault();
+    b.disabled = true;
+    b.textContent = 'UPDATING…';
+    x.hidden = true;
+    accept();
+  }, { once: true });
 }
 
 export function backToPause(from) {

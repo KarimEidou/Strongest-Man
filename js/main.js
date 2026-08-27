@@ -5,17 +5,42 @@ import { initDebug, perfFrame, addSimTime, profile, flags } from './core/debug.j
 import { loadState, game, setGameState, settings, persist } from './core/state.js';
 import { createLoop, FIXED_DT } from './core/loop.js';
 import { pollInput } from './core/input.js';
-import { createRenderer } from './engine/renderer.js';
+import { createRenderer, onContextLost, onContextRestored } from './engine/renderer.js';
 import { initSky } from './engine/sky.js';
 import { applyQuality, probeTier, tierOf } from './engine/quality.js';
 import { createCamera } from './engine/camera.js';
 import { initHUD, hudFrame } from './ui/hud.js';
-import { initOverlays, loadingProgress } from './ui/overlays.js';
+import { initOverlays, loadingProgress, showUpdate, loadingFailed, toast } from './ui/overlays.js';
 import { initSettings } from './ui/settings.js';
 import { PAL } from './core/palette.js';
+import { on as onEvent, EV } from './core/events.js';
 
 initDebug();
 loadState();
+
+// Boot is a chain of top-level awaits behind an opaque overlay. If any link
+// throws — a 404 on an asset, a GLB the decoder rejects, a WebGL context the
+// device refuses — execution stops where it is and #loading stays up forever
+// with a half-filled bar. These three are the only things that can tell the
+// player what happened and offer them a way out. All of them are removed the
+// moment boot succeeds; nothing here is a permanent global handler.
+const bootFail = (reason) => { loadingFailed(reason); clearBootGuards(); };
+const onErr = (e) => bootFail(e?.error?.message || e?.message || e);
+const onRej = (e) => bootFail(e?.reason?.message || e?.reason || 'unhandled rejection');
+// Boot on a cold cache over a slow link is a few seconds; ninety is not a slow
+// link, it is something that is never going to finish.
+const BOOT_TIMEOUT_MS = 90000;
+let bootWatchdog = setTimeout(
+  () => bootFail('Startup timed out. This is usually a failed asset download.'),
+  BOOT_TIMEOUT_MS,
+);
+function clearBootGuards() {
+  clearTimeout(bootWatchdog);
+  removeEventListener('error', onErr);
+  removeEventListener('unhandledrejection', onRej);
+}
+addEventListener('error', onErr);
+addEventListener('unhandledrejection', onRej);
 
 const canvas = document.getElementById('gl');
 const { renderer, resize: setDpr } = createRenderer(canvas);
@@ -110,7 +135,10 @@ fixedSystems.push(profile('combat', (dt) => combat.fixedUpdate(dt)));
 const { initInspect, showPrompt, enterInspect, isInspecting } = await import('./ui/inspect.js');
 initInspect(cam);
 fixedSystems.push(profile('museum', () => {
-  if (isInspecting()) return;
+  // Not while a text field has focus: INTERACT is deliberately kept alive
+  // through pollInput's text-focus branch so TALK can close the conversation,
+  // and the gallery must not eat that press on its way there.
+  if (isInspecting() || inputRef.textFocus) return;
   const w = nearestWork(player.p.x, player.p.z, cam.st.curYaw);
   showPrompt(w);
   if (w && inputRef.interactPressed) {
@@ -125,7 +153,16 @@ frameSystems.push(profile('combat.frame', (dt) => combat.frameUpdate(dt)));
 // After combat, and it has to be: combat owns pose.update(), and the aim twists
 // are applied ON TOP of the pose it writes rather than under it.
 frameSystems.push(profile('weapons.frame', (dt) => weapons.frameUpdate(dt)));
-frameSystems.push(profile('fx.frame', (dt) => { debrisFrame(dt); particlesFrame(dt); tracersFrame(dt); blobFrame(); }));
+// Paused means paused. main.js keeps frameSystems running while 'paused' so the
+// world stays rendered behind an overlay — but that also kept particles
+// integrating, hydrant jets emitting and tracers flying the whole time the pause
+// panel was up, so a player who paused mid-collapse came back to a settled
+// street and a dust cloud that had aged out. The blobs still update, because
+// they only follow positions and would pop if they stopped.
+frameSystems.push(profile('fx.frame', (dt) => {
+  const d = game.state === 'playing' ? dt : 0;
+  debrisFrame(d); particlesFrame(d); tracersFrame(d); blobFrame();
+}));
 window.__bodyStats = bodyStats;
 window.__pworld = pworld;   // test hook: the live active/sleeping body arrays
 
@@ -302,6 +339,7 @@ window.__test.plaqueShot = (slug, dist = 1.05) => {
   return true;
 };
 
+clearBootGuards();
 loadingProgress(1, 'ready');
 window.__test.city = () => ({ buildings: city.buildings.length, cells: buildingsReg.cells.length, props: propsReg.all.length });
 window.__test.showcase = (names) => {
@@ -376,7 +414,58 @@ function render() {
   window.__READY__ = true;
 }
 
-createLoop({ fixed, frame, render });
+const loop = createLoop({ fixed, frame, render });
+
+// iOS purges WebGL contexts under memory pressure and when the app is
+// backgrounded. engine/renderer.js calls preventDefault() so the browser will
+// try to give one back; this is the other half — stop stepping and stop drawing
+// in between, because rendering into a lost context throws on every frame and
+// the sim would run the whole time the screen is black.
+onContextLost(() => {
+  loop.suspend(true);
+  toast('Graphics interrupted — restoring…', 6000);
+});
+onContextRestored(() => {
+  // Everything three owns is re-uploaded on the next render. What is NOT
+  // three's is the shadow map, which lives behind our own needsUpdate cadence
+  // and would otherwise stay unbuilt for two frames and log a driver warning
+  // per draw call, exactly as it did at boot.
+  shadows.setTier(tierOf(settings.qualityResolved || flags.quality || settings.quality));
+  loop.suspend(false);
+  toast('Graphics restored', 2200);
+});
+window.__test.loseContext = () => {
+  const ext = renderer.getContext().getExtension('WEBGL_lose_context');
+  if (!ext) return false;
+  ext.loseContext();
+  setTimeout(() => ext.restoreContext(), 400);
+  return true;
+};
+window.__test.loopSuspended = () => loop.suspended;
+
+// Screen Wake Lock. A phone left to its own devices dims and locks after thirty
+// seconds of no touch, and this game is played with long stretches of nothing
+// but a thumb on a joystick, which iOS does not count. Not available everywhere
+// and revoked whenever the app is backgrounded, so it is re-taken on the way
+// back rather than assumed to survive; every failure is a no-op by design.
+let wakeLock = null;
+async function takeWakeLock() {
+  if (!('wakeLock' in navigator) || wakeLock || game.state !== 'playing') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch { wakeLock = null; }
+}
+function dropWakeLock() {
+  wakeLock?.release?.().catch(() => {});
+  wakeLock = null;
+}
+onEvent(EV.GAME_STATE, ({ state }) => { if (state === 'playing') takeWakeLock(); else dropWakeLock(); });
+addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') takeWakeLock();
+  else dropWakeLock();
+});
+window.__test.wakeLock = () => ({ supported: 'wakeLock' in navigator, held: !!wakeLock });
 
 // expose plumbing for later phases + tests
 window.__test.simTime = () => simTime;
@@ -405,10 +494,62 @@ window.__test.profile = () => {
 };
 export { scene, renderer, cam, fixedSystems, frameSystems };
 
-// Service worker: content-hash-versioned precache, generated by tools/gen-sw.mjs
+// Service worker: content-hash-versioned precache, generated by tools/gen-sw.mjs.
+//
+// The worker takes over as soon as it installs (see the long note in
+// tools/gen-sw.mjs for why a waiting worker could never reach anyone), but it
+// keeps the old cache alive until a navigation, so the page running right now
+// keeps working. That leaves this file one job: tell the player a new build is
+// ready and let THEM pick the moment, rather than reloading out from under a
+// fight.
 const swOk = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
 if ('serviceWorker' in navigator && swOk) {
-  const registerSW = () => navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
+  const registerSW = async () => {
+    try {
+      // Ask the browser not to evict us. Declined is fine — this is a hint, and
+      // an installed PWA usually gets it without prompting.
+      navigator.storage?.persist?.().catch(() => {});
+
+      const reg = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+
+      // controller null means this page loaded before any worker existed: it is
+      // a first install, not an update, and must not offer a reload.
+      // A page that loaded with no controller is a FIRST install: the worker
+      // claims it and controllerchange fires, and offering an "update" for the
+      // build already on screen would just bounce every new visitor mid-boot.
+      const hadController = !!navigator.serviceWorker.controller;
+      let reloading = false;
+      const reload = () => { if (!reloading) { reloading = true; location.reload(); } };
+      const offer = (worker) => {
+        if (!hadController) return;
+        showUpdate(() => {
+          // Harmless if the worker already activated itself; necessary if some
+          // future build goes back to waiting.
+          worker?.postMessage?.('SKIP_WAITING');
+          // controllerchange may already have fired, so do not depend on it.
+          setTimeout(reload, 200);
+        });
+      };
+      if (reg.waiting) offer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        w?.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // The takeover itself is not a reason to reload — it is a reason to
+        // offer one. reg.waiting is empty by now, so the message goes nowhere
+        // and the reload is what does the work.
+        offer(navigator.serviceWorker.controller);
+      });
+
+      // A standalone PWA is launched, not reloaded, so it can run for days
+      // without the browser ever re-checking sw.js. Check on every return to the
+      // foreground instead.
+      addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    } catch { /* no worker: the game runs, it just will not be offline */ }
+  };
   // top-level awaits above can outlast the load event — don't miss it
   if (document.readyState === 'complete') registerSW();
   else addEventListener('load', registerSW);

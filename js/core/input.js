@@ -60,15 +60,42 @@ export function bindButtons({ punch, jump, grab, interact }) {
     () => { state.pendingPunchUp = true; input.punchDown = false; });
   press(jump, guarded(() => { state.pendingJump = true; }));
   press(grab, guarded(() => { state.pendingGrab = true; }));
-  press(interact, () => { state.pendingInteract = true; });   // TALK closes the panel too
+  // TALK closes the panel too — and that is why it is not guarded. It also has
+  // to SURVIVE pollInput's text-focus branch, which is where it used to die:
+  // the branch cleared every pending edge including this one, so the button
+  // that opened the conversation could not close it and the only way out was a
+  // 26px ✕. See the note in pollInput.
+  press(interact, () => { state.pendingInteract = true; });
+}
+
+// A pointer that lands on a real control belongs to that control; a pointer that
+// lands on a HUD *container* belongs to the stick.
+//
+// The listener used to be on #gl alone, so every pointer-events:auto element of
+// the HUD was a permanent hole in the joystick — and the holes were not the
+// buttons, they were the boxes AROUND the buttons: the conversation panel is a
+// 307x195 slab in the top-left, which is 97% of the stick's claim region, and a
+// thumb coming down on it did nothing at all while the world kept simulating.
+// Two comments elsewhere in this codebase exist only to route layout around that
+// problem. Listening on the document and excluding controls fixes the class of
+// bug instead of one instance of it, and it means the HUD can be laid out for
+// legibility rather than to dodge the stick.
+//
+// [data-ui] marks a panel that must swallow input outright (the chat log, which
+// scrolls). Everything else in the HUD is either a control or transparent to it.
+const CONTROL_SEL = 'button, input, select, textarea, a, label, [data-ui]';
+
+function claimedByUI(target) {
+  return !!(target && target.closest && target.closest(CONTROL_SEL));
 }
 
 export function initInput(surface, stick, nub) {
   stickEl = stick; nubEl = nub;
   const opts = { passive: false };
 
-  surface.addEventListener('pointerdown', (e) => {
+  document.addEventListener('pointerdown', (e) => {
     if (game.state !== 'playing' || input.textFocus) return;
+    if (claimedByUI(e.target)) return;
     e.preventDefault();
     input.anyTouch = true;
     const w = window.innerWidth;
@@ -84,7 +111,7 @@ export function initInput(surface, stick, nub) {
     }
   }, opts);
 
-  surface.addEventListener('pointermove', (e) => {
+  document.addEventListener('pointermove', (e) => {
     if (e.pointerId === state.stickId) {
       e.preventDefault();
       let dx = e.clientX - state.stickCX, dy = e.clientY - state.stickCY;
@@ -110,8 +137,12 @@ export function initInput(surface, stick, nub) {
       state.lookId = -1;
     }
   };
-  surface.addEventListener('pointerup', end, opts);
-  surface.addEventListener('pointercancel', end, opts);
+  // On document, and on window for the cancel: a finger that slides off the
+  // canvas and lifts over a button used to leave the stick latched at full
+  // deflection, and the character kept running.
+  document.addEventListener('pointerup', end, opts);
+  document.addEventListener('pointercancel', end, opts);
+  window.addEventListener('blur', () => resetInput());
 
   // ---- desktop fallbacks for development/testing
   window.addEventListener('keydown', (e) => {
@@ -134,7 +165,10 @@ export function initInput(surface, stick, nub) {
     if (input.textFocus) { state.keys.clear(); return; }
     state.keys.delete(e.code);
   });
-  surface.addEventListener('mousedown', (e) => { if (e.button === 0 && !e.isPrimary === false) state.mouseLook = true; });
+  // `e.button === 0 && !e.isPrimary === false` was always false: isPrimary is a
+  // PointerEvent property and this is a MouseEvent, so it is undefined, !undefined
+  // is true, and true === false never held. Desktop drag-look has never worked.
+  surface.addEventListener('mousedown', (e) => { if (e.button === 0) state.mouseLook = true; });
   window.addEventListener('mouseup', () => { state.mouseLook = false; });
   surface.addEventListener('mousemove', (e) => {
     if (state.mouseLook && game.state === 'playing') {
@@ -183,10 +217,15 @@ export function pollInput(dt) {
     input.moveX = 0; input.moveZ = 0;
     input.lookDX = 0; input.lookDY = 0;
     input.punchPressed = input.punchReleased = false;
-    input.jumpPressed = input.grabPressed = input.interactPressed = false;
+    input.jumpPressed = input.grabPressed = false;
     input.weaponCycle = false;
+    // INTERACT survives. It is the one control that has to work while a text
+    // field has focus, because it is what closes the field. Everything else is
+    // dropped so a typed sentence never also drives the character.
+    input.interactPressed = state.pendingInteract;
     state.pendingPunchDown = state.pendingPunchUp = false;
-    state.pendingJump = state.pendingGrab = state.pendingInteract = state.pendingCycle = false;
+    state.pendingJump = state.pendingGrab = state.pendingCycle = false;
+    state.pendingInteract = false;
     // Typing cancels a held charge outright: no finger is on the button any
     // more, so leaving punchDown set would keep accruing chargeTime the instant
     // focus is released — and pin the player to 45% speed with it.

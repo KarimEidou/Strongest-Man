@@ -196,7 +196,12 @@ Line:`;
     npcSys.sys.beginTalk?.(n);
     cam.frameTwoShot(player.p, n);
     player.p.talkingTo = n;
-    chat.input.focus();
+    // NOT focused here. openChat is reached from the fixed-step loop (the TALK
+    // button sets a flag, pollInput folds it in, the dialogue system acts on
+    // it), and a focus() call that far from the tap is not a user gesture — iOS
+    // shows no keyboard, while input.textFocus goes true and locks every
+    // control. The player is left in a conversation they cannot type in or
+    // leave. The field is focused by its own tap instead, and the hint says so.
     return true;
   }
 

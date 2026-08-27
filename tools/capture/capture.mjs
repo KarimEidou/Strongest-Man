@@ -150,8 +150,18 @@ for (const engineName of engines) {
       for (const scene of scenes) {
         const page = await ctx.newPage();
         const problems = [];
+        // Noise the HARNESS causes, not the app. Everything else counts.
+        //  - the SW warning is Playwright announcing our own serviceWorkers:'block'
+        //  - KHR_parallel_shader_compile is SwiftShader; real Safari has it
+        const HARNESS_NOISE = [
+          /Service Worker registration blocked by Playwright/,
+          /KHR_parallel_shader_compile extension not supported/,
+        ];
         page.on('console', (m) => {
-          if (m.type() === 'error' || m.type() === 'warning') problems.push(`[${m.type()}] ${m.text()}`);
+          if (m.type() !== 'error' && m.type() !== 'warning') return;
+          const t = m.text();
+          if (HARNESS_NOISE.some((re) => re.test(t))) return;
+          problems.push(`[${m.type()}] ${t}`);
         });
         page.on('pageerror', (e) => problems.push(`[pageerror] ${String(e)}`));
         page.on('requestfailed', (r) => problems.push(`[requestfailed] ${r.url()} ${r.failure()?.errorText}`));

@@ -35,6 +35,14 @@ export function initSettings() {
 
   sens.addEventListener('input', () => { sensVal.textContent = `${parseFloat(sens.value).toFixed(2)}×`; });
 
+  // The key field lives in a <form> so a password manager and Chromium's DOM
+  // audit both see it in a sensible place. Nothing here ever posts anywhere:
+  // Enter runs the same test the button does.
+  el('key-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    el('btn-groq-test').click();
+  });
+
   // The owner's key cannot be reproduced anywhere else, so this is the only
   // instrument that can tell a typo from a revoked key from a blocked network:
   // one real round trip, and whatever the server said printed verbatim.

@@ -43,9 +43,15 @@ button { font: inherit; color: inherit; }
 #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 
 /* ---------- speech bubbles ---------- */
+/* FULL BLEED, deliberately. dialogue/bubbles.js projects a world position into
+   this layer with layer.clientWidth/Height, so insetting the layer moved every
+   bubble off its speaker's head by up to 59px horizontally and 21px vertically
+   on a notched iPhone — and the error swapped sides when the phone was turned.
+   A transient balloon that strays under the Dynamic Island is a far smaller
+   problem than one that is not attached to the person talking. */
 #bubbles {
   position: fixed;
-  inset: var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l);
+  inset: 0;
   pointer-events: none;
   overflow: hidden;
   z-index: 5;
@@ -88,19 +94,40 @@ button { font: inherit; color: inherit; }
 }
 #hud[hidden] { display: none; }
 
-#karma-wrap { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 240px; text-align: center; }
+/* Top-centre stack, in order: karma, reputation hint, toast. 200px rather than
+   240 so it cannot reach #vitals at 667x375, where the two used to overlap by
+   5px and the meter ran across the last digit of the HP readout. */
+#karma-wrap { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 200px; text-align: center; }
 #karma-bar { position: relative; height: 8px; border-radius: 4px; background: rgba(0,0,0,0.45); border: 1px solid rgba(234,242,255,0.35); overflow: hidden; }
 #karma-fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; background: var(--blue-bright); transition: width 0.4s, background-color 0.4s; }
 #karma-tick { position: absolute; top: -2px; bottom: -2px; left: 50%; width: 2px; background: rgba(234,242,255,0.6); }
-#karma-label { margin-top: 3px; font-size: 10px; letter-spacing: 2px; font-weight: 700; opacity: 0.9; text-shadow: 0 1px 3px #000; }
+/* A text shadow is not contrast. Measured against the rendered sky this sat at
+   1.90:1, and this band is where the sky always is. The plate is what makes it
+   readable at every hour and over every level. */
+#karma-label {
+  display: inline-block;
+  margin-top: 4px; padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(6, 12, 30, 0.72);
+  font-size: 10px; letter-spacing: 2px; font-weight: 700;
+  color: var(--ink);
+}
 
-#rep-hint { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); font-size: 11px; opacity: 0.8; text-shadow: 0 1px 3px #000; transition: opacity 0.5s; }
+#rep-hint {
+  position: absolute; top: 42px; left: 50%; transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 3px 10px; border-radius: 8px;
+  background: rgba(6, 12, 30, 0.72);
+  font-size: 11px; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity 0.5s;
+}
 #rep-hint.hidden { opacity: 0; }
 
 /* ---------- vitals: health + points ----------
    Top-left, above everything the player has to read mid-fight. The conversation
    panel is pushed down rather than allowed to cover them. */
-#vitals { position: absolute; top: 8px; left: 10px; width: 208px; }
+#vitals { position: absolute; top: 8px; left: 10px; width: 176px; }
 #hp-wrap { display: flex; align-items: center; gap: 8px; }
 #hp-bar {
   position: relative; flex: 1 1 auto; height: 12px;
@@ -125,7 +152,13 @@ button { font: inherit; color: inherit; }
 @keyframes hp-pulse { 0%,100% { box-shadow: 0 0 0 rgba(255,60,40,0); } 50% { box-shadow: 0 0 10px rgba(255,60,40,0.75); } }
 #hp-num { flex: none; width: 34px; text-align: right; font-size: 11px; font-weight: 800; text-shadow: 0 1px 3px #000; }
 
-#points-row { margin-top: 4px; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 1px 3px #000; }
+/* nowrap: a payout label used to push the +N chip onto a second line, away
+   from the score it modifies */
+#points-row {
+  margin-top: 4px; font-size: 12px; font-weight: 800; letter-spacing: 1px;
+  text-shadow: 0 1px 3px #000;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 #points-val { color: var(--orange-bright); }
 #points-lbl { opacity: 0.6; margin-left: 4px; font-size: 9px; letter-spacing: 1.5px; }
 #points-pop { margin-left: 8px; font-size: 11px; opacity: 0; transition: opacity 0.25s, transform 0.25s; display: inline-block; }
@@ -133,7 +166,14 @@ button { font: inherit; color: inherit; }
 #points-pop.gain { color: #7ef0a8; }
 #points-pop.loss { color: #ff8a6a; }
 
-/* ---------- reticle ---------- */
+/* ---------- reticle ----------
+   In its own FULL-BLEED layer, not in #hud. The crosshair marks the centre of
+   the CANVAS — player/weapons.js builds every shot from the camera's own axis —
+   and 50% of the safe-area box is not 50% of the canvas: on a notched iPhone in
+   landscape the mark sat 29.5px away from where the round actually went, and
+   flipped to the other side when the phone was turned. */
+#aim-layer { position: fixed; inset: 0; pointer-events: none; z-index: 9; }
+#aim-layer[hidden] { display: none; }
 #reticle {
   position: absolute; left: 50%; top: 50%;
   width: 26px; height: 26px; margin: -13px 0 0 -13px;
@@ -158,13 +198,16 @@ button { font: inherit; color: inherit; }
 @keyframes hitmark { from { opacity: 1; transform: scale(1.6); } to { opacity: 0; transform: scale(0.7); } }
 
 /* ---------- ammo + weapon rail ---------- */
+/* THE BOTTOM-RIGHT STACK, from the bottom up. Every number here is derived
+   from #btns, which is a 2x2 grid of 64/86 buttons with a 12px gap: 162px wide
+   (64 + 12 + 86) and 152px tall (54 + 12 + 86), inset 10px right and 14px
+   bottom. So #btns occupies right 10..172 and bottom 14..166.
+     #ammo     left of the cluster, at the cluster's own height
+     #weapons  above the cluster, wrapping upward
+   The rail used to sit at bottom:8px, which put its first row straight through
+   the ammo readout as soon as it wrapped to a second line. */
 #ammo {
-  /* LEFT of the button cluster, not over it: #btns is 152px wide and ~166px
-     tall from the bottom, and an ammo count printed inside that box lands on
-     the GRAB button. */
-  /* #btns is 162px wide (64 + 12 + 86) inset 10px from the right, so its left
-     edge is at 172px; clear it. */
-  position: absolute; right: 180px; bottom: 34px; text-align: right;
+  position: absolute; right: 182px; bottom: 22px; text-align: right;
   font-size: 15px; font-weight: 900; letter-spacing: 1px;
   text-shadow: 0 1px 4px #000; transition: opacity 0.15s;
 }
@@ -181,35 +224,63 @@ button { font: inherit; color: inherit; }
    and a thumb in one of the 6px gaps hit the bare container and did nothing at
    all. So it is anchored in the LOOK half now and wraps upward rather than
    inward, and only the chips take pointer events. */
+/* ONE ROW that scrolls, not a block that wraps upward.
+   Seven chips (FISTS plus six guns) at 44px tall cannot fit one row at any
+   viewport in the matrix — the widest available strip is 467px at 667x375 and
+   the chips need ~650 — so wrapping meant two rows, 96px tall, whose top edge
+   reached y=102 and painted through the toast at every device height. A rail
+   that always occupies exactly one row cannot collide with anything above it
+   however many guns get added, and a horizontally scrolling strip is what a
+   phone inventory bar is anyway.
+   data-ui: the strip takes pointers so it can scroll, and core/input.js must
+   not read those as joystick input. */
 #weapons {
-  position: absolute; left: auto; right: 210px; bottom: 8px; transform: none;
-  display: flex; gap: 6px; justify-content: flex-end;
-  flex-wrap: wrap-reverse;              /* a full armoury grows UP, never left */
-  max-width: calc(56% - 220px);
-  pointer-events: none;
+  position: absolute; left: auto; right: 10px; bottom: 174px; transform: none;
+  display: flex; gap: 8px; justify-content: flex-end;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  max-width: calc(100% - 200px);
+  pointer-events: auto;
 }
+#weapons::-webkit-scrollbar { display: none; }
+/* 44px tall, which is the HIG minimum and was previously 23. The chip is a
+   TARGET, not a label: the visual pill can stay small inside it. */
 .wchip {
   pointer-events: auto; flex: none;
-  box-sizing: border-box; padding: 5px 9px;
-  border-radius: 8px; border: 1.5px solid rgba(234,242,255,0.35);
+  box-sizing: border-box;
+  min-height: 44px; padding: 0 12px;
+  display: inline-flex; align-items: center;
+  border-radius: 10px; border: 1.5px solid rgba(234,242,255,0.35);
   background: rgba(13,27,62,0.6);
-  font-size: 9.5px; font-weight: 800; letter-spacing: 1px;
+  font-size: 10px; font-weight: 800; letter-spacing: 1px;
   white-space: nowrap; touch-action: none;
 }
 .wchip.on { border-color: var(--orange-bright); background: rgba(240,168,96,0.3); }
+.wchip:active { background: rgba(240,168,96,0.45); }
 
+/* 44x44 minimum, and 8px apart: at 32px tall and 6px apart these were both
+   under the HIG minimum AND close enough that a thumb reaching for SHOP could
+   take PAUSE, which opens a different modal. */
 #btn-shop {
   pointer-events: auto;
-  position: absolute; top: 8px; right: 54px;
-  height: 32px; padding: 0 10px;
-  border-radius: 8px;
+  position: absolute; top: 8px; right: 62px;
+  min-height: 44px; min-width: 44px; padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 10px;
   border: 1.5px solid var(--orange-bright);
   background: rgba(240,168,96,0.22);
   font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
 }
+#btn-shop:active { background: rgba(240,168,96,0.45); }
 
+/* Above #chat (12). Going down is the single most important thing the HUD can
+   say, and a conversation panel used to paint over the word. */
 #down-banner {
   position: absolute; left: 50%; top: 38%; transform: translateX(-50%);
+  z-index: 14;
   text-align: center; transition: opacity 0.3s;
 }
 #down-banner.hidden { opacity: 0; }
@@ -288,12 +359,14 @@ button { font: inherit; color: inherit; }
 #btn-pause {
   pointer-events: auto;
   position: absolute; top: 8px; right: 8px;
-  width: 40px; height: 32px;
-  border-radius: 8px;
+  width: 44px; height: 44px;
+  box-sizing: border-box;
+  border-radius: 10px;
   border: 1.5px solid rgba(234,242,255,0.4);
   background: rgba(13,27,62,0.55);
   font-weight: 800;
 }
+#btn-pause:active { background: rgba(48,144,240,0.35); }
 
 /* ---------- live conversation ---------- */
 #chat {
@@ -303,6 +376,7 @@ button { font: inherit; color: inherit; }
   left: 10px; top: 62px;
   width: min(340px, 46vw);
   max-height: min(52vh, 296px);
+  box-sizing: border-box;
   display: flex; flex-direction: column;
   pointer-events: auto;
   background: rgba(9, 18, 44, 0.92);
@@ -315,14 +389,26 @@ button { font: inherit; color: inherit; }
 #chat[hidden] { display: none; }
 #chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #chat-who { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: var(--orange-bright); }
+/* The escape hatch from an input lock cannot be a 26px target. */
 #chat-close {
-  width: 26px; height: 26px; flex: none;
-  border-radius: 6px; border: 1px solid rgba(234,242,255,0.35);
-  background: transparent; font-size: 13px; line-height: 1;
+  width: 44px; height: 44px; flex: none;
+  box-sizing: border-box;
+  border-radius: 10px; border: 1px solid rgba(234,242,255,0.35);
+  background: transparent; font-size: 15px; line-height: 1;
 }
+#chat-close:active { background: rgba(48,144,240,0.35); }
+/* The FORM sits directly under the header and the log below it. In landscape
+   the iOS keyboard covers roughly the bottom half of the viewport and does not
+   resize it, so a form at the bottom of a 195px-tall panel that starts at y=62
+   is a field the player types into without being able to see it. Ordering is
+   done in CSS so the markup stays in reading order. */
+#chat-form { order: 1; }
+#chat-log { order: 2; }
+#chat-hint { order: 3; }
 #chat-log {
   flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  margin: 6px 0; padding-right: 2px;
+  touch-action: pan-y;                 /* html/body set touch-action:none */
+  margin: 6px 0 0; padding-right: 2px;
   font-size: 13px; line-height: 1.35;
 }
 #chat-log .them, #chat-log .you { margin: 5px 0; }
@@ -332,30 +418,50 @@ button { font: inherit; color: inherit; }
 #chat-log .pending { opacity: 0.55; font-style: italic; }
 /* A built-in line, not an answer: dimmer, and marked, so the player can tell at
    a glance which replies actually came from the model. */
-#chat-log .them.canned { color: var(--blue-bright); opacity: 0.8; }
-#chat-log .them.canned::before { content: "— "; opacity: 0.5; }
-#chat-form { display: flex; gap: 6px; }
+/* A built-in line, marked as one. The old rule was a byte-for-byte duplicate of
+   the .them rule above it, so the only thing separating a canned line from a
+   live one was hue — at 3.93:1 against the panel, and invisible to anyone who
+   does not distinguish those two blues. */
+#chat-log .them.canned { color: var(--blue-bright); }
+#chat-log .them.canned::before { content: "\00b7\00b7 "; opacity: 0.7; }
+#chat-log .them.canned::after {
+  content: " (stock reply)";
+  font-size: 9.5px; letter-spacing: 0.5px; opacity: 0.75;
+}
+#chat-form { display: flex; gap: 8px; margin-top: 6px; }
 #chat-input {
   flex: 1 1 auto; min-width: 0;
+  min-height: 44px; box-sizing: border-box;
   padding: 8px 10px; border-radius: 8px;
   border: 1.5px solid var(--blue-mid); background: #091430; color: var(--ink);
-  font-size: 15px;              /* 16px-ish keeps iOS from zooming the page */
+  /* EXACTLY 16px. Anything smaller and iOS zooms the viewport on focus, and
+     with user-scalable=no there is no way for the player to zoom back out —
+     they are left typing into a page stuck at 1.3x. 15px was not close enough. */
+  font-size: 16px;
   -webkit-user-select: text; user-select: text;
 }
 #chat-send {
-  flex: none; padding: 0 12px; border-radius: 8px;
+  flex: none; min-height: 44px; min-width: 56px; padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 8px;
   border: 1.5px solid var(--orange-bright); background: rgba(240,168,96,0.18);
   font-size: 11px; font-weight: 800; letter-spacing: 1px;
 }
+#chat-send:active { background: rgba(240,168,96,0.45); }
 #chat-hint { margin-top: 6px; font-size: 10.5px; opacity: 0.65; }
 #chat-hint.hidden { display: none; }
 
+/* Third in the top-centre stack. It used to sit at bottom:42px behind a comment
+   about owning the bottom centre — the weapon rail moved to the bottom right
+   two changes later and the toast has been painting over the ammo readout and
+   the rail ever since. */
 #toast {
-  /* above the weapon strip, which owns the bottom centre */
-  position: absolute; bottom: 42px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 72px; left: 50%; transform: translateX(-50%);
+  max-width: calc(100% - 32px);
   padding: 6px 14px; border-radius: 8px;
-  background: rgba(13,27,62,0.85); border: 1px solid var(--blue-bright);
-  font-size: 12px; transition: opacity 0.4s;
+  background: rgba(9, 18, 44, 0.92); border: 1px solid var(--blue-bright);
+  font-size: 12px; text-align: center;
+  transition: opacity 0.4s;
 }
 #toast.hidden { opacity: 0; }
 
@@ -395,32 +501,87 @@ button { font: inherit; color: inherit; }
 .mbtn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--orange-shadow); }
 
 #settings-screen, #pause-screen, #shop-screen { background: rgba(4, 9, 24, 0.82); backdrop-filter: blur(6px); }
+/* box-sizing: border-box, and it matters. max-height applies to the CONTENT box
+   by default, so every one of these panels ended up its own padding and border
+   taller than the space it was told to fit — 20px over on settings and pause,
+   8px on the shop — which cut the top and bottom borders and the rounded
+   corners off on every device, and pushed the shop's DONE button, the only way
+   out of the shop, entirely below the fold at 667x375. */
 #settings-panel, #pause-panel, #shop-panel {
-  width: min(560px, 86vw);
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - var(--sa-l) - var(--sa-r) - 32px));
   max-height: calc(100vh - var(--sa-t) - var(--sa-b) - 24px);
   overflow-y: auto;
-  padding: 20px 26px calc(20px + var(--sa-b)) 26px;
+  touch-action: pan-y;                 /* html/body set touch-action:none */
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 26px 20px 26px;
   border-radius: 16px;
   background: var(--navy-bg);
   border: 2px solid var(--blue-mid);
   text-align: center;
 }
+/* The way out is always on screen, whatever the list above it does. */
+.btnrow {
+  position: sticky; bottom: -20px;
+  margin: 16px -26px -20px;
+  padding: 12px 26px calc(12px + var(--sa-b));
+  background: linear-gradient(180deg, rgba(13,27,62,0), var(--navy-bg) 40%);
+}
 #settings-panel h2, #pause-panel h2, #shop-panel h2 { margin: 4px 0 16px; letter-spacing: 3px; color: var(--orange-bright); }
 #shop-panel h2 { margin: 0 0 8px; font-size: 19px; }
-#shop-panel { padding-top: 14px; padding-bottom: calc(14px + var(--sa-b)); }
-#shop-panel .btnrow { margin-top: 12px; }
-.srow { display: block; margin: 14px 0; font-size: 14px; text-align: left; }
-.srow input[type=range] { width: 100%; margin-top: 6px; accent-color: var(--orange-bright); }
-.srow input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--orange-bright); float: right; }
+#shop-panel { padding-top: 14px; }
+/* Every control in this panel is at least 44px in its short axis. A range
+   thumb, a checkbox and a select were 20-34px, which is a miss waiting to
+   happen on the one screen a player uses with the game paused. */
+.srow { display: block; margin: 16px 0; font-size: 14px; text-align: left; }
+.srow input[type=range] {
+  width: 100%; height: 44px; margin-top: 4px;
+  accent-color: var(--orange-bright);
+  background: transparent;
+  touch-action: pan-y;
+}
+/* A 44pt TARGET with a 24px control drawn inside it. The native checkbox was
+   28x28 — a comfortable size to look at and under the HIG minimum to hit — and
+   growing the native box to 44 would have made it a slab. appearance:none is
+   what lets the target and the mark be different sizes. */
+.srow input[type=checkbox] {
+  appearance: none; -webkit-appearance: none;
+  width: 44px; height: 44px; margin: 0;
+  flex: none;
+  display: grid; place-content: center;
+  background: transparent; border: 0;
+  cursor: pointer;
+}
+.srow input[type=checkbox]::before {
+  content: "";
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  border: 2px solid var(--blue-mid);
+  background: #091430;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.srow input[type=checkbox]:checked::before {
+  border-color: var(--orange-bright);
+  background: var(--orange-bright);
+  /* a tick, drawn rather than typed, so it needs no font */
+  box-shadow: inset 0 0 0 3px var(--navy-bg), inset 0 0 0 20px var(--orange-bright);
+}
+.srow input[type=checkbox]:active::before { border-color: var(--orange-bright); }
+/* the label is the target, and the label is a full row */
+label.srow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; flex-wrap: wrap; }
+label.srow > input[type=range] { flex: 1 1 100%; }
 .srow select {
   width: 100%; box-sizing: border-box; margin-top: 6px;
+  min-height: 44px;
   padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--blue-mid);
-  background: #091430; color: var(--ink); font-size: 14px;
+  background: #091430; color: var(--ink); font-size: 16px;
 }
 .key-row input[type=password] {
   width: 100%; box-sizing: border-box; margin-top: 8px;
+  min-height: 44px;
   padding: 10px; border-radius: 8px; border: 1.5px solid var(--blue-mid);
-  background: #091430; color: var(--ink); font-size: 14px;
+  background: #091430; color: var(--ink);
+  font-size: 16px;                     /* 16px or iOS zooms and cannot zoom back */
   -webkit-user-select: text; user-select: text;
 }
 /* The key belongs to the owner's device, so the only way to diagnose it is from
@@ -429,11 +590,12 @@ button { font: inherit; color: inherit; }
 .key-test input[type=password] { flex: 1 1 auto; min-width: 0; }
 #btn-groq-test {
   flex: none; margin-top: 8px; padding: 10px 14px;
+  min-height: 44px; box-sizing: border-box;
   font-size: 12px; letter-spacing: 1px; border-radius: 8px;
 }
 #btn-groq-test[disabled] { opacity: 0.5; }
 .hint { display: block; font-size: 11px; opacity: 0.7; margin-top: 3px; font-weight: 400; }
-.btnrow { text-align: center; margin-top: 20px; }
+.btnrow { text-align: center; }
 #pause-panel .mbtn { display: block; margin: 12px auto; min-width: 220px; }
 
 /* ---------- armoury ---------- */
@@ -460,14 +622,23 @@ button { font: inherit; color: inherit; }
 .gun-stats b { color: var(--blue-bright); font-weight: 800; }
 .gun-buy {
   grid-column: 2; grid-row: 1 / span 2;
-  min-width: 96px; padding: 8px 12px;
+  min-width: 96px; min-height: 44px; box-sizing: border-box;
+  padding: 8px 12px;
   border-radius: 9px; border: 2px solid var(--orange-bright);
   background: linear-gradient(180deg, var(--orange-bright), var(--orange-deep));
   color: #24150a; font-size: 12px; font-weight: 900; letter-spacing: 1.5px;
 }
 .gun-buy.ghost { background: rgba(13,27,62,0.7); color: var(--ink); border-color: var(--blue-bright); }
+.gun-buy:active:not([disabled]) { transform: translateY(1px); filter: brightness(1.15); }
 .gun-buy[disabled] { opacity: 0.4; }
-.gun-buy.equipped { background: rgba(240,168,96,0.25); color: var(--orange-bright); border-color: var(--orange-bright); }
+/* EQUIPPED is disabled but it is not unavailable — it is the readout telling you
+   what is in your hands, and dimming it to 0.4 made the one thing in the panel
+   you most need to read the faintest thing in it (1.8:1). */
+.gun-buy.equipped {
+  background: rgba(240,168,96,0.25); color: var(--orange-bright);
+  border-color: var(--orange-bright);
+}
+.gun-buy.equipped[disabled] { opacity: 1; }
 
 #rotate-overlay { background: var(--navy-bg); z-index: 40; }
 #rotate-inner { text-align: center; font-size: 18px; font-weight: 700; }
@@ -499,14 +670,15 @@ button { font: inherit; color: inherit; }
    the 44pt HIG minimum with the border included. */
 #art-prompt {
   pointer-events: auto;
-  /* Anchored in the LOOK half, directly above the button cluster (#btns is
-     162px wide, 152px tall, inset 10/14). max-width keeps the pill out of the
-     left 44% of the screen at every viewport in the matrix, which is the
-     joystick's claim region — a pointer-events:auto element in there is a
-     permanent hole in the stick. Same rule as #weapons. */
+  /* Bottom centre. It used to be jammed into the right-hand half to stay out of
+     the joystick's claim region; core/input.js now listens on the document and
+     skips only real controls, so a button no longer punches a hole in the stick
+     and this can sit where it reads best. Clear of #weapons, which starts at
+     bottom:174px. */
   position: absolute;
-  right: 10px; bottom: 172px;
-  max-width: calc(50% - 24px);
+  left: 50%; bottom: 18px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 380px);
   display: flex; align-items: center; gap: 8px;
   min-height: 48px;
   box-sizing: border-box;
@@ -523,7 +695,7 @@ button { font: inherit; color: inherit; }
   touch-action: none;
 }
 #art-prompt.hidden { opacity: 0; pointer-events: none; }
-#art-prompt:active { background: rgba(240, 168, 96, 0.4); transform: translateY(2px); }
+#art-prompt:active { background: rgba(240, 168, 96, 0.4); transform: translateX(-50%) translateY(2px); }
 #art-prompt-text { text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
 #art-prompt-icon { color: var(--orange-bright); font-size: 15px; line-height: 1; }
 #art-prompt-text::before { content: "VIEW  "; opacity: 0.6; font-weight: 700; }
@@ -602,4 +774,85 @@ button { font: inherit; color: inherit; }
   font-size: 10px; letter-spacing: 0.5px;
   color: #7c8aa8;
   pointer-events: none;
+}
+
+/* ---------- "a new build is waiting" banner ----------
+   Top-centre, above every overlay except the rotate block, and clear of the
+   notch in either landscape orientation because #update-banner is padded by the
+   left and right insets rather than being centred on the raw viewport. */
+#update-banner {
+  position: fixed;
+  /* Above the HUD (10) and every panel (20/30) so it can be taken from a paused
+     game, but BELOW #rotate-overlay (40), which is a hard input block and must
+     be the only thing on screen while the phone is the wrong way round. */
+  z-index: 38;
+  top: calc(var(--sa-t) + 8px);
+  /* Centred on the SAFE BOX, not the raw viewport. Centring on the viewport put
+     it under the notch in landscape, which is what the inset exists to prevent —
+     and this rule's own comment used to claim the opposite. */
+  left: calc(var(--sa-l) + (100% - var(--sa-l) - var(--sa-r)) / 2);
+  transform: translateX(-50%);
+  max-width: calc(100% - var(--sa-l) - var(--sa-r) - 24px);
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 10px 20px;
+  border-radius: 22px;
+  border: 2px solid var(--orange-bright);
+  background: rgba(13, 27, 62, 0.94);
+  color: var(--ink);
+  font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+  touch-action: none;
+}
+#update-banner[hidden] { display: none; }
+#update-banner:active { background: rgba(240, 168, 96, 0.4); }
+#update-banner[disabled] { opacity: 0.6; border-color: var(--blue-bright); }
+/* Dismiss. Without one the banner sat over the karma meter for the rest of the
+   session for anyone who did not want to reload right then. */
+#update-dismiss {
+  position: fixed;
+  z-index: 39;
+  top: calc(var(--sa-t) + 8px);
+  right: calc(var(--sa-r) + 8px);
+  width: 44px; height: 44px; box-sizing: border-box;
+  border-radius: 22px;
+  border: 1.5px solid rgba(234, 242, 255, 0.4);
+  background: rgba(13, 27, 62, 0.94);
+  color: var(--ink); font-size: 15px; line-height: 1;
+  touch-action: none;
+}
+#update-dismiss[hidden] { display: none; }
+#update-dismiss:active { background: rgba(48, 144, 240, 0.35); }
+/* While the banner is up the top-centre stack steps down out from under it. */
+body.has-update #karma-wrap { top: 60px; }
+body.has-update #rep-hint { top: 94px; }
+body.has-update #toast { top: 124px; }
+
+/* Boot failed: the progress panel becomes an error panel with a way out. */
+#loading-error { margin-top: 18px; }
+#loading-error[hidden] { display: none; }
+#loading-error-msg {
+  margin: 0 auto 14px;
+  max-width: 34em;
+  font-size: 12px; line-height: 1.4;
+  color: #ffb59a;
+  word-break: break-word;
+}
+#btn-retry { padding: 10px 26px; font-size: 15px; }
+
+/* ---------- reduced motion ----------
+   Three infinite animations ran unconditionally, including a 0.3s shake on
+   body text inside a speech bubble and a permanent pulse on the health bar when
+   it is critical — which is exactly when the player most needs to read it.
+   prefers-reduced-motion is a vestibular accessibility setting, not a
+   preference about polish. The states these animations carry are all also
+   carried by colour and shape, so removing the motion loses no information. */
+@media (prefers-reduced-motion: reduce) {
+  #hp-bar.critical { animation: none; box-shadow: 0 0 10px rgba(255, 60, 40, 0.75); }
+  #rotate-icon { animation: none; }
+  .bubble { animation: none; }
+  .bubble.scream { animation: none; }
+  #reticle.hit b { animation: none; opacity: 0; }
+  #title-splash, .mbtn, .abtn, #art-prompt, #update-banner { transition: none; }
 }

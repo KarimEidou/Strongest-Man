@@ -7,7 +7,7 @@
 // spread), which are written in hudFrame.
 import { on, EV } from '../core/events.js';
 import { save, settings, persist } from '../core/state.js';
-import { input, bindButtons, initInput } from '../core/input.js';
+import { input, bindButtons, initInput, resetInput } from '../core/input.js';
 
 const el = (id) => document.getElementById(id);
 
@@ -62,6 +62,14 @@ export function initHUD() {
     b.classList.remove('hidden');
   });
   on(EV.PLAYER_REVIVED, () => el('down-banner').classList.add('hidden'));
+
+  // Every exit from and return to 'playing' drops whatever a finger was doing.
+  // Without this a PUNCH released behind the pause panel stayed queued in
+  // core/input.js — pollInput does not run while paused — and fired an attack
+  // the player never asked for on the first step after RESUME. Same for a
+  // thumb still on the joystick when the shop opens, or when the phone turns
+  // to portrait mid-sprint.
+  on(EV.GAME_STATE, () => resetInput());
 
   setPoints(save.points, 0, null);
   buildRail();
@@ -125,6 +133,9 @@ function setAmmo(n, mag, state) {
 function buildRail() {
   const rail = el('weapons');
   if (!rail) return;
+  // The strip scrolls, so it has to take pointer events — and core/input.js must
+  // therefore be told not to read a scroll drag on it as joystick input.
+  rail.setAttribute('data-ui', '');
   rail.textContent = '';
   const ids = ['', ...(weapons ? weapons.ownedIds() : [])];
   for (const id of ids) {
