@@ -47,6 +47,30 @@ export function initDebug() {
   flags.capture = q.has('capture');
   seedWorld(flags.seed);
 
+  // Capture mode replaces Math.random with a seeded generator, globally.
+  //
+  // The world, the city and the debris all draw from core/mathx.js's seeded
+  // rand(), but the decorative layers — particle jitter, the noise buffer's
+  // fill, ambient dialogue picks — reasonably use Math.random, and a dust cloud
+  // is most of the screen during the one event a screenshot is most likely to be
+  // taken of. Seeding those call sites one by one would be a large mechanical
+  // change to code that is right as it stands.
+  //
+  // Overriding a builtin is heavy-handed and it is confined to exactly this: a
+  // ?capture=1 run, which nothing in normal play sets. It is what makes "two
+  // harness runs produce near-identical images" true rather than approximately
+  // true.
+  if (flags.capture) {
+    let s0 = (flags.seed * 2654435761) >>> 0 || 1;
+    Math.random = () => {
+      // xorshift32 — small, fast, and good enough for jitter
+      s0 ^= s0 << 13; s0 >>>= 0;
+      s0 ^= s0 >>> 17;
+      s0 ^= s0 << 5; s0 >>>= 0;
+      return s0 / 4294967296;
+    };
+  }
+
   window.__perf = {
     fps: 0, ms: 0, maxMs: 0, p99Ms: 0,
     simMs: 0, maxSimMs: 0,

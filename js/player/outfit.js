@@ -18,7 +18,6 @@ export function initOutfit(playerSys) {
 
   const flapMat = new THREE.MeshLambertMaterial({ color: 0x1c2f66, side: THREE.DoubleSide });
   const skinMat = new THREE.MeshLambertMaterial({ color: 0xd9a06b });
-  const flaps = [];
 
   // The flap sizes below are METRES — a 5 cm tear at the shoulder, an 8 cm one
   // down the back. The bones they hang off are not at metre scale: the source
@@ -48,7 +47,6 @@ export function initOutfit(playerSys) {
     m.rotation.z = Math.random() * 0.8 - 0.4;
     m.visible = false;
     bone.add(m);
-    flaps.push(m);
     return m;
   }
   // authored ahead, toggled per stage

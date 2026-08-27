@@ -2,6 +2,7 @@
 // Bodies write their instance matrix on move and once on sleep; despawn always
 // animates (shrink), never pops. Craters and decals live here too.
 import * as THREE from 'three';
+import { rand } from '../core/mathx.js';
 import { makeWorldMaterial, tagGeometry, faceShade, SURF } from '../engine/materials.js';
 import { createBody, active as activeBodies, sleeping as sleepingBodies } from '../physics/pworld.js';
 import { addDent, removePile } from '../physics/heightfield.js';
@@ -70,8 +71,12 @@ export function spawnDebris(type, x, y, z, vx, vy, vz, size, color, opts = {}) {
   const body = createBody({
     kind: 'debris',
     x, y, z, vx, vy, vz,
-    rx: Math.random() * 3, ry: Math.random() * 3, rz: Math.random() * 3,
-    wx: (Math.random() - 0.5) * 9, wy: (Math.random() - 0.5) * 9, wz: (Math.random() - 0.5) * 9,
+    // rand(), not Math.random(). ?seed=N is what makes a capture comparable to
+    // the one before it, and a debris field spun with the unseeded generator
+    // came out different on every run — which is most of the screen during the
+    // one event a screenshot is most likely to be taken of.
+    rx: rand() * 3, ry: rand() * 3, rz: rand() * 3,
+    wx: (rand() - 0.5) * 9, wy: (rand() - 0.5) * 9, wz: (rand() - 0.5) * 9,
     half: size * 0.5,
     mass: opts.mass || size * size * 40,
     onMove: (b) => writeMatrix(pool, idx, b, size),
