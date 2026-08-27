@@ -87,21 +87,51 @@ matrix from most of a day to about ninety minutes.
 
 ### The scan
 
-`tools/capture/scan.mjs` measures every image's largest channel deviation and
-mean horizontal gradient. Six hundred screenshots is more than anyone reviews
-honestly by eye, and a blank capture is still a valid PNG of the right size.
+`tools/capture/scan.mjs` measures every image three ways: its largest channel
+deviation and mean horizontal gradient (*is there anything here?*), and its
+self-similarity under a horizontal shift of w/2, w/3 or w/4 (*is this one frame,
+or the same frame repeated?*). Six hundred screenshots is more than anyone
+reviews honestly by eye, and a blank or mosaiced capture is still a valid PNG of
+the right size, still counted in the report.
 
-It has earned its place twice. First: `loading_ip14_landscape-left` came out as
-bare navy with nothing in it, because boot's own hide-the-overlay timer fired
-*after* the scene had made the overlay visible again — the fix removed that timer
-entirely (§4 below). Then, once that was fixed, it caught the same symptom on a
-different device from a different cause: `renderNow()` rasterizes the whole city
-in software inside its rAF, and the compositor can commit the surface from
+It has earned its place three times.
+
+**Blank, from a timer.** `loading_ip14_landscape-left` came out as bare navy with
+nothing in it, because boot's own hide-the-overlay timer fired *after* the scene
+had made the overlay visible again — the fix removed that timer entirely (§4
+below).
+
+**Blank, from the compositor.** Once that was fixed, the same symptom appeared on
+a different device from a different cause: `renderNow()` rasterizes the whole
+city in software inside its rAF, and the compositor can commit the surface from
 *before* that frame, so the screenshot was the previous composite. Two more rAFs
 after the draw; verified over 30 consecutive captures of the scene that was
-failing, zero blank. Neither would have been noticed in a contact sheet of 622.
+failing, zero blank.
 
-Nothing else in either run mentioned either of them.
+**Tiled.** A `plaque-riverbank` capture came back as a 3 × 4 mosaic of the frame
+repeated — high detail, high edge energy, and therefore invisible to both of the
+first two measurements. The repeat test was added for it. It is *normalised*, and
+that matters: the first version of it simply asked whether the shifted difference
+was small, which flagged the two portrait `rotate` captures — a navy field with
+one centred glyph, where every shift is near zero because there is almost nothing
+there to differ. Both were checked by eye and were correct. The test now asks
+whether the shifted difference is small **relative to the same image shifted by a
+fraction that cannot be a tile period**. Measured on this project: a genuinely
+mosaiced frame scores 0.006; the least self-different of 622 good captures scores
+0.657. The threshold is 0.25, and the full matrix passes with none flagged.
+
+None of the three would have been noticed in a contact sheet of 622, and nothing
+else in any run mentioned any of them.
+
+The thresholds have their own test — `node tools/capture/scan.test.mjs` — which
+synthesises a 3 × 4 tiled frame, a normal one and a flat one with a single
+centred mark, and asserts that the first is caught, the other two are not, and a
+tiled frame fails the run. Neither real fixture could be committed (one is a
+corrupt PNG, the other belongs to a matrix that stays out of git), and a
+threshold with no test is a number somebody will nudge. It paid for itself on
+first run by failing on a path bug in `scan.mjs` — an absolute directory argument
+was being joined onto the repo root, so `/tmp/x` was looked for at `<root>/tmp/x`
+and reported as missing.
 
 ---
 
