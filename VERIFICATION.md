@@ -265,7 +265,7 @@ node tools/test/metrics.mjs --ref origin/pre-overhaul-2026-08-26
 | JS heap | 26 MB | **26 MB** | — |
 | Page-load requests | 128 | **136** | +8 |
 | Payload on disk | 4.87 MB | **6.09 MB** | +1.22 MB |
-| Precache | — | **5.01 MB**, 121 files | |
+| Precache | — | **5.01 MB**, 121 URLs | |
 | Console problems | 7 | **0** | |
 
 **On "transfer".** A first visit pays for the page load *and* the service
@@ -273,8 +273,9 @@ worker's precache pass, and the two overlap without being the same set — the
 worker fetches with `{cache: 'reload'}` on purpose, so a precached file the page
 already pulled is pulled again. Rather than quote one ambiguous megabyte figure
 that moves between runs, the three numbers that do not move are given: what the
-page requests (136), what the worker precaches (5.01 MB across 121 files, from
-`tools/gen-sw.mjs`), and what the whole site weighs on disk (6.09 MB).
+page requests (136), what the worker precaches (5.01 MB across 121 URLs — 120
+files plus `./`, the navigation entry — from `tools/gen-sw.mjs`), and what the
+whole site weighs on disk (6.09 MB).
 
 **The baseline's numbers are cheap because the baseline was broken.** On the run
 that produced them it failed to load `monster_b.glb`, `prop_hydrant.glb` and
