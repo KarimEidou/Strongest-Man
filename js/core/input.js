@@ -37,13 +37,23 @@ const state = {
 const STICK_R = 56;
 let stickEl = null, nubEl = null;
 
+const buttons = [];
+
 export function bindButtons({ punch, jump, grab, interact }) {
   const opts = { passive: false };
   const press = (el, down, up) => {
+    buttons.push({ el, up });
     el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); el.setPointerCapture(e.pointerId); el.classList.add('held'); down(); }, opts);
     const release = (e) => { e.preventDefault(); el.classList.remove('held'); up && up(); };
     el.addEventListener('pointerup', release, opts);
     el.addEventListener('pointercancel', release, opts);
+    // A captured pointer can be taken away without a pointerup: the element is
+    // hidden mid-press (PAUSE with a thumb on PUNCH, the HUD going away for
+    // inspect mode), an incoming call, a system edge gesture. Only this event
+    // fires then, and without it the button keeps its .held styling and — for
+    // PUNCH — leaves punchDown latched, which pins him to charge speed for the
+    // rest of the session.
+    el.addEventListener('lostpointercapture', release, opts);
   };
   const guarded = (fn) => () => { if (!input.textFocus) fn(); };
   press(punch, guarded(() => { state.pendingPunchDown = true; input.punchDown = true; }),
@@ -212,6 +222,27 @@ export function pollInput(dt) {
   }
 
   input.chargeTime = input.punchDown ? input.chargeTime + dt : 0;
+}
+
+// Drop every held button, every pending edge and every axis. Called when the
+// game leaves 'playing' for an overlay and again when it comes back, so nothing
+// a finger was doing before the overlay fires the moment it closes.
+export function resetInput() {
+  for (const b of buttons) {
+    b.el.classList.remove('held');
+    b.up?.();
+  }
+  input.moveX = 0; input.moveZ = 0;
+  input.lookDX = 0; input.lookDY = 0;
+  input.punchDown = false; input.chargeTime = 0;
+  input.punchPressed = input.punchReleased = false;
+  input.jumpPressed = input.grabPressed = input.interactPressed = false;
+  input.weaponCycle = false;
+  state.pendingPunchDown = state.pendingPunchUp = false;
+  state.pendingJump = state.pendingGrab = state.pendingInteract = state.pendingCycle = false;
+  state.stickId = -1; state.lookId = -1;
+  state.keys.clear();
+  if (stickEl) stickEl.classList.remove('active');
 }
 
 // Look deltas are consumed by the camera each render frame.
