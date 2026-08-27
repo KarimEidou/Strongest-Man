@@ -149,6 +149,19 @@ for (const engineName of engines) {
         // between two runs of identical code, all of it inside that one pill.
         // Killing the transitions puts every DOM overlay at its settled state,
         // which is the state worth photographing anyway.
+        //
+        // Every scene starts from an empty save.
+        //
+        // The pool runs scenes in whatever order lanes free up, and they share a
+        // browser context — so they shared localStorage. The shop scene writes
+        // 9,000 points; hud-stress writes the whole armoury; karma and reputation
+        // persist too, and reputation decides which shops are shut, which
+        // decides where the townsfolk walk. Scenes captured after those ones
+        // therefore differed from the same scenes captured before them, by up to
+        // 6,600 pixels of pedestrians in a street. Clearing here, before any of
+        // the page's own script runs, makes a capture independent of what else
+        // was captured in the same viewport.
+        try { localStorage.clear(); } catch (e) { /* private mode; nothing to clear */ }
         const css = ':root{--sa-t:${insets.top}px;--sa-r:${insets.right}px;'
           + '--sa-b:${insets.bottom}px;--sa-l:${insets.left}px;}'
           + '*,*::before,*::after{transition:none!important;animation:none!important;}';
@@ -225,6 +238,32 @@ for (const engineName of engines) {
             window.__test.renderNow();
             requestAnimationFrame(() => requestAnimationFrame(r));
           }))`);
+          // …and then a real pause before the shutter.
+          //
+          // Two extra rAFs made the stale-surface race rare rather than gone: a
+          // `loading` capture still came out as bare canvas roughly once in a
+          // few hundred. renderNow() rasterizes the whole city in software, and
+          // the compositor is entitled to commit the surface from before that
+          // frame; rAF callbacks are not a promise that a commit has happened.
+          //
+          // This wait cannot change what is IN the picture — the loop is
+          // suspended and the world is frozen — so it costs determinism nothing
+          // and buys the compositor room it evidently needs.
+          await page.waitForTimeout(150);
+          // Fonts laid out and every image fully decoded before the shutter.
+          //
+          // The title screen is a full-bleed JPEG behind the logo, and two runs
+          // of it differed across 1,344,780 pixels at a mean delta of 1.2 —
+          // invisible, and still a difference, because one run photographed an
+          // intermediate decode. decode() resolves only when the bitmap is ready
+          // to paint, which is the thing actually being waited for.
+          await page.evaluate(`(async () => {
+            await (document.fonts ? document.fonts.ready : Promise.resolve());
+            await Promise.all([...document.images]
+              .filter((i) => i.src && !i.complete === false)
+              .map((i) => i.decode().catch(() => {})));
+          })()`);
+          await page.evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
           await page.screenshot({ path: file, fullPage: false });
           slots[job.i] = {
             engine: engineName, device: device.id, orientation, scene: scene.id,
