@@ -1,0 +1,10 @@
+{
+  "_comment": "Gallery wall labels. Edit titles / years / medium here — js/world/museum.js reads this file at boot and nothing else hardcodes the text. `slug` keys the image files in this folder (<slug>.webp for inspect mode, <slug>_512.webp for the wall texture). `wall` and `at` place the work inside the museum; see docs/MUSEUM.md.",
+  "artist": "Inder",
+  "works": [
+    { "slug": "the-visitor", "title": "The Visitor", "year": "2026", "medium": "Digital print", "wall": "north", "at": -13.0 },
+    { "slug": "riverbank",   "title": "Riverbank",   "year": "2026", "medium": "Digital print", "wall": "north", "at": -19.6 },
+    { "slug": "reach",       "title": "Reach",       "year": "2026", "medium": "Digital print", "wall": "west",  "at": 19.5 },
+    { "slug": "the-reader",  "title": "The Reader",  "year": "2026", "medium": "Digital print", "wall": "alcove-south", "at": -20.0 }
+  ]
+}
