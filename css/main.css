@@ -720,9 +720,22 @@ label.srow > input[type=range] { flex: 1 1 100%; }
 }
 #art-prompt.hidden { opacity: 0; pointer-events: none; }
 #art-prompt:active { background: rgba(240, 168, 96, 0.4); transform: translateX(-50%) translateY(2px); }
-#art-prompt-text { text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
+/* The title is a Roman numeral, so it is set in a serif for the same reason the
+   wall label and the inspect caption are: an "I" in the sans stack is a bare
+   vertical bar. The "VIEW" prefix is UI voice, not part of the title, so it goes
+   back to the system stack. */
+#art-prompt-text {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 15px; letter-spacing: 2px;
+  text-transform: uppercase; overflow: hidden; text-overflow: ellipsis;
+}
 #art-prompt-icon { color: var(--orange-bright); font-size: 15px; line-height: 1; }
-#art-prompt-text::before { content: "VIEW  "; opacity: 0.6; font-weight: 700; }
+#art-prompt-text::before {
+  content: "VIEW  ";
+  font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px; letter-spacing: 1.5px;
+  opacity: 0.6; font-weight: 700;
+}
 
 #inspect {
   position: fixed; inset: 0; z-index: 35;
@@ -762,8 +775,15 @@ label.srow > input[type=range] { flex: 1 1 100%; }
   margin-top: 8px;
   padding: 0 60px;      /* clear of the CLOSE button in either landscape */
 }
+/* Serif, for the same reason the wall label is serif (js/world/museum.js): the
+   works are numbered, and a Roman "I" in the UI's sans stack is a bare vertical
+   bar that reads as a stray tick rather than a numeral. This is the one place in
+   the interface that sets a number as a name, so it is the one place that
+   departs from the system stack. No webfont — Georgia and Times ship on the
+   target device, and the fallback is the platform serif. */
 #inspect-title {
-  font-size: 17px; font-weight: 800; letter-spacing: 2px;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 21px; font-weight: 700; letter-spacing: 3px;
   color: var(--ink);
 }
 #inspect-meta {
@@ -791,10 +811,21 @@ label.srow > input[type=range] { flex: 1 1 100%; }
 
 /* Top-left, not bottom-left: the caption occupies the bottom strip at every
    viewport in the matrix and the two would sit on top of each other. */
+/* Under the caption, in the flow — not floated over the stage.
+   It used to sit absolutely at the top left, and at 667x375 the centred artwork
+   reached back across it and cut off the last word: the stage fills all the free
+   height, so on a short screen the image is nearly as wide as the gap the hint
+   was sitting in. Narrowing the hint does not fix that, it only moves the
+   viewport at which it happens — the image's left edge is (stageW - imgW)/2, so
+   a wide enough work collides with any left-aligned text. In the column it is
+   structurally impossible instead, and it costs one 10px line rather than the
+   44pt row a top-aligned fix would have had to reserve.
+   CLOSE stays floated: it carries its own fill and border, so it reads over the
+   artwork the way a lightbox control is meant to. */
 #inspect-hint {
-  position: absolute;
-  left: calc(var(--sa-l) + 12px); top: calc(var(--sa-t) + 16px);
-  max-width: 45%;
+  flex: none;
+  margin-top: 6px;
+  text-align: center;
   font-size: 10px; letter-spacing: 0.5px;
   color: #7c8aa8;
   pointer-events: none;
