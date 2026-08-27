@@ -39,7 +39,11 @@ const arg = (name, def) => {
 const has = (name) => argv.includes(`--${name}`);
 const SET = arg('set', 'final');
 const ENGINE = arg('engine', 'chromium');       // chromium | webkit | both
-const ONLY = arg('only', '');
+// --only takes a comma-separated list of substrings, so one re-run can cover
+// several scene families against a single build rather than relaunching the
+// browser once per family. Empty means everything.
+const ONLY = arg('only', '').split(',').map((s) => s.trim()).filter(Boolean);
+const wanted = (id) => !ONLY.length || ONLY.some((o) => id.includes(o));
 const DEVICE_FILTER = arg('device', '');
 const KEEP = has('keep');
 // How many scenes are captured at once. Each lane is a browser page rendering
@@ -115,8 +119,8 @@ for (const engineName of engines) {
   await probe.close();
 
   const landscapeScenes = [...SCENES, ...artworkScenes(works)]
-    .filter((s) => !ONLY || s.id.includes(ONLY));
-  const portraitScenes = PORTRAIT_SCENES.filter((s) => !ONLY || s.id.includes(ONLY));
+    .filter((s) => wanted(s.id));
+  const portraitScenes = PORTRAIT_SCENES.filter((s) => wanted(s.id));
 
   for (const device of DEVICES) {
     if (DEVICE_FILTER && device.id !== DEVICE_FILTER) continue;
