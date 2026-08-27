@@ -20,11 +20,31 @@ export function initOutfit(playerSys) {
   const skinMat = new THREE.MeshLambertMaterial({ color: 0xd9a06b });
   const flaps = [];
 
+  // The flap sizes below are METRES — a 5 cm tear at the shoulder, an 8 cm one
+  // down the back. The bones they hang off are not at metre scale: the source
+  // GLB's armature carries a 0.01 node scale, so a plane parented straight to a
+  // bone came out a hundred times too small. Measured: every flap in this file
+  // was rendering between 0.4 and 0.8 MILLIMETRES wide, which is the entire
+  // outfit-tear feature — every stage of the sleeper-build reveal — invisible
+  // since it was written.
+  //
+  // The scale is read off the bone rather than hardcoded at 100, so a re-export
+  // of the rig at a different scale needs no edit here. The position offset is
+  // compensated the same way, because it is in the same local space.
+  const P = new THREE.Vector3(), Q = new THREE.Quaternion(), S = new THREE.Vector3();
+  function boneScale(bone) {
+    bone.updateWorldMatrix(true, false);
+    bone.matrixWorld.decompose(P, Q, S);
+    return S.x || 1;
+  }
+
   function addFlap(boneName, w, h, out, material) {
     const bone = findBone(p.root, boneName);
     if (!bone) return;
+    const k = 1 / boneScale(bone);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
-    m.position.set(out, 0.02, 0);
+    m.scale.setScalar(k);
+    m.position.set(out * k, 0.02 * k, 0);
     m.rotation.z = Math.random() * 0.8 - 0.4;
     m.visible = false;
     bone.add(m);

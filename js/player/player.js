@@ -6,6 +6,7 @@ import { createLocomotion } from '../anim/locomotion.js';
 import { createPoseLayer } from '../anim/poselayer.js';
 import { findBone, groundOffset } from '../anim/retarget.js';
 import { input } from '../core/input.js';
+import { game } from '../core/state.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { capsuleVsWorld } from '../physics/collide.js';
 import { damp, dampAngle, clamp } from '../core/mathx.js';
@@ -121,7 +122,12 @@ export function createPlayer(scene, cam) {
     p.visYaw = dampAngle(p.visYaw, p.yaw, 16, dt);
     root.rotation.set(0, p.visYaw, 0);
 
-    p.loco.update(dt, p.speed);
+    // Frozen with the simulation. main.js keeps frameSystems running while
+    // 'paused' so the world stays rendered behind an overlay, but the animation
+    // mixer is not scenery: player/combat.js schedules a strike at a fixed offset
+    // into the punch clip, and letting the clip advance across a pause moved the
+    // hit away from the frame it was supposed to land on.
+    p.loco.update(game.state === 'playing' ? dt : 0, p.speed);
 
     // The sleeper-build reveal used to SCALE bones — forearms to 1.38, upper arms
     // to 1.22, Spine02.x to 1.10, all driven by p.charge. It is gone. Charge is

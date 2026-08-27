@@ -264,7 +264,20 @@ export function createWeapons(player, cam, combat) {
     // between putting one thing away and firing the next is what switching
     // should cost anyway.
     st.cool = EQUIP_TIME;
-    if (id) buildGun(id).visible = true;
+    // buildGun returns null when the model failed to load. Dereferencing that
+    // threw inside equip(), which left the weapon system half-switched: the id
+    // set, the cooldown reset, and no WEAPON_CHANGED emitted, so the HUD went on
+    // showing the previous gun.
+    if (id) {
+      const mesh = buildGun(id);
+      if (!mesh) {
+        console.error(`weapons: ${id} has no model; staying on bare hands`);
+        st.equipped = null;
+        emit(EV.WEAPON_CHANGED, { id: null, gun: null, ammo: 0 });
+        return false;
+      }
+      mesh.visible = true;
+    }
     emit(EV.WEAPON_CHANGED, { id, gun: id ? GUNS[id] : null, ammo: id ? st.ammo[id] : 0 });
     return true;
   }

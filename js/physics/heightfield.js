@@ -45,10 +45,15 @@ export function groundHeight(x, z) {
   return baseHeight(x, z) + pile[idx(x, z)];
 }
 
+// Returns the cell AND the amount actually applied. The cell clamps at 1.6 m,
+// so a caller that stores what it asked for and subtracts that later takes out
+// more than it ever put in — and the ground under a cleared rubble stack ends up
+// lower than the street around it.
 export function addPile(x, z, amount) {
   const i = idx(x, z);
-  pile[i] = Math.min(pile[i] + amount, 1.6);
-  return i;
+  const before = pile[i];
+  pile[i] = Math.min(before + amount, 1.6);
+  return { cell: i, applied: pile[i] - before };
 }
 export function removePile(i, amount) {
   pile[i] = Math.max(0, pile[i] - amount);

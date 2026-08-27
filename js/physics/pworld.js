@@ -59,8 +59,11 @@ function oldestSmallest() {
 }
 
 export function step(dt) {
+  stepping = true;
   for (let i = active.length - 1; i >= 0; i--) {
     const b = active[i];
+    // slept or removed earlier in THIS walk, by something re-entrant
+    if (b.asleep || b.dead) continue;
     b.px = b.x; b.py = b.y; b.pz = b.z;
     b.prx = b.rx; b.pry = b.ry; b.prz = b.rz;
 
@@ -100,8 +103,41 @@ export function step(dt) {
       continue;
     }
     if (b.onMove) b.onMove(b);
-    if (!(b.y > -20)) { counters.fellOut++; active.splice(i, 1); b.dead = true; b.onSleep?.(b); }
+    if (!(b.y > -20)) { counters.fellOut++; b.dead = true; dropFromActive(b, i); b.onSleep?.(b); }
   }
+  stepping = false;
+  flushRemovals();
+}
+
+// `active` must not be spliced while step() is walking it.
+//
+// step() iterates backwards, which makes ITS own splice-at-i safe. What is not
+// safe is the re-entrant one: a thrown body's onMove calls removeSphere, which
+// spawns debris, which calls createBody, which force-sleeps the smallest active
+// body to stay under the cap — and THAT splice lands at an arbitrary index. Any
+// index below the cursor shifts every remaining body down one, so one body is
+// skipped for the whole step and another is stepped twice. It is invisible
+// until a collapse, which is exactly when it happens most.
+//
+// Removals are deferred to the end of the step instead. A body slept mid-walk
+// keeps its slot until then and is skipped by the `asleep` guard when the
+// cursor reaches it.
+let stepping = false;
+const deferredRemoval = [];
+
+function dropFromActive(b, i) {
+  if (stepping) { deferredRemoval.push(b); return; }
+  const k = (i !== undefined && active[i] === b) ? i : active.indexOf(b);
+  if (k >= 0) active.splice(k, 1);
+}
+
+function flushRemovals() {
+  if (!deferredRemoval.length) return;
+  for (const b of deferredRemoval) {
+    const k = active.indexOf(b);
+    if (k >= 0) active.splice(k, 1);
+  }
+  deferredRemoval.length = 0;
 }
 
 function sleepBody(b, i) {
@@ -111,13 +147,18 @@ function sleepBody(b, i) {
   b.y = g + b.half;
   b.px = b.x; b.py = b.y; b.pz = b.z;
   b.prx = b.rx; b.pry = b.ry; b.prz = b.rz;
-  active.splice(i ?? active.indexOf(b), 1);
+  dropFromActive(b, i);
   sleeping.push(b);
   counters.slept++;
   b.asleep = true;
   // raise the pile so future debris stacks on top of this one
-  b.pileAmount = Math.min(b.half * 1.2, 0.5);
-  b.pileCell = addPile(b.x, b.z, b.pileAmount);
+  // addPile clamps the CELL at 1.6 m, so what it applies can be less than what
+  // it was asked for. Storing the request and subtracting it later dug the
+  // ground down under a stack of rubble every time one was cleared away.
+  const want = Math.min(b.half * 1.2, 0.5);
+  const put = addPile(b.x, b.z, want);
+  b.pileCell = put.cell;
+  b.pileAmount = put.applied;
   b.onMove?.(b);
   b.onSleep?.(b);
 }

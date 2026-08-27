@@ -619,7 +619,12 @@ export function createCombat(playerSys, cam, scene) {
   // thrown bodies smash what they land on
   function armProjectile(body, blastR) {
     body.kind = 'thrown';
-    const prevMove = body.onMove;
+    // The BASE handler, captured once. Wrapping body.onMove each time stacked a
+    // new layer per throw: a chunk picked up and thrown three times ran the
+    // blast three times per move, for three times the damage and three times
+    // the debris, and the stack was never unwound.
+    if (body.baseMove === undefined) body.baseMove = body.onMove || null;
+    const prevMove = body.baseMove;
     body.onMove = (b) => {
       prevMove?.(b);
       const speed2 = b.vx * b.vx + b.vy * b.vy + b.vz * b.vz;
