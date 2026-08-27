@@ -275,6 +275,36 @@ ${LAMP_GLSL}`)
 #include <opaque_fragment>`);
 }
 
+// three resolves #include AFTER onBeforeCompile runs, so a .replace() aimed at
+// GLSL that lives inside a chunk matches nothing and silently does nothing. The
+// specular lobe below was written against the body of RE_Direct_Lambert, which
+// is inside lights_lambert_pars_fragment — so for as long as this material has
+// existed there has been no specular and no sky rim on any surface in the city,
+// and reflectedLight.directSpecular *= smSpecInt has been multiplying zero.
+//
+// Expanding the chunk here and patching the expansion is the fix. The result is
+// recorded so a future three.js renaming the chunk is a reported failure rather
+// than the same silent flattening: tools/test/final.mjs asserts on it and
+// window.__test.shaderChecks reads it back.
+const LAMBERT_BRDF = 'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );';
+const SPEC_GLSL = `
+	vec3 smHalf = normalize( directLight.direction + geometryViewDir );
+	reflectedLight.directSpecular += directLight.color * dotNL *
+		pow( saturate( dot( geometryNormal, smHalf ) ), material.specularStrength );`;
+
+export const shaderChecks = { lambertSpecular: false };
+
+function lambertParsWithSpecular() {
+  const chunk = THREE.ShaderChunk.lights_lambert_pars_fragment;
+  const patched = chunk.replace(LAMBERT_BRDF, LAMBERT_BRDF + SPEC_GLSL);
+  shaderChecks.lambertSpecular = patched !== chunk;
+  if (!shaderChecks.lambertSpecular) {
+    console.error('materials: RE_Direct_Lambert anchor not found in this three.js '
+      + '— the world material will render with no specular and no sky rim.');
+  }
+  return patched;
+}
+
 export function makeWorldMaterial(opts = {}) {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
   mat.onBeforeCompile = (shader) => {
@@ -309,13 +339,8 @@ float smSpecPow = 24.0;
       // hijack the Lambert struct's unused specularStrength as the exponent
       .replace('#include <lights_lambert_fragment>', `#include <lights_lambert_fragment>
 material.specularStrength = smSpecPow;`)
-      .replace(
-        'reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );',
-        `reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );
-	vec3 smHalf = normalize( directLight.direction + geometryViewDir );
-	reflectedLight.directSpecular += directLight.color * dotNL *
-		pow( saturate( dot( geometryNormal, smHalf ) ), material.specularStrength );`,
-      )
+      // expand the chunk and patch the expansion — see lambertParsWithSpecular
+      .replace('#include <lights_lambert_pars_fragment>', lambertParsWithSpecular())
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
 reflectedLight.directSpecular *= smSpecInt;
 {
