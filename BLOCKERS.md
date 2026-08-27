@@ -88,19 +88,43 @@ git tag pre-overhaul-2026-08-26 origin/pre-overhaul-2026-08-26
 git push origin pre-overhaul-2026-08-26
 ```
 
-## 4. Lighthouse has not been run
+## 4. Lighthouse ran locally, not against the deployed URL
 
-§10.1 asks for Lighthouse against the deployed URL. Lighthouse is not installed
-here and there is nothing deployed to point it at. Run it after merging:
+§10.1 asks for Lighthouse against the deployed URL. There is nothing deployed to
+point it at — the work is on a feature branch (see 2) — so it was run against the
+local server instead, on the same build. Results and the full reasoning are in
+`VERIFICATION.md`; the short version:
+
+| | |
+|---|---|
+| Performance | **33** — a SwiftShader number, see 5 |
+| Accessibility | **88** |
+| Best practices | **100** |
+| SEO | **100** |
+
+Three audits failed on the first run. One is fixed, one is an artefact of the
+harness, one is deliberate:
+
+- **`meta-description`** — fixed. SEO went 91 → 100.
+- **`bf-cache`** — not a defect and Lighthouse labels it "Not actionable" itself:
+  the reason it gives is `MainResourceHasCacheControlNoStore`, which is
+  `tools/test/serve.mjs` sending `cache-control: no-store` so a local run never
+  serves a stale build. GitHub Pages sends `max-age=600`. It cannot be checked
+  properly until there is a deployment to check.
+- **`user-scalable=no`** — kept, and it is the ONLY accessibility failure in the
+  report. It is what makes the virtual joystick and the 16px input rule work:
+  with pinch-zoom available, a two-finger move-and-look becomes a zoom and there
+  is no way back out. Documented in `ASSUMPTIONS.md` and `docs/STYLE.md`.
+
+**The performance score is not transferable and is not claimed as one.** It is
+dominated by LCP and total blocking time on a CPU-throttled emulated phone with
+no GPU, where a single frame of this game rasterizes in seconds. Re-run it after
+merging, on the real URL:
 
 ```sh
 npx lighthouse https://karimeidou.github.io/Strongest-Man/ \
-  --preset=desktop --only-categories=performance,best-practices,pwa
+  --only-categories=performance,accessibility,best-practices,seo
 ```
-
-Performance numbers taken with the in-game profiler are in `VERIFICATION.md`, and
-they are more useful for a WebGL game than a Lighthouse score is — but they are
-not the same measurement and the score is not recorded.
 
 ## 5. Performance numbers are SwiftShader numbers
 
