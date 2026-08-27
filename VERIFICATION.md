@@ -23,6 +23,11 @@ sentence as the number rather than in a footnote.
 | Lighthouse (local) | performance 33 · accessibility 88 · best practices 100 · **SEO 100** |
 | Physical iPhone | **none available** — see `BLOCKERS.md` §1 |
 
+Every figure above was measured on the tree at the head of this branch. The 622
+captures were taken at `a1fa908`, and `git diff a1fa908..HEAD -- js/ css/
+index.html vendor/ assets/ sw.js manifest.webmanifest` is empty — nothing that
+renders has changed since the shutter.
+
 ---
 
 ## 1. The screenshot matrix
