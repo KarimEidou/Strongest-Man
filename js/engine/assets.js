@@ -24,12 +24,34 @@ const LIST = [
 ];
 const CLIPS = ['clip_run', 'clip_punch', 'clip_die'];
 
+// Fetch the bytes ourselves and hand them to parseAsync, instead of letting
+// GLTFLoader's FileLoader do the fetch.
+//
+// three r185's FileLoader builds its request signal with
+// AbortSignal.any([fileLoaderController.signal, manager.abortController.signal]).
+// GLTFLoader.load() constructs that FileLoader as a local and keeps no reference
+// to it, so the moment V8 collects it the composite signal loses a source and
+// Chromium aborts the in-flight request. The bytes have usually already arrived,
+// so the model still loads and nothing looks wrong — but the request is recorded
+// as net::ERR_ABORTED and the console shows a failed asset fetch, on a random
+// subset of the 28 GLBs, differently on every run. Measured: 8 to 11 of 28 under
+// load, 1 when the machine was quiet.
+//
+// Doing the fetch here also means an offline miss surfaces as one clear error
+// naming the file, rather than as a GLTFLoader parse failure.
+async function loadGLB(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`asset ${url}: HTTP ${res.status}`);
+  const buf = await res.arrayBuffer();
+  return loader.parseAsync(buf, url.slice(0, url.lastIndexOf('/') + 1));
+}
+
 export async function loadModels(onProgress) {
   let done = 0;
   const total = LIST.length + CLIPS.length;
   const jobs = [...LIST.map((n) => ['models', n]), ...CLIPS.map((n) => ['anim', n])];
   await Promise.all(jobs.map(async ([dir, name]) => {
-    const gltf = await loader.loadAsync(`./assets/${dir}/${name}.glb`);
+    const gltf = await loadGLB(`./assets/${dir}/${name}.glb`);
     gltf.scene.traverse((o) => {
       if (o.isMesh) {
         o.frustumCulled = true;
