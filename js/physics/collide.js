@@ -17,6 +17,24 @@ let B = null, P = null, CARS = null;
 let buildGrid = null, propGrid = null, iwallGrid = null;
 const nearB = [], nearP = [], nearI = [];
 
+// Static axis-aligned solids that are not building cells, not spine walls and
+// not props: the museum's partition, its plinths, benches, desk and stanchion
+// posts. They never move, never break and never sleep, so they get a plain grid
+// and a slab test rather than a place in any of the destructible registries.
+// Each is {x0, z0, x1, z1, y0, y1}.
+let solidGrid = null;
+const solids = [];
+const nearS = [];
+
+export function addStaticBox(box) {
+  solids.push(box);
+  if (!solidGrid) solidGrid = createGrid();
+  solidGrid.insertBox(box, box.x0, box.z0, box.x1, box.z1, 1.0);
+  return box;
+}
+
+export function staticBoxCount() { return solids.length; }
+
 export function initCollide(buildingsReg, propsReg) {
   B = buildingsReg; P = propsReg;
   buildGrid = createGrid();
@@ -121,6 +139,22 @@ export function capsuleVsWorld(x, z, y, r, opts) {
     }
   }
 
+  if (solidGrid) {
+    solidGrid.query(x, z, r, nearS);
+    for (const b of nearS) {
+      // A capsule standing on top of a plinth or a bench is not inside it: the
+      // vertical band has to gate the pushout, or walking over a 0.45 m bench
+      // would shove him sideways off it. `y` is the capsule's foot.
+      if (y + 1.7 <= b.y0 || y >= b.y1 - 0.05) continue;
+      const hx = (b.x1 - b.x0) / 2 + r, hz = (b.z1 - b.z0) / 2 + r;
+      const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+      const dx = x - cx, dz = z - cz;
+      if (Math.abs(dx) >= hx || Math.abs(dz) >= hz) continue;
+      if (hx - Math.abs(dx) < hz - Math.abs(dz)) x = cx + Math.sign(dx || 1) * hx;
+      else z = cz + Math.sign(dz || 1) * hz;
+    }
+  }
+
   if (propGrid && !skipProps) {
     propGrid.query(x, z, r + 1.5, nearP);
     for (const p of nearP) {
@@ -178,6 +212,13 @@ export function blockedAt(x, z, y, r) {
       if (x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) return true;
     }
   }
+  if (solidGrid) {
+    solidGrid.query(x, z, r, nearS);
+    for (const b of nearS) {
+      if (y + 1.7 <= b.y0 || y >= b.y1 - 0.05) continue;
+      if (x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r) return true;
+    }
+  }
   if (propGrid) {
     propGrid.query(x, z, r + 1.5, nearP);
     for (const p of nearP) {
@@ -190,6 +231,19 @@ export function blockedAt(x, z, y, r) {
   return false;
 }
 
+// Static solids as an occluder, for the camera probe and for hitscan. Same
+// boxes, point sample — they are all at least 0.16 m thick, which is the same
+// margin pointInWall() already relies on for a facade cell.
+function pointInSolid(x, y, z) {
+  if (!solidGrid) return false;
+  solidGrid.query(x, z, 0, nearS);
+  for (const b of nearS) {
+    if (y < b.y0 || y > b.y1) continue;
+    if (x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) return true;
+  }
+  return false;
+}
+
 // camera occlusion: march from `look` toward `eye`; return allowed distance
 export function cameraAllowed(look, eye, wanted) {
   const steps = Math.ceil(wanted / 0.15);
@@ -198,7 +252,7 @@ export function cameraAllowed(look, eye, wanted) {
     const x = look.x + (eye.x - look.x) * t;
     const y = look.y + (eye.y - look.y) * t;
     const z = look.z + (eye.z - look.z) * t;
-    if (pointInWall(x, y, z)) return Math.max(0.6, t * wanted - 0.35);
+    if (pointInWall(x, y, z) || pointInSolid(x, y, z)) return Math.max(0.6, t * wanted - 0.35);
   }
   return wanted;
 }
@@ -304,6 +358,7 @@ export function rayWorld(ox, oy, oz, dx, dy, dz, maxDist) {
       return { dist: hit, kind: 'ground', x: ox + dx * hit, y: g, z: oz + dz * hit, prop: null };
     }
     if (pointInWall(x, y, z, true)) return { dist: t, kind: 'wall', x, y, z, prop: null };
+    if (pointInSolid(x, y, z)) return { dist: t, kind: 'wall', x, y, z, prop: null };
     const iwT = rayIWall(ox, oy, oz, dx, dy, dz, x, z, t);
     if (iwT >= 0) {
       return { dist: iwT, kind: 'wall', x: ox + dx * iwT, y: oy + dy * iwT, z: oz + dz * iwT, prop: null };

@@ -23,6 +23,11 @@ export const flags = {
   nogodrays: false,       // ?nogodrays=1 isolates the sun-shaft pass
   noshadows: false,       // ?noshadows=1 isolates the shadow pass
   nodetail: false,        // ?nodetail=1 isolates procedural surface detail
+  warp: '',               // ?warp=museum spawns him on the gallery forecourt
+  // ?capture=1 makes a run reproducible for the screenshot harness: the frame
+  // loop steps a fixed dt instead of the wall clock, the day does not advance,
+  // and the camera does not shake. Two runs then produce near-identical images.
+  capture: false,
 };
 
 export function initDebug() {
@@ -38,6 +43,8 @@ export function initDebug() {
   flags.nogodrays = q.has('nogodrays');
   flags.noshadows = q.has('noshadows');
   flags.nodetail = q.has('nodetail');
+  flags.warp = q.get('warp') || '';
+  flags.capture = q.has('capture');
   seedWorld(flags.seed);
 
   window.__perf = {

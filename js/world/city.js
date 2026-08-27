@@ -25,6 +25,27 @@ const LANDMARK_FLOORS = 11;                 // 33m; 10 is stouter, 12 starts to 
 const LANDMARK_DEPTH = 14;                  // metres, clamped to keep a 1m gap to neighbours
 const LANDMARK_TINT = 0xd08a3c;             // fried-pastry gold; also tints the crumb debris
 
+// The museum. Unlike the samosas it is NOT chosen from whatever the generator
+// happened to lay down: a gallery has to be a fixed, findable address with a
+// known interior, so its lot is reserved before the fill runs and the procedural
+// buildings are placed around it.
+//
+// East front on the Market Side block, flush with the block edge at x = -8.5, so
+// the facade faces the central north-south road — the same road the player spawns
+// standing on, eleven metres away. Approach, signage and door are all in view
+// from the spawn point.
+//
+// 16 m deep x 22 m of frontage: both are whole multiples of the 2 m cell width,
+// which the wall grid in world/buildings.js requires, and two floors of cells
+// gives a 6 m hall once the mid-floor slab is suppressed.
+export const MUSEUM = {
+  x0: -24.5, z0: 12.5, x1: -8.5, z1: 34.5,
+  floors: 2,
+  front: 'east',
+  district: 2,
+  tint: 0xcabf9f,          // warm limestone, deliberately unlike any procedural tint
+};
+
 export function districtOf(x, z) {
   return (x >= 0 ? 1 : 0) + (z >= 0 ? 2 : 0);
 }
@@ -35,6 +56,26 @@ export function buildCitySpec() {
 
   for (const b of BLOCKS) {
     const placed = [];
+    // Reserved first so tryPlace() routes the procedural fill around it. Pushed
+    // straight into `placed`/`buildings` rather than through tryPlace so it
+    // consumes none of the rand() stream itself.
+    if (b.district === MUSEUM.district) {
+      const spec = {
+        id: id++,
+        x0: MUSEUM.x0, z0: MUSEUM.z0, x1: MUSEUM.x1, z1: MUSEUM.z1,
+        w: MUSEUM.x1 - MUSEUM.x0, d: MUSEUM.z1 - MUSEUM.z0,
+        floors: MUSEUM.floors, type: 'museum', front: MUSEUM.front,
+        district: b.district, tint: MUSEUM.tint, material: 'plaster',
+        alive: true,
+        landmark: 'museum',
+        // Civic stone. destruction.js refuses every removal on a protected lot:
+        // a gallery whose walls come down takes four paintings with it, and §8.2
+        // asks for collision that stays watertight from every angle, which a
+        // destructible shell cannot be.
+        protected: true,
+      };
+      placed.push(spec); buildings.push(spec);
+    }
     const tryPlace = (x0, z0, w, d, front) => {
       const x1 = x0 + w, z1 = z0 + d;
       if (x0 < b.x0 - 0.01 || z0 < b.z0 - 0.01 || x1 > b.x1 + 0.01 || z1 > b.z1 + 0.01) return false;

@@ -148,6 +148,16 @@ export function buildBuildings(scene, specs) {
             kind = isDoor ? 'door' : crustKind;
             if (isDoor) shell.hideKey(key);                    // cut the doorway out of the pastry
             else shell.chunkKeys.push(key);
+          } else if (s.landmark === 'museum') {
+            // Solid stone, top to bottom, with one door and no glazing at all.
+            // A clerestory was tried and cost more than it bought: the shell's
+            // inner faces are aInterior, so any wall band the gallery lining
+            // could not cover read as a 2.7 m strip of near-black above the
+            // pictures. Blank walls let the lining run to the ceiling, and
+            // world/museum.js gives the outside its rhythm with pilasters and an
+            // entablature instead of holes — which is what civic stone actually
+            // looks like.
+            if (floor === 0 && col === doorCol[side]) kind = 'door';
           } else {
             const storefront = floor === 0 && (s.type === 'shop' || s.type === 'diner') && side === s.front;
             if (floor === 0 && col === doorCol[side]) kind = 'door';
@@ -176,6 +186,9 @@ export function buildBuildings(scene, specs) {
     // slabs: one per floor 1..F-1 plus roof at F. Landmark slabs follow the shell's
     // cross-section instead of the lot rectangle, or the filling pokes out of the crust.
     for (let f = 1; f <= s.floors; f++) {
+      // The gallery is one 6 m room, not two 3 m ones: skip every slab but the
+      // roof. world/museum.js lays its own stone floor over the ground plane.
+      if (s.landmark === 'museum' && f < s.floors) continue;
       let px = (s.x0 + s.x1) / 2, pz = (s.z0 + s.z1) / 2, sx = w - 0.5, sz = d - 0.5;
       if (shell) {
         // A slab sits on the boundary between bands f-1 and f. Below the samosa's
@@ -203,6 +216,10 @@ export function buildBuildings(scene, specs) {
       });
     }
     if (shell) continue;   // no spine walls or office furniture inside a samosa
+    // The museum furnishes itself (world/museum.js): a randomly-placed office
+    // desk in the middle of a gallery, or a spine wall cutting a painting in
+    // half, is exactly what the bespoke layout exists to avoid.
+    if (s.landmark === 'museum') continue;
     // Interior spine wall per floor (along the long axis), stopping IWALL_GAP
     // short of each end so the two halves of the floor stay connected. It used to
     // stop 0.6m short, which was fine while it was scenery; now that it collides

@@ -83,6 +83,28 @@
   </div>
   <div id="toast" class="hidden"></div>
   <div id="down-banner" class="hidden"><b>DOWN</b><span id="down-sub"></span></div>
+
+  <!-- gallery proximity prompt: a real button, so it works by tap as well as
+       through the TALK control -->
+  <button id="art-prompt" class="hidden" type="button">
+    <span id="art-prompt-icon" aria-hidden="true">◻</span>
+    <span id="art-prompt-text"></span>
+  </button>
+</div>
+
+<!-- artwork inspect mode. The picture is a DOM <img>, not a WebGL surface: it
+     costs no texture memory, it is resolution-independent on a 3x display, and
+     object-fit:contain guarantees the native aspect ratio can never be lost. -->
+<div id="inspect" hidden>
+  <div id="inspect-stage">
+    <img id="inspect-img" alt="" draggable="false">
+  </div>
+  <div id="inspect-caption">
+    <div id="inspect-title"></div>
+    <div id="inspect-meta"><span id="inspect-artist"></span><span id="inspect-year"></span><span id="inspect-medium"></span></div>
+  </div>
+  <button id="inspect-close" type="button" aria-label="close">CLOSE</button>
+  <div id="inspect-hint">Pinch to zoom · drag to pan · double-tap to reset</div>
 </div>
 
 <!-- title / splash -->

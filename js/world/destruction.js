@@ -33,6 +33,11 @@ export function removeSphere(x, y, z, r, { impulse = 8, fragMult = 1, byPlayer =
   for (const b of B.buildings) {
     if (b.collapsed || !b.aliveCount) continue;
     const s = b.spec;
+    // Protected civic stone (the museum). This is the ONE funnel every cell
+    // removal in the game goes through — punches, throws, gunfire, monsters and
+    // the collapse solver all arrive here — so refusing it here is the whole
+    // rule. Nothing else needs a special case.
+    if (s.protected) continue;
     if (x < s.x0 - r || x > s.x1 + r || z < s.z0 - r || z > s.z1 + r) continue;
     // Y reject: a punch at street level used to walk every cell of an 8-storey
     // tower. Thrown bodies call this every step while fast, and so does every
@@ -120,7 +125,7 @@ function checkBuildingFall(b, byPlayer) {
 }
 
 export function collapseBuilding(b, byPlayer = true) {
-  if (b.collapsed || b.falling) return;
+  if (b.collapsed || b.falling || b.spec.protected) return;
   b.falling = true;
   const s = b.spec;
   for (const [, cell] of b.idx) {

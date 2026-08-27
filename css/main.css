@@ -491,3 +491,115 @@ button { font: inherit; color: inherit; }
   background: radial-gradient(ellipse at center, transparent 55%, rgba(240,80,32,0.55) 100%);
   opacity: 0; transition: opacity 0.25s;
 }
+
+/* ---------- gallery prompt + artwork inspect mode ----------
+   The prompt sits above the weapon rail and below the button cluster's top
+   edge, centred in the LOOK half so it can never sit inside the joystick's
+   left-44% claim region (see the note on #weapons). 48px tall, which clears
+   the 44pt HIG minimum with the border included. */
+#art-prompt {
+  pointer-events: auto;
+  /* Anchored in the LOOK half, directly above the button cluster (#btns is
+     162px wide, 152px tall, inset 10/14). max-width keeps the pill out of the
+     left 44% of the screen at every viewport in the matrix, which is the
+     joystick's claim region — a pointer-events:auto element in there is a
+     permanent hole in the stick. Same rule as #weapons. */
+  position: absolute;
+  right: 10px; bottom: 172px;
+  max-width: calc(50% - 24px);
+  display: flex; align-items: center; gap: 8px;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 8px 20px;
+  border-radius: 24px;
+  border: 2px solid var(--orange-bright);
+  background: rgba(13, 27, 62, 0.86);
+  color: var(--ink);
+  font-size: 13px; font-weight: 800; letter-spacing: 1.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+  transition: opacity 0.18s;
+  touch-action: none;
+}
+#art-prompt.hidden { opacity: 0; pointer-events: none; }
+#art-prompt:active { background: rgba(240, 168, 96, 0.4); transform: translateY(2px); }
+#art-prompt-text { text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
+#art-prompt-icon { color: var(--orange-bright); font-size: 15px; line-height: 1; }
+#art-prompt-text::before { content: "VIEW  "; opacity: 0.6; font-weight: 700; }
+
+#inspect {
+  position: fixed; inset: 0; z-index: 35;
+  display: flex; flex-direction: column;
+  background: #07090f;
+  padding: calc(var(--sa-t) + 12px) calc(var(--sa-r) + 12px)
+           calc(var(--sa-b) + 12px) calc(var(--sa-l) + 12px);
+  touch-action: none;
+}
+#inspect[hidden] { display: none; }
+
+/* The stage owns all the free height; the caption takes what it needs. The
+   image is object-fit:contain inside it, which is what makes the native aspect
+   ratio structurally impossible to lose at any viewport. */
+#inspect-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+#inspect-img {
+  max-width: 100%; max-height: 100%;
+  width: auto; height: auto;
+  object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8);
+}
+
+#inspect-caption {
+  flex: none;
+  text-align: center;
+  margin-top: 8px;
+  padding: 0 60px;      /* clear of the CLOSE button in either landscape */
+}
+#inspect-title {
+  font-size: 17px; font-weight: 800; letter-spacing: 2px;
+  color: var(--ink);
+}
+#inspect-meta {
+  margin-top: 2px;
+  font-size: 11px; letter-spacing: 1px;
+  color: #a9b6d0;
+}
+#inspect-meta span + span::before { content: " · "; opacity: 0.55; }
+#inspect-artist { color: var(--orange-bright); font-weight: 700; }
+
+#inspect-close {
+  position: absolute;
+  top: calc(var(--sa-t) + 8px); right: calc(var(--sa-r) + 8px);
+  min-width: 72px; min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 2px solid var(--blue-bright);
+  background: rgba(13, 27, 62, 0.9);
+  color: var(--ink);
+  font-size: 12px; font-weight: 800; letter-spacing: 1.5px;
+  touch-action: none;
+}
+#inspect-close:active { background: rgba(48, 144, 240, 0.35); }
+
+/* Top-left, not bottom-left: the caption occupies the bottom strip at every
+   viewport in the matrix and the two would sit on top of each other. */
+#inspect-hint {
+  position: absolute;
+  left: calc(var(--sa-l) + 12px); top: calc(var(--sa-t) + 16px);
+  max-width: 45%;
+  font-size: 10px; letter-spacing: 0.5px;
+  color: #7c8aa8;
+  pointer-events: none;
+}

@@ -47,6 +47,10 @@ buildStreets(scene);
 const buildingsReg = buildBuildings(scene, city.buildings);
 const propsReg = buildProps(scene, city);
 
+loadingProgress(0.80, 'gallery…');
+const { initMuseum, nearestWork } = await import('./world/museum.js');
+const museum = await initMuseum(scene, renderer);
+
 loadingProgress(0.85, 'player…');
 const { initCollide, cameraAllowed, debrisVsWorld } = await import('./physics/collide.js');
 const { buildClipBank } = await import('./anim/retarget.js');
@@ -100,6 +104,20 @@ window.__propsReg = propsReg;
 fixedSystems.push(profile('player', (dt) => player.fixedUpdate(dt)));
 fixedSystems.push(profile('weapons', (dt) => weapons.fixedUpdate(dt)));
 fixedSystems.push(profile('combat', (dt) => combat.fixedUpdate(dt)));
+// Gallery proximity. Ahead of dialogue in the list on purpose: both want the
+// same interact press, and standing in front of a painting should offer the
+// painting, not the tourist behind you.
+const { initInspect, showPrompt, enterInspect, isInspecting } = await import('./ui/inspect.js');
+initInspect(cam);
+fixedSystems.push(profile('museum', () => {
+  if (isInspecting()) return;
+  const w = nearestWork(player.p.x, player.p.z, cam.st.curYaw);
+  showPrompt(w);
+  if (w && inputRef.interactPressed) {
+    inputRef.interactPressed = false;
+    enterInspect(w);
+  }
+}));
 fixedSystems.push(profile('destruction', (dt) => destructionFixed(dt)));
 fixedSystems.push(profile('physics', (dt) => physicsStep(dt)));
 frameSystems.push(profile('player.frame', (dt, alpha) => player.frameUpdate(dt, alpha)));
@@ -188,6 +206,7 @@ frameSystems.push(profile('chars.frame', (dt, alpha) => {
 }));
 if (flags.time >= 0) game.timeOfDay = flags.time;
 fixedSystems.push((dt) => {
+  if (flags.capture) return;   // a screenshot must not depend on how long it took
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
 });
 frameSystems.push(profile('sky.frame', (dt) => sky.frameUpdate(dt, game.timeOfDay, cam.camera)));
@@ -226,6 +245,62 @@ loadingProgress(0.98, 'shaders…');
 const { warmUp } = await import('./engine/warmup.js');
 const { bangMaterial } = await import('./ai/monster.js');
 await warmUp(renderer, scene, cam.camera, [bangMaterial()]);
+
+// ?warp=museum drops him on the gallery forecourt in one step — the screenshot
+// harness uses it, and so does anyone who does not want to walk there.
+if (flags.warp === 'museum') {
+  player.p.x = museum.door.x; player.p.z = museum.door.z;
+  player.p.px = player.p.x; player.p.pz = player.p.z;
+  cam.st.target.set(player.p.x, 0, player.p.z);
+  cam.st.smoothed.copy(cam.st.target);
+  // eye on the road side, looking west at the facade
+  cam.st.yaw = Math.PI / 2; cam.st.curYaw = cam.st.yaw;
+  cam.st.curDist = cam.st.dist;
+}
+window.__test.museum = () => ({
+  door: museum.door,
+  bounds: museum.bounds,
+  works: museum.works.map((w) => ({
+    slug: w.slug, title: w.title, year: w.year, medium: w.medium, artist: w.artist,
+    x: +w.x.toFixed(3), z: +w.z.toFixed(3),
+    viewX: +w.viewX.toFixed(3), viewZ: +w.viewZ.toFixed(3),
+    plaqueX: +w.plaqueX.toFixed(3), plaqueZ: +w.plaqueZ.toFixed(3), plaqueY: w.plaqueY,
+    yaw: +w.yaw.toFixed(4),
+  })),
+});
+window.__test.warpTo = (x, z, yaw) => {
+  player.p.x = x; player.p.z = z;
+  player.p.px = x; player.p.pz = z;
+  player.p.vx = 0; player.p.vz = 0;
+  cam.st.target.set(x, 0, z); cam.st.smoothed.copy(cam.st.target);
+  if (yaw !== undefined) { cam.st.yaw = yaw; cam.st.curYaw = yaw; }
+  return { x, z };
+};
+window.__test.inspect = (slug) => {
+  const w = museum.works.find((k) => k.slug === slug);
+  if (!w) return false;
+  enterInspect(w);
+  return true;
+};
+window.__test.isInspecting = () => isInspecting();
+// Park the camera on one wall label at reading distance, square to the plate.
+// The follow camera adds HEAD (1.55 m) and a 0.55 m shoulder offset to whatever
+// target it is given, so both are subtracted out here — otherwise the plaque
+// lands off-centre and half a metre low, and the screenshot proves nothing.
+window.__test.plaqueShot = (slug, dist = 1.05) => {
+  const w = museum.works.find((k) => k.slug === slug);
+  if (!w) return false;
+  const st = cam.st;
+  st.freeCam = true;
+  st.noOcclusion = true;
+  st.yaw = Math.atan2(w.nx, w.nz); st.curYaw = st.yaw;
+  st.pitch = 0; st.curPitch = 0;
+  st.dist = dist; st.curDist = dist;
+  const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw);
+  st.target.set(w.plaqueX - cy * 0.55, w.plaqueY - 1.55, w.plaqueZ + sy * 0.55);
+  st.smoothed.copy(st.target);
+  return true;
+};
 
 loadingProgress(1, 'ready');
 window.__test.city = () => ({ buildings: city.buildings.length, cells: buildingsReg.cells.length, props: propsReg.all.length });
@@ -297,6 +372,8 @@ function render() {
     return { activeBodies: s.active, sleeping: s.sleeping };
   });
   window.__ready = true;
+  // The capture harness waits on this name; keep both, they are one flag.
+  window.__READY__ = true;
 }
 
 createLoop({ fixed, frame, render });
