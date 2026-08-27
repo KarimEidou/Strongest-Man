@@ -126,10 +126,13 @@ All of them start the static server themselves if it is not already up.
 ```sh
 node tools/capture/capture.mjs --set final          # the screenshot matrix
 node tools/capture/capture.mjs --set final --engine both
-node tools/capture/capture.mjs --set final --only museum --device ip16pro
+node tools/capture/capture.mjs --set final --only art-,plaque- --device ip16pro
+node tools/capture/scan.mjs screenshots/final       # blank and tiled captures
+node tools/capture/scan.test.mjs                    # the scanner's own thresholds
 node tools/capture/layout.mjs                       # layout assertions
 node tools/test/upgrade.mjs                         # the §9.2 upgrade-path test
 node tools/test/final.mjs                           # the long gameplay e2e
+node tools/test/preflight.mjs                       # the pre-push check
 node tools/test/bench.mjs                           # performance sampling
 ```
 
@@ -175,8 +178,17 @@ The one that decides whether a deploy is real. See `VERIFICATION.md`.
 Push to `main`. The workflow verifies `sw.js` is current, then uploads the repo
 root and deploys. It takes about a minute and there is no staging.
 
-Before pushing: run the server, load the site, confirm zero console errors,
-confirm the game is playable. A push is a deploy.
+Before pushing: `node tools/test/preflight.mjs`. It loads the real page at the
+`/Strongest-Man/` subpath — not at the origin root, because loading it at the
+root locally is exactly what lets an absolute path ship and 404 in production —
+presses PLAY, and checks the title screen goes, the loading overlay comes down,
+the simulation clock advances and a worker is active, with zero console errors,
+warnings, failed requests or 4xx/5xx. It exits non-zero on any of them, so it
+can gate the push. A push is a deploy.
+
+It is strict about the network on purpose: a 404 on a texture does not throw and
+does not stop the game booting, it just quietly leaves a surface wrong, and that
+is the failure mode a subpath deploy introduces.
 
 - `.nojekyll` must stay at the repo root. Without it Pages runs Jekyll and drops
   underscore-prefixed files.
