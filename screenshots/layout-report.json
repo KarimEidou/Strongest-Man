@@ -22,7 +22,7 @@
     {
       "where": "museum se3 landscape-left",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt: none visible",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
@@ -606,7 +606,7 @@
     {
       "where": "museum desktop landscape-left",
       "seen": [
-        "#art-prompt 208.2x48.0",
+        "#art-prompt: none visible",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]
