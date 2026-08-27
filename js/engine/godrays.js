@@ -11,6 +11,7 @@
 //   2. blur   — 12-tap radial blur away from the sun's screen position
 //   3. compos — additive fullscreen quad over the main render
 import * as THREE from 'three';
+import { onViewportChange } from './viewport.js';
 import { LAYER_OCCLUDER } from './shadows.js';
 
 const BLUR_FRAG = `
@@ -110,7 +111,7 @@ export function initGodrays(renderer, camera) {
     rayRT.setSize(w, h);
   }
   resize();
-  addEventListener('resize', () => setTimeout(resize, 60));
+  onViewportChange(() => resize());
 
   // false when the sun is behind, below the horizon, or well off screen
   function prepare(cam, sunDir, tint) {

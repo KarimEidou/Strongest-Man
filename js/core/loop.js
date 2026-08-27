@@ -16,6 +16,22 @@ export function createLoop({ fixed, frame, render }) {
   let last = performance.now();
   let acc = 0;
   let running = true;
+  // Backgrounded, or the GL context is gone. iOS suspends rAF when the app goes
+  // to the background, so the loop mostly stops on its own — but the FIRST frame
+  // back arrives with a multi-second gap, and 0.1s of that still buys five fixed
+  // steps of catch-up the player never asked for. Zeroing the accumulator on the
+  // way back in is what stops him walking through a wall on return.
+  let hidden = document.visibilityState === 'hidden';
+  let suspended = false;
+  const resetClock = () => { last = performance.now(); acc = 0; };
+  addEventListener('visibilitychange', () => {
+    hidden = document.visibilityState === 'hidden';
+    if (!hidden) resetClock();
+  });
+  // pagehide/pageshow are the pair iOS actually delivers when a PWA is swiped
+  // away and reopened from the app switcher; visibilitychange alone misses it.
+  addEventListener('pagehide', () => { hidden = true; });
+  addEventListener('pageshow', () => { hidden = document.visibilityState === 'hidden'; resetClock(); });
   let halfRate = false;
   let skip = false;
   let frameTimes = [];
@@ -31,6 +47,10 @@ export function createLoop({ fixed, frame, render }) {
   function tick(tMs) {
     if (!running) return;
     requestAnimationFrame(tick);
+    // Nothing may step or draw while the context is gone or the app is away:
+    // rendering into a lost context throws, and stepping into a hidden tab
+    // burns battery for frames nobody sees.
+    if (hidden || suspended) { last = tMs; acc = 0; return; }
     if (halfRate && (skip = !skip)) return;
 
     // Capture mode renders on a metronome: same dt every frame, so damping,
@@ -86,6 +106,10 @@ export function createLoop({ fixed, frame, render }) {
   requestAnimationFrame((t) => { last = t; requestAnimationFrame(tick); });
   return {
     stop() { running = false; },
+    // Held by whatever knows the renderer cannot draw right now — see the
+    // webglcontextlost wiring in js/main.js.
+    suspend(v) { suspended = !!v; if (!v) resetClock(); },
+    get suspended() { return suspended || hidden; },
     get halfRate() { return halfRate; },
     get refreshHz() { return refreshHz; },
   };

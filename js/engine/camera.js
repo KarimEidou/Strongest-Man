@@ -5,6 +5,7 @@ import { clamp, damp, dampAngle, shortAngle } from '../core/mathx.js';
 import { consumeLook } from '../core/input.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { flags } from '../core/debug.js';
+import { onViewportChange } from './viewport.js';
 
 const DIST = 6.2;
 // -0.18 was fine while the only reach was a fist. A gun has to be able to point
@@ -36,8 +37,13 @@ export function createCamera() {
     framingW: 0,
   };
 
-  window.addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
+  // Shared with the renderer and the god-ray targets, so a rotation cannot
+  // leave the projection describing one viewport and the canvas another. The
+  // old listener was on 'resize' only, while the renderer also listened to
+  // 'orientationchange' — on the iOS paths where the latter fires without the
+  // former, the aspect simply stayed wrong.
+  onViewportChange((w, h) => {
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
   });
 
