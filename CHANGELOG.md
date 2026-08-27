@@ -76,6 +76,13 @@ drawings by **Inder**.
 - Random GLB loads aborted mid-flight on a fraction of boots: three's
   `FileLoader` composes an `AbortSignal.any` whose controller is collected once
   the un-referenced loader is, and a collected `AbortController` aborts.
+- **Every walkable front door in the city was drawn shut.** `physics/collide.js`
+  gives every ground-floor door cell a 1.3 m walkable gap — that is how you get
+  inside any of the thirty buildings with an interior — and the shared door
+  archetype merged a solid wooden leaf across it. The player walked through
+  visible wood on all 29 of them, and the gallery, with FREE ADMISSION lettered
+  over its door, read as sealed. The leaf is gone; the jambs and head are full
+  wall thickness, so the opening is a real reveal you can see into.
 
 ### Fixed — pause, and the frame clock
 
@@ -183,6 +190,19 @@ drawings by **Inder**.
 
 ### Fixed — PWA and deploy
 
+- **A player who reloaded while a new worker was installing was never offered
+  the update.** `register()` resolves whenever it resolves, and the browser has
+  usually already begun fetching the new `sw.js` on the navigation before any
+  page script runs. A worker already *waiting* was handled and one that had not
+  started was handled; one *installing* at that moment was not, because
+  `reg.waiting` was empty and `updatefound` had already fired. On a phone that
+  is the ordinary case. All three states are watched now.
+- **The boot watchdog reported a slow first install as a failure.** Ninety
+  seconds measured from module evaluation, with no idea whether anything was
+  happening — so it fired in exactly the case it exists for, a first install
+  where the page and the precache compete for a slow connection, and told the
+  player the app had failed while it was still loading. It measures a stall now.
+
 - **Navigations were cache-first**, so the HTML could never update from the
   network.
 - `cache.addAll()` used the HTTP cache, so a worker installing within ten minutes
@@ -228,9 +248,11 @@ drawings by **Inder**.
   deliberate exception.
 
 The screenshot harness had to be made deterministic first, and doing so found
-three clocks that were getting into the pictures — the frame loop between boot
-and the shutter, the shadow map's render-frame cadence, and CSS transitions plus
-five `setTimeout`s in the HUD. `VERIFICATION.md` has the numbers.
+five things getting into the pictures that were not the fixed step: the frame
+loop between boot and the shutter, the shadow map's render-frame cadence, CSS
+transitions plus five `setTimeout`s in the HUD, scenes sharing a save inside a
+browser context, and a shutter that could outrun the compositor.
+`VERIFICATION.md` has the numbers and the tolerance.
 
 ### Known gaps
 

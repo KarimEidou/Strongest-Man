@@ -196,6 +196,21 @@ The flag is test-and-capture only; nothing in normal play sets it, and the one
 thing it changes that a player could notice — the shadow cadence — is a cost, not
 an appearance.
 
+## 16a. `tools/` is uploaded to Pages, and that is accepted
+
+The workflow uploads `path: .`, which is what the brief specifies and what keeps
+`.nojekyll` and the subpath working. That means `tools/` and the documents are in
+the Pages artifact even though nothing ever requests them — about 300 KB of
+`.mjs` that no visitor downloads, because the service worker's precache is an
+explicit allow-list (`index.html`, `manifest`, `favicon`, `css`, `js`, `vendor`,
+`assets`) and the page never links to them.
+
+Staging a subset instead would mean a copy step between checkout and upload, and
+a copy step is a place for a file to go missing on a deploy that nothing tests.
+The cost of shipping the tools is a few hundred kilobytes in an artifact; the
+cost of the alternative is a class of silent deploy bug. Verified: 121 precached
+URLs, none of them under `tools/`, `docs/` or `screenshots/`.
+
 ## 16b. The screenshot matrix is not committed
 
 602 captures, about 600 MB. This repository **is** the deployed site, so
