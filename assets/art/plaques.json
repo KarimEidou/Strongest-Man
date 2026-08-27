@@ -1,10 +1,38 @@
 {
-  "_comment": "Gallery wall labels. Edit titles / years / medium here — js/world/museum.js reads this file at boot and nothing else hardcodes the text. `slug` keys the image files in this folder (<slug>.webp for inspect mode, <slug>_512.webp for the wall texture). `wall` and `at` place the work inside the museum; see docs/MUSEUM.md.",
+  "_comment": "Gallery wall labels. Edit titles / years / medium here - js/world/museum.js reads this file at boot and nothing else hardcodes the text. `slug` keys the image files in this folder (<slug>.webp for inspect mode, <slug>_512.webp for the wall texture). `wall` and `at` place the work inside the museum; see docs/MUSEUM.md. The titles are the game's invention; the medium is what the works are, graphite on paper; the date is not known to us, so the plaques read Undated rather than assert a year about somebody else's work.",
   "artist": "Inder",
   "works": [
-    { "slug": "the-visitor", "title": "The Visitor", "year": "2026", "medium": "Digital print", "wall": "north", "at": -13.0 },
-    { "slug": "riverbank",   "title": "Riverbank",   "year": "2026", "medium": "Digital print", "wall": "north", "at": -19.6 },
-    { "slug": "reach",       "title": "Reach",       "year": "2026", "medium": "Digital print", "wall": "west",  "at": 19.5 },
-    { "slug": "the-reader",  "title": "The Reader",  "year": "2026", "medium": "Digital print", "wall": "alcove-south", "at": -20.0 }
+    {
+      "slug": "the-visitor",
+      "title": "The Visitor",
+      "year": "Undated",
+      "medium": "Graphite on paper",
+      "wall": "north",
+      "at": -13.0
+    },
+    {
+      "slug": "riverbank",
+      "title": "Riverbank",
+      "year": "Undated",
+      "medium": "Graphite on paper",
+      "wall": "north",
+      "at": -19.6
+    },
+    {
+      "slug": "reach",
+      "title": "Reach",
+      "year": "Undated",
+      "medium": "Graphite on paper",
+      "wall": "west",
+      "at": 19.5
+    },
+    {
+      "slug": "the-reader",
+      "title": "The Reader",
+      "year": "Undated",
+      "medium": "Graphite on paper",
+      "wall": "alcove-south",
+      "at": -20.0
+    }
   ]
 }

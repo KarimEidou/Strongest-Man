@@ -82,7 +82,15 @@ Titles are **invented for this project**. They are not the artist's own.
 | **Reach** | `reach` | west, z = 19.5 | A hand rising from a sleeve, index finger extended, a butterfly hovering just above the fingertip and not yet landed. The entire drawing is that one gesture and the gap left in it. Named for the gesture, not the butterfly — which is what keeps it distinct from *The Visitor*. |
 | **The Reader** | `the-reader` | alcove, south wall, x = −20.0 | A girl seen from behind under a tree, knees drawn up, an open book in her hands, ducks on the water beyond. She is reading, and everything else in the drawing is arranged around her doing it. |
 
-All four are `Inder`, `2026`, `Digital print`.
+All four are credited to `Inder`, `Undated`, `Graphite on paper`.
+
+**The medium and the date are not invented; the titles are.** The works are
+photographs of graphite drawings on paper — two of them carry Inder's signature
+in the lower right — so "Graphite on paper" is a description, not a guess. The
+year is not known here, and a plaque asserting one would be a fabrication about
+somebody else's work, so the label reads `Undated`, which is the ordinary museum
+convention for exactly this case. The titles are the game's, and the table above
+says what each one is drawn from.
 
 **None of the titles is guessed.** Each names something that is unambiguously in
 its own image. There was no case here where the subject was unreadable — had
@@ -204,7 +212,7 @@ a keyboard) to leave.
 3. Add or edit the entry in `assets/art/plaques.json`:
 
    ```json
-   { "slug": "…", "title": "…", "year": "2026", "medium": "Digital print",
+   { "slug": "…", "title": "…", "year": "Undated", "medium": "Graphite on paper",
      "wall": "north", "at": -13.0 }
    ```
 
