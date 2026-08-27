@@ -50,23 +50,35 @@ way round is not automatically correct the other.
 
 ### A capture is a pure function of the scene
 
-This was not true when the harness was written, and it took three fixes:
+This was not true when the harness was written, and it took five fixes. Each one
+was found the same way — by capturing the same scene twice and subtracting.
 
-| The clock | What it did to a picture |
+| What was not the fixed step | What it did to a picture |
 |---|---|
 | The frame loop kept stepping between boot and the shutter | Scenes with a view out of a doorway differed by up to **142,000 pixels** between two runs of identical code — the townsfolk outside had walked further on an idle machine than a loaded one. Scenes with no view out were byte-identical, which is what identified it. |
 | The shadow map's three-frame cadence counts **render** frames | 13,337 pixels on `museum-hall-wide`, max channel delta 72 |
 | CSS transitions and `setTimeout` are on the wall clock | `#art-prompt` fades in over 0.18s and the reputation hint hides after 3s: **196,819 pixels** inside one pill, and a hint that was present or absent depending on how fast the machine was |
+| Scenes shared `localStorage` inside a viewport's context | The shop scene writes 9,000 points; karma and reputation persist too, and reputation decides which shops are shut, which decides where the townsfolk walk. A street captured after the shop had **6,600 pixels** of different pedestrians in it, reproducibly. |
+| The screenshot could outrun the compositor | `renderNow()` rasterizes the whole city in software inside its rAF, and the surface committed can be the one from before it. A `loading` capture came out as bare canvas about once in a few hundred. |
 
 Fixed by freezing the loop after the first render in capture mode and driving
 everything from `__test.step()` and `__test.renderNow()`; refreshing the shadow
-map every frame during a capture; killing CSS transitions in the harness; and
-moving every timed HUD affordance onto the frame clock.
+map every frame during a capture; killing CSS transitions in the harness; moving
+every timed HUD affordance onto the frame clock; clearing storage before the
+page's own script runs; and waiting on a real pause, `document.fonts.ready` and
+`img.decode()` before the shutter. None of the waits can change what is in a
+picture — the loop is suspended and the world is frozen.
 
-**Verified**: a 3-lane and a 1-lane run of the same twelve scenes are
-pixel-identical, all twelve, max channel delta 0. That is also what makes it
-safe to run scenes concurrently, which took the full matrix from most of a day
-to about ninety minutes.
+**Verified, and stated with its tolerance:** a 3-lane and a 1-lane run of all 32
+scenes on one device give **58 of 63 captures byte-identical**. The five that
+differ do so at ±1 on antialiased edges — 5 to 26 pixels out of 3,013,524 — with
+one exception: the title screen, a full-bleed photograph, where Chromium's image
+scaler resamples ±1 along the artwork's own edges across most of the frame at a
+mean delta of 1.2. That is the browser's rasterizer and not the game's
+rendering; the game's own draw is identical in every one of the 63.
+
+That is what makes it safe to run scenes concurrently, which took the full
+matrix from most of a day to about ninety minutes.
 
 ### The scan
 
