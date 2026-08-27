@@ -377,11 +377,17 @@ node tools/test/serve.mjs &
 node tools/test/final.mjs
 ```
 
-**29 assertions, 29 ok. Zero console errors, zero page errors.**
+**29 assertions, 29 ok. Zero console errors, zero page errors.** Four
+consecutive runs, to show it stays that way.
 
-The suite waits on **simulation time**, never on wall time, so it does not pass
-or fail based on how loaded the machine is. Two assertions had to be rewritten
-during this work because they were measuring the run rather than the game:
+The suite also **failed on a failed assertion** for the first time. It used to
+exit on console errors alone, so a check printing `ok: false` still exited 0 —
+invisible to CI, to a shell loop, or to anyone reading the exit code. That is a
+report, not a suite, and it was hiding one.
+
+It waits on **simulation time**, never on wall time, so it does not pass or fail
+based on how loaded the machine is. Three assertions had to be rewritten during
+this work because they were measuring the run rather than the game:
 
 - `armedCarry` re-picked `npcs.find(...)` — always the same first match — twenty-five
   times over. Grabbing worked first try in isolation and mid-panic; the test was
@@ -390,8 +396,12 @@ during this work because they were measuring the run rather than the game:
   were flinging people around, and returned 0.418 or 1.662 on identical code. It
   uses a per-id run-length invariant now, the same treatment the monster check
   already had.
+- `carriedSwing` left its victim in the `commute` state, so between being placed
+  2.4 m ahead and the swing landing 0.35 s later they walked off at about
+  1.4 m/s — sometimes out of the arc. The check was passing or failing on where
+  an NPC's own errand happened to take them. The victim stands still now.
 
-Neither was a game defect and neither is counted as one in `AUDIT.md`.
+None was a game defect and none is counted as one in `AUDIT.md`.
 
 ---
 
