@@ -12,9 +12,9 @@ sentence as the number rather than in a footnote.
 
 | | |
 |---|---|
-| Screenshots, final build | **602** — 31 scenes × 5 viewports × 2 orientations × 2 engines, plus portrait |
+| Screenshots, final build | **622** — 32 scenes × 5 viewports × 2 orientations × 2 engines, plus portrait |
 | Screenshots, pre-overhaul build | **90** — the nine scenes that exist in both |
-| Console problems, final | **0** of 602 |
+| Console problems, final | **0** of 622 |
 | Console problems, baseline | **90** of 90 |
 | Layout assertions | **70 checks, 0 failures** |
 | End-to-end suite | **29/29 ok, 0 console errors, 0 page errors** |
@@ -32,11 +32,12 @@ node tools/capture/capture.mjs --set final --engine both
 node tools/capture/scan.mjs screenshots/final
 ```
 
-**602 screenshots, 0 with a console problem, 0 failed captures.**
+**622 screenshots, 0 with a console problem, 0 failed captures.**
+Every row is in `screenshots/final-report.json`.
 
 | | |
 |---|---|
-| Scenes | 31 — see `tools/capture/scenes.mjs`, each with a note saying what it proves |
+| Scenes | 32 — see `tools/capture/scenes.mjs`, each with a note saying what it proves |
 | Devices | iPhone SE 3 (667×375@2), 14 (844×390@3), 16 Pro (852×393@3), 16 Pro Max (932×430@3), desktop (1920×1080@1) |
 | Orientations | `landscape-left` and `landscape-right`, with the notch inset on the correct side for each |
 | Engines | Chromium and WebKit — WebKit files carry a `wk_` prefix |
@@ -65,7 +66,7 @@ moving every timed HUD affordance onto the frame clock.
 **Verified**: a 3-lane and a 1-lane run of the same twelve scenes are
 pixel-identical, all twelve, max channel delta 0. That is also what makes it
 safe to run scenes concurrently, which took the full matrix from most of a day
-to about fifty minutes.
+to about ninety minutes.
 
 ### The scan
 
@@ -73,10 +74,17 @@ to about fifty minutes.
 mean horizontal gradient. Six hundred screenshots is more than anyone reviews
 honestly by eye, and a blank capture is still a valid PNG of the right size.
 
-It found one: `loading_ip14_landscape-left` came out as bare navy with nothing in
-it, because boot's own hide-the-overlay timer fired *after* the scene had made
-the overlay visible again. Nothing else in the run mentioned it. The fix removed
-that timer entirely (§4 below).
+It has earned its place twice. First: `loading_ip14_landscape-left` came out as
+bare navy with nothing in it, because boot's own hide-the-overlay timer fired
+*after* the scene had made the overlay visible again — the fix removed that timer
+entirely (§4 below). Then, once that was fixed, it caught the same symptom on a
+different device from a different cause: `renderNow()` rasterizes the whole city
+in software inside its rAF, and the compositor can commit the surface from
+*before* that frame, so the screenshot was the previous composite. Two more rAFs
+after the draw; verified over 30 consecutive captures of the scene that was
+failing, zero blank. Neither would have been noticed in a contact sheet of 622.
+
+Nothing else in either run mentioned either of them.
 
 ---
 
@@ -97,6 +105,7 @@ same viewports with the same insets. The only difference is the code.
 | `GL_INVALID_OPERATION: Mismatch between texture format and sampler type` | **17,795** |
 | `net::ERR_ABORTED` on a `.glb` | **321** |
 | `KHR_parallel_shader_compile extension not supported` | 89 |
+| **Total** | **18,358** |
 
 Both causes are in `AUDIT.md` (#105 and #104). The GL errors are two frames per
 boot drawing every shadow receiver with no depth texture bound. The aborted
@@ -104,14 +113,14 @@ loads are three r185's `FileLoader` composing an `AbortSignal.any` whose
 controller is collected once the un-referenced loader is — and a collected
 `AbortController` aborts.
 
-**The final build logs nothing, on any of its 602 screens.**
+**The final build logs nothing, on any of its 622 screens.**
 
 ### Paired scenes
 
 Nine scenes exist in both builds and pair directly: `title`, `loading`,
 `settings`, `shop`, `pause`, `hud-idle`, `hud-bright`, `hud-dark`, `street`.
 
-The other twenty-two are new-build only, and the reason is not a gap in the
+The other twenty-three are new-build only, and the reason is not a gap in the
 method: **there was nothing there to photograph.** No gallery, no artwork, no
 plaques, no inspect mode, no `hud-stress`, no `hud-down`, no rotate overlay
 capture, no update banner. A before/after pair for `plaque-the-visitor` would be
@@ -155,13 +164,13 @@ Instrumented by watching `#loading-msg` and timing every rAF from load to ready.
 
 | | pre-overhaul | final |
 |---|---:|---:|
-| Boot phases complete | 1,980 ms | 2,163 ms |
-| First frame presented (`__READY__`) | 2,896 ms | 7,404 ms |
-| Largest single frame in between | 873 ms | 5,180 ms |
+| Boot phases complete | 1,980 ms | 2,150 ms |
+| First frame presented (`__READY__`) | 2,896 ms | 7,585 ms |
+| Largest single frame in between | 873 ms | 5,359 ms |
 
 **Read this carefully, because the headline number is worse and the build is not.**
 
-Boot itself is +183 ms, and that is the gallery: models, merge, four image
+Boot itself is +170 ms, and that is the gallery: models, merge, four image
 textures and four canvas plaques. Everything else is the **first rendered
 frame**, and it got more expensive for two reasons that are both fixes working:
 
@@ -200,16 +209,24 @@ node tools/test/metrics.mjs --ref origin/pre-overhaul-2026-08-26
 
 | | before | after | |
 |---|---:|---:|---|
-| Draw calls | 53 | **70** | +17 |
-| Triangles | 253,880 | **265,107** | +11,227 |
+| Draw calls | 53 | **71** | +18 |
+| Triangles | 253,880 | **267,786** | +13,906 |
 | Geometries | 52 | **67** | +15 |
 | Textures | 74 | **77** | +3 |
 | Shader programs | 28 | **28** | — |
-| JS heap | 26 MB | **25 MB** | −1 MB |
-| Transfer, first visit | 2.64 MB | **3.39 MB** | +0.75 MB |
-| Requests | 128 | **236** | +108 |
+| JS heap | 26 MB | **26 MB** | — |
+| Page-load requests | 128 | **136** | +8 |
 | Payload on disk | 4.87 MB | **6.09 MB** | +1.22 MB |
+| Precache | — | **5.01 MB**, 121 files | |
 | Console problems | 7 | **0** | |
+
+**On "transfer".** A first visit pays for the page load *and* the service
+worker's precache pass, and the two overlap without being the same set — the
+worker fetches with `{cache: 'reload'}` on purpose, so a precached file the page
+already pulled is pulled again. Rather than quote one ambiguous megabyte figure
+that moves between runs, the three numbers that do not move are given: what the
+page requests (136), what the worker precaches (5.01 MB across 121 files, from
+`tools/gen-sw.mjs`), and what the whole site weighs on disk (6.09 MB).
 
 **The baseline's numbers are cheap because the baseline was broken.** On the run
 that produced them it failed to load `monster_b.glb`, `prop_hydrant.glb` and
@@ -234,8 +251,8 @@ the hall:
 
 | | draw calls | triangles |
 |---|---:|---:|
-| Outside, facing the building | 103 | 275,909 |
-| Inside the hall | **90** | **246,062** |
+| Outside, facing the building | 103 | 275,561 |
+| Inside the hall | **90** | **245,714** |
 
 The gallery is **cheaper to stand in than to stand outside**, because its walls
 occlude the city. The interior is two draw calls: one unlit merged mesh with
@@ -260,6 +277,28 @@ baked vertex colours, one world-lit shell. `docs/MUSEUM.md` has the reasoning.
 
 CPU-side and therefore meaningful off this machine. Character skinning dominates,
 which is expected and is why the townsfolk get blob shadows rather than real ones.
+
+### What reviewing them found
+
+The pictures were then opened and looked at, which is §5.7 of the brief and is
+not a formality. Seven defects came out of that pass and only that pass:
+
+| # | What the screenshot showed |
+|---|---|
+| 107 | The museum plaque's four lines ended 43% down a fixed plate — a label with a hole under it |
+| 108 | With all seven weapons owned, the armed chip sat half off the right edge of the rail |
+| 109 | Five wall-clock timers in the HUD, counting down behind the pause panel |
+| 110 | The gallery prompt drawn on top of the ammo readout at 667×375 |
+| 111 | The loading screen down five seconds before there was anything behind it |
+| 112 | **A solid wooden door across every entrance the player is meant to walk through** |
+| 113 | The four artwork scenes photographing the player's back instead of the artwork |
+
+\#112 is the one worth naming twice. `physics/collide.js` gives every floor-0
+door cell a 1.3 m walkable gap — that is how you get inside any of the thirty
+buildings with an interior — and `doorGeo()` merged a solid leaf across it. The
+geometry contradicted the collision on all 29 doors in the city, and the gallery,
+with FREE ADMISSION lettered over its door, read as sealed. Nothing in any test
+suite was ever going to say so.
 
 ---
 
