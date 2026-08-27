@@ -41,25 +41,26 @@ window.__test.inspect('the-visitor')   opens inspect mode on one work
                     z = 34.2  (south wall)
    ┌──────────────────────────┬────────────────────────┐
    │        ALCOVE            │                        │
-   │   ▣ The Reader           │                        │
+   │   ▣ IV                   │                        │
    │      (south wall)        │                        │
    ├───────────── partition ──┘   z = 27.6             │
    │                                                   │
-   │  ▣ Reach                                          │
+   │  ▣ III                                            │
    │  (west wall)                                   ╔══╡  door
    │                                                ║  │  (−8.5, 23.5)
    │                                       reception║  │
-   │            ▣ Riverbank    ▣ The Visitor         ─┤
+   │            ▣ II           ▣ I                   ─┤
    └──────────────────────────────────────────────────┘
     x = −24.2        z = 12.8 (north wall)        x = −8.8
 ```
 
-Enter from the east. The north wall carries two works on the right; *Reach* is
-straight ahead on the west wall. Walk south past the partition's opening (which
-is 6.6 m wide, between x = −15.4 and the east wall) and the alcove holds the
-fourth. **All four are on a single natural walkthrough**, and from the doorway
-you can already see a corner of *The Reader* through the gap — which is the
-point of putting it there.
+Enter from the east. The north wall carries **I** and **II** on the right; **III**
+is straight ahead on the west wall. Walk south past the partition's opening (which
+is 6.6 m wide, between x = −15.4 and the east wall) and the alcove holds **IV**.
+**All four are on a single natural walkthrough**, and from the doorway you can
+already see a corner of **IV** through the gap — which is the point of putting it
+there. The numbering runs in that walking order, so the hang and the labels tell
+the same story.
 
 The **partition** runs along x at z = 27.6, from the west lining to x = −15.4,
 220 mm thick. It is full height for collision even though it stops at the
@@ -73,28 +74,36 @@ darker stone inlay at the threshold so the material change reads underfoot.
 
 ## The four works
 
-Titles are **invented for this project**. They are not the artist's own.
+The works are **numbered, not named** — `I`, `II`, `III`, `IV`, in hanging
+order. That is the owner's instruction and it overrides the earlier descriptive
+titles, which are recorded below only so the table still says which drawing is
+which.
 
-| Title | File | Wall | Why this title |
+Numbering is a real convention and not a placeholder: a plain numeral says the
+sequence is the curator's and declines to put a reading on somebody else's
+drawing. It is also the honest option here, because every descriptive title was
+this project's invention rather than the artist's.
+
+| Plaque | File | Wall | Which drawing |
 |---|---|---|---|
-| **The Visitor** | `the-visitor` | north, x = −13.0 | A woman in a wide-brimmed hat, seen in profile, with a butterfly settled on her raised finger. The butterfly is what the whole composition turns on — she is entirely still and it has chosen to land. "The Visitor" is the butterfly. |
-| **Riverbank** | `riverbank` | north, x = −19.6 | Reeds, seed heads, pebbles and a small bird over shallow water with fish in it. No single figure is the subject; the bank itself is, and the plainest true name for it is the one it already has. |
-| **Reach** | `reach` | west, z = 19.5 | A hand rising from a sleeve, index finger extended, a butterfly hovering just above the fingertip and not yet landed. The entire drawing is that one gesture and the gap left in it. Named for the gesture, not the butterfly — which is what keeps it distinct from *The Visitor*. |
-| **The Reader** | `the-reader` | alcove, south wall, x = −20.0 | A girl seen from behind under a tree, knees drawn up, an open book in her hands, ducks on the water beyond. She is reading, and everything else in the drawing is arranged around her doing it. |
+| **I** | `the-visitor` | north, x = −13.0 | A woman in a wide-brimmed hat, seen in profile, with a butterfly settled on her raised finger. |
+| **II** | `riverbank` | north, x = −19.6 | Reeds, seed heads, pebbles and a small bird over shallow water with fish in it. |
+| **III** | `reach` | west, z = 19.5 | A hand rising from a sleeve, index finger extended, a butterfly hovering just above the fingertip and not yet landed. |
+| **IV** | `the-reader` | alcove, south wall, x = −20.0 | A girl seen from behind under a tree, knees drawn up, an open book in her hands, ducks on the water beyond. |
 
 All four are credited to `Inder`, `Undated`, `Graphite on paper`.
 
-**The medium and the date are not invented; the titles are.** The works are
-photographs of graphite drawings on paper — two of them carry Inder's signature
-in the lower right — so "Graphite on paper" is a description, not a guess. The
-year is not known here, and a plaque asserting one would be a fabrication about
-somebody else's work, so the label reads `Undated`, which is the ordinary museum
-convention for exactly this case. The titles are the game's, and the table above
-says what each one is drawn from.
+**The slugs are file keys, not titles.** `the-visitor.webp` displays as `I`. They
+were left alone deliberately: renaming them renames the assets, the service
+worker's precache list and every capture filename, for no gain — the mapping
+lives in the table above and in `assets/art/plaques.json`.
 
-**None of the titles is guessed.** Each names something that is unambiguously in
-its own image. There was no case here where the subject was unreadable — had
-there been, that one would be `Untitled` rather than a flattering guess.
+**The medium and the date are descriptions, not inventions.** The works are
+photographs of graphite drawings on paper — two of them carry Inder's signature
+in the lower right — so "Graphite on paper" is a description. The year is not
+known here, and a plaque asserting one would be a fabrication about somebody
+else's work, so the label reads `Undated`, which is the ordinary museum
+convention for exactly this case.
 
 ---
 
@@ -125,6 +134,20 @@ Texture setup, per work: `SRGBColorSpace` (it is albedo), mipmaps on,
 Around the canvas: a real four-bar frame with 90 mm of depth, a backing board so
 no wall shows through the opening, a soft contact shadow on the wall, a modelled
 picture-light fixture above, and the plaque 300 mm to its right.
+
+### The label
+
+The plate is 0.46 m wide and **its height is cut to its content** — the four
+lines are laid out first and the canvas is sized to the block, so there is never
+a band of empty plate under the last line and a longer title can never run off
+the bottom. `plaqueTexture()` in `js/world/museum.js` returns that height in
+metres alongside the texture, and the plate geometry is built from it.
+
+The title line is set in a **serif** face and everything under it in sans. That
+is not decoration. The works are numbered, and a Roman `I` set in Helvetica is a
+bare vertical bar — it reads as a stray tick or a text cursor rather than as a
+numeral; the serifs are what make it a one. It also happens to be the museum
+convention: the number gets serifs, the catalogue data underneath does not.
 
 ---
 
@@ -212,7 +235,7 @@ a keyboard) to leave.
 3. Add or edit the entry in `assets/art/plaques.json`:
 
    ```json
-   { "slug": "…", "title": "…", "year": "Undated", "medium": "Graphite on paper",
+   { "slug": "…", "title": "V", "year": "Undated", "medium": "Graphite on paper",
      "wall": "north", "at": -13.0 }
    ```
 

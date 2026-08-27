@@ -122,10 +122,11 @@ clouds, and sun shafts. **Auto** measures the device on first boot.
 
 There is a small municipal art gallery on the north-west block, and it is the one
 building in town that is not there to be knocked down. Walk in and four drawings
-by **Inder** are hung on the walls, each with a proper museum plaque — title,
-artist, date, medium. Stand in front of one and a prompt appears; take it and the
-work fills the screen at its own aspect ratio, where you can pinch to zoom and
-drag to pan around it. Double-tap resets.
+by **Inder** are hung on the walls — numbered **I** to **IV** in hanging order —
+each with a proper museum plaque carrying the numeral, artist, date and medium.
+Stand in front of one and a prompt appears; take it and the work fills the screen
+at its own aspect ratio, where you can pinch to zoom and drag to pan around it.
+Double-tap resets.
 
 The room is lit and finished the way a gallery is rather than the way the rest of
 the city is, and the reasons — why it is unlit baked vertex colour instead of four

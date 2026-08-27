@@ -188,9 +188,15 @@ function plaqueTexture(work, artist) {
   g.lineWidth = 8;
   g.strokeRect(4, 4, W - 8, H - 8);
 
+  // Serif for the title line, sans for everything under it.
+  //
+  // The works are numbered rather than named, and a Roman "I" set in Helvetica
+  // is a bare vertical bar — it reads as a stray tick or a text cursor, not as
+  // a numeral. Serifs are what make it a one. It is also the convention: wall
+  // labels set numbers with serifs and the catalogue data without them.
   g.fillStyle = '#141821';
   g.textBaseline = 'alphabetic';
-  g.font = '700 74px "Helvetica Neue", Helvetica, Arial, sans-serif';
+  g.font = '700 74px Georgia, "Times New Roman", Times, serif';
   g.fillText(work.title, pad, yTitle);
 
   g.strokeStyle = '#c0b8a4';
@@ -705,8 +711,8 @@ export async function initMuseum(scene, renderer) {
 // interaction
 
 // Nearest artwork the player is close enough to, and facing. Returns null when
-// nothing qualifies. Facing matters: standing with your back to The Reader while
-// inside the alcove should not offer to open it.
+// nothing qualifies. Facing matters: standing with your back to the alcove's own
+// work while inside the alcove should not offer to open it.
 export function nearestWork(px, pz, yaw) {
   let best = null, bd = INTERACT_R * INTERACT_R;
   for (const w of works) {

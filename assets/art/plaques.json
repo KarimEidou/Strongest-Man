@@ -1,10 +1,10 @@
 {
-  "_comment": "Gallery wall labels. Edit titles / years / medium here - js/world/museum.js reads this file at boot and nothing else hardcodes the text. `slug` keys the image files in this folder (<slug>.webp for inspect mode, <slug>_512.webp for the wall texture). `wall` and `at` place the work inside the museum; see docs/MUSEUM.md. The titles are the game's invention; the medium is what the works are, graphite on paper; the date is not known to us, so the plaques read Undated rather than assert a year about somebody else's work.",
+  "_comment": "Gallery wall labels. Edit titles / years / medium here - js/world/museum.js reads this file at boot and nothing else hardcodes the text. `slug` keys the image files in this folder (<slug>.webp for inspect mode, <slug>_512.webp for the wall texture) and is NOT the title: the works are numbered I-IV in hanging order at the owner's request, and the slugs are kept as they are because renaming them would rename the assets and the precache with them. `wall` and `at` place the work inside the museum; see docs/MUSEUM.md. The medium is what the works are, graphite on paper; the date is not known to us, so the plaques read Undated rather than assert a year about somebody else's work.",
   "artist": "Inder",
   "works": [
     {
       "slug": "the-visitor",
-      "title": "The Visitor",
+      "title": "I",
       "year": "Undated",
       "medium": "Graphite on paper",
       "wall": "north",
@@ -12,7 +12,7 @@
     },
     {
       "slug": "riverbank",
-      "title": "Riverbank",
+      "title": "II",
       "year": "Undated",
       "medium": "Graphite on paper",
       "wall": "north",
@@ -20,7 +20,7 @@
     },
     {
       "slug": "reach",
-      "title": "Reach",
+      "title": "III",
       "year": "Undated",
       "medium": "Graphite on paper",
       "wall": "west",
@@ -28,7 +28,7 @@
     },
     {
       "slug": "the-reader",
-      "title": "The Reader",
+      "title": "IV",
       "year": "Undated",
       "medium": "Graphite on paper",
       "wall": "alcove-south",

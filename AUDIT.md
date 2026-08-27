@@ -877,7 +877,7 @@ The commit named is where the behaviour actually changed.
 
 **Expected.** Nothing in the HUD is drawn over anything else in the HUD.
 
-**Actual.** #art-prompt is centred on the viewport (left 50%, translateX(-50%)) and #ammo is pinned to right:182px. On a 852px screen they clear each other by 68px; on a 667px screen they do not, and the prompt is the wider of the two so narrowing it is not an option — VIEW THE READER does not fit in the 143px that would be needed.
+**Actual.** #art-prompt is centred on the viewport (left 50%, translateX(-50%)) and #ammo is pinned to right:182px. On a 852px screen they clear each other by 68px; on a 667px screen they do not, and the prompt is the wider of the two so narrowing it is not an option — VIEW THE READER does not fit in the 143px that would be needed. (The works were renumbered I-IV after this was measured, so the prompt is shorter today; the measurement stands as it was taken, and the fix is not contingent on the string length.)
 
 **Remedy.** Above the ammo row rather than beside it: bottom 58px, derived from #ammo at bottom 22 and 28 tall plus the 8px gutter. Still 116px clear of #weapons at bottom 174.
 

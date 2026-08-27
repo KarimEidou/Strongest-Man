@@ -224,6 +224,13 @@ drawings by **Inder**.
 
 ### Changed
 
+- **The four works are numbered `I`–`IV` rather than named**, in hanging order,
+  at the owner's instruction. The plaque, the inspect caption and the proximity
+  prompt all read from `assets/art/plaques.json`, so this was a data change; the
+  file slugs are deliberately unchanged, because renaming them would rename the
+  assets, the precache list and every capture filename to no end. The title line
+  on the plaque moved to a serif face at the same time — a Roman `I` in Helvetica
+  is a bare vertical bar and does not read as a numeral.
 - `manifest.display` is `fullscreen`, with a `display_override` chain.
 - The museum facade is solid stone with pilasters and an entablature rather than
   glazed; the interior is lined floor to ceiling because of it.

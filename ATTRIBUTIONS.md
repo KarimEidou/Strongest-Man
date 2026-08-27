@@ -81,10 +81,13 @@ This attribution also appears in `assets/CREDITS.md`, which ships with the site.
 
 | Path | What | Author | Licence | Redistribute? |
 |---|---|---|---|---|
-| `assets/art/the-visitor.webp`, `the-visitor_512.webp` | *The Visitor* | **Inder** | Owner's own artwork, used with permission | **No** |
-| `assets/art/riverbank.webp`, `riverbank_512.webp` | *Riverbank* | **Inder** | Owner's own artwork, used with permission | **No** |
-| `assets/art/reach.webp`, `reach_512.webp` | *Reach* | **Inder** | Owner's own artwork, used with permission | **No** |
-| `assets/art/the-reader.webp`, `the-reader_512.webp` | *The Reader* | **Inder** | Owner's own artwork, used with permission | **No** |
+| `assets/art/the-visitor.webp`, `the-visitor_512.webp` | *I* | **Inder** | Owner's own artwork, used with permission | **No** |
+| `assets/art/riverbank.webp`, `riverbank_512.webp` | *II* | **Inder** | Owner's own artwork, used with permission | **No** |
+| `assets/art/reach.webp`, `reach_512.webp` | *III* | **Inder** | Owner's own artwork, used with permission | **No** |
+| `assets/art/the-reader.webp`, `the-reader_512.webp` | *IV* | **Inder** | Owner's own artwork, used with permission | **No** |
+
+The filenames are file keys, not titles — the works are numbered `I`–`IV` on the
+plaques. `docs/MUSEUM.md` maps each slug to its drawing.
 
 Supplied by the repository owner for this project. They are **not** covered by
 the repository's MIT licence and are not free for reuse: anyone cloning this
