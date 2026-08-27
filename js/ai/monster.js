@@ -11,9 +11,6 @@ import { groundHeight } from '../physics/heightfield.js';
 import { capsuleVsWorld } from '../physics/collide.js';
 import { createBody, releaseBody } from '../physics/pworld.js';
 import { removeSphere } from '../world/destruction.js';
-
-// Shared, because setFromAxisAngle is called every frame a monster is eating.
-const UP = new THREE.Vector3(0, 1, 0);
 import { burstBlood, burstDust } from '../engine/particles.js';
 import { addBlob, removeBlob } from '../engine/blobshadows.js';
 import { addBloodDecal } from '../world/debris.js';
@@ -58,6 +55,14 @@ export function bangMaterial() {
 // `hurtPlayer(amount, cause, severity)` is player/health.js's damage entry; it
 // arrives as a plain function rather than as the health system so this file
 // never grows a reason to read the player's hit points.
+// Shared: setFromAxisAngle runs every frame a monster is eating.
+const UP = new THREE.Vector3(0, 1, 0);
+// The townsfolk rig's collar sits 1.45 m above its root, scaled by the per-NPC
+// height. npc.js measures the real bone when the PLAYER grabs someone; here the
+// nominal is enough, because a monster's fist is a 3.4 m creature's fist and
+// nobody is going to read a two-centimetre error in it.
+const HELD_NECK_DROP = 1.45;
+
 export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
   const monsters = [];
   const sys = { monsters };
@@ -225,7 +230,11 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
             // handle sets and this did not. The victim's simulation position
             // came here while their mesh stayed standing at the spot they were
             // taken from, upright, for the whole 1.9s.
-            t.carryY = t.y;
+            // carryY is where the ROOT goes, and the root is at the feet. Set
+            // to the grip height it would put a dangling person's soles level
+            // with the monster's chest and their head above its own; the anchor
+            // is the collar, exactly as it is for the player's carry.
+            t.carryY = t.y - HELD_NECK_DROP * (t.root.scale.y || 1);
             (t.carryQuat || (t.carryQuat = new THREE.Quaternion()))
               .setFromAxisAngle(UP, m.yaw + Math.PI);
             // head-dip "eating" read
