@@ -10,7 +10,7 @@ import { initSky } from './engine/sky.js';
 import { applyQuality, probeTier, tierOf } from './engine/quality.js';
 import { createCamera } from './engine/camera.js';
 import { initHUD, hudFrame } from './ui/hud.js';
-import { initOverlays, loadingProgress, loadingComplete, showUpdate, loadingFailed, toast, toastFrame } from './ui/overlays.js';
+import { initOverlays, loadingProgress, loadingComplete, setBootProgressHook, showUpdate, loadingFailed, toast, toastFrame } from './ui/overlays.js';
 import { initSettings } from './ui/settings.js';
 import { PAL } from './core/palette.js';
 import { on as onEvent, EV } from './core/events.js';
@@ -27,15 +27,29 @@ loadState();
 const bootFail = (reason) => { loadingFailed(reason); clearBootGuards(); };
 const onErr = (e) => bootFail(e?.error?.message || e?.message || e);
 const onRej = (e) => bootFail(e?.reason?.message || e?.reason || 'unhandled rejection');
-// Boot on a cold cache over a slow link is a few seconds; ninety is not a slow
-// link, it is something that is never going to finish.
-const BOOT_TIMEOUT_MS = 90000;
-let bootWatchdog = setTimeout(
-  () => bootFail('Startup timed out. This is usually a failed asset download.'),
-  BOOT_TIMEOUT_MS,
-);
+// The watchdog measures STALL, not elapsed time, and the difference matters.
+//
+// A fixed ninety seconds from module evaluation is a claim about how long boot
+// should take, and it is wrong in the one case it exists for: a first install on
+// a slow phone, where the page is fetching its own hundred-and-thirty resources
+// while the service worker precaches five megabytes beside it with
+// `{cache: 'reload'}`. Boot there is slow and entirely healthy, and a timer that
+// fires through it tells the player the app failed while it is still loading —
+// which is a worse lie than the frozen bar it replaced. Caught doing exactly
+// that in tools/test/upgrade.mjs, where the reload lands mid-precache.
+//
+// Every loadingProgress() call re-arms it, so what it now says is "nothing has
+// happened for ninety seconds", which is what "never going to finish" means.
+const BOOT_STALL_MS = 90000;
+const stallMessage = 'Startup stalled. This is usually a failed asset download.';
+let bootWatchdog = setTimeout(() => bootFail(stallMessage), BOOT_STALL_MS);
+setBootProgressHook(() => {
+  clearTimeout(bootWatchdog);
+  bootWatchdog = setTimeout(() => bootFail(stallMessage), BOOT_STALL_MS);
+});
 function clearBootGuards() {
   clearTimeout(bootWatchdog);
+  setBootProgressHook(null);
   removeEventListener('error', onErr);
   removeEventListener('unhandledrejection', onRej);
 }
@@ -652,11 +666,28 @@ if ('serviceWorker' in navigator && swOk) {
           setTimeout(reload, 200);
         });
       };
-      if (reg.waiting) offer(reg.waiting);
-      reg.addEventListener('updatefound', () => {
-        const w = reg.installing;
-        w?.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
-      });
+      // Three states, and the middle one used to be missed.
+      //
+      // register() resolves whenever it resolves, and the browser has usually
+      // already begun fetching the new sw.js on the navigation before any of
+      // this page's script runs. So by the time we look:
+      //   - the new worker is WAITING      -> offer it now
+      //   - the new worker is INSTALLING   -> offer it when it lands
+      //   - nothing yet                    -> updatefound will tell us
+      // Only the first and third were covered. A player who reloaded while a
+      // new worker was mid-install got no banner at all: the startup check saw
+      // reg.waiting empty, and updatefound had already fired before the listener
+      // existed. That is the ordinary case on a phone, not an edge one, and it
+      // is how tools/test/upgrade.mjs caught it — the newer build was installed
+      // and waiting and never offered.
+      const watch = (w) => {
+        if (!w) return;
+        if (w.state === 'installed') { offer(w); return; }
+        w.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
+      };
+      watch(reg.waiting);
+      watch(reg.installing);
+      reg.addEventListener('updatefound', () => watch(reg.installing));
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         // The takeover itself is not a reason to reload — it is a reason to
         // offer one. reg.waiting is empty by now, so the message goes nowhere

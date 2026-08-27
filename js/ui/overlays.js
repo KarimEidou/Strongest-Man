@@ -81,9 +81,15 @@ export function initOverlays() {
   check();
 }
 
+// main.js's boot watchdog registers here so it can measure "no progress" rather
+// than "too long". See the note beside BOOT_STALL_MS.
+let onProgress = null;
+export function setBootProgressHook(fn) { onProgress = fn; }
+
 export function loadingProgress(frac, msg) {
   el('loading-fill').style.width = `${Math.round(frac * 100)}%`;
   if (msg) el('loading-msg').textContent = msg;
+  onProgress?.();
 }
 
 // Take the loading screen down when there is something behind it, and not one

@@ -119,10 +119,27 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 
+// Named, because a bare "waitForFunction timed out" tells you nothing about
+// which of the eight boots in this run was the one that hung.
+let bootLabel = 'initial';
 const boot = async (timeout = 240000) => {
-  await page.waitForFunction(
-    'window.__READY__ === true || window.__ready === true', null, { timeout },
-  );
+  const t0 = Date.now();
+  try {
+    await page.waitForFunction(
+      'window.__READY__ === true || window.__ready === true', null, { timeout },
+    );
+  } catch (e) {
+    const st = await page.evaluate(`(async () => ({
+      url: location.href,
+      caches: await caches.keys(),
+      controller: navigator.serviceWorker.controller ? 'yes' : 'no',
+      loadingMsg: document.getElementById('loading-msg')?.textContent ?? null,
+      readyFlags: [window.__ready === true, window.__READY__ === true],
+    }))()`).catch((x) => ({ evaluateFailed: String(x).split('\n')[0] }));
+    console.error(`\n! boot "${bootLabel}" never became ready (${Date.now() - t0} ms)`);
+    console.error(`  ${JSON.stringify(st)}`);
+    throw e;
+  }
 };
 const controlled = () => page.evaluate(
   'navigator.serviceWorker.ready.then(() => !!navigator.serviceWorker.controller)',
@@ -132,12 +149,14 @@ const cacheNames = () => page.evaluate('caches.keys()');
 try {
   // ---- 1: old build, worker installed and controlling ----------------------
   await page.goto(`${ORIGIN}?autoplay=1&seed=42`, { waitUntil: 'load' });
+  bootLabel = '1: first load of the old build';
   await boot();
   await page.waitForFunction('navigator.serviceWorker.controller !== null', null, { timeout: 60000 })
     .catch(() => {});
   // the first load registers the worker but is not yet controlled by it; one
   // reload is what a returning player does anyway
   await page.reload({ waitUntil: 'load' });
+  bootLabel = '1: reload into worker control';
   await boot();
   check('1. old build installs a service worker and controls the page', await controlled());
   const oldCaches = await cacheNames();
@@ -146,6 +165,7 @@ try {
   // ---- 2: offline, old build still boots -----------------------------------
   await ctx.setOffline(true);
   await page.reload({ waitUntil: 'load' });
+  bootLabel = '2: offline, old build';
   await boot();
   check('2. old build boots offline from its precache', true);
 
@@ -164,7 +184,19 @@ try {
   const swVersion = await (await fetch(`${ORIGIN}sw.js`)).text()
     .then((t) => (t.match(/const VERSION = '([^']+)'/) || [])[1]);
 
-  // A plain poll, not waitForFunction: the predicate has to await caches.keys(),
+  // Wait for the cache to be POPULATED, not merely to exist.
+  //
+  // caches.open(VERSION) creates the cache the instant the worker starts
+  // installing, so a poll on caches.keys() returns true before addAll has put a
+  // single file in it. Reloading then lands mid-precache: the page's own ~130
+  // requests queue behind 121 concurrent {cache:'reload'} fetches through the
+  // same worker, and boot takes long enough that the app's own stall watchdog
+  // fires. That is the test creating the condition and then failing on it.
+  //
+  // index.html is the last thing to be missing and the first thing a navigation
+  // needs, so its presence is the honest signal that the install is done.
+  //
+  // A plain poll, not waitForFunction: the predicate has to await caches.match(),
   // and a promise-returning expression is not something waitForFunction's poller
   // can be relied on to resolve — it timed out for three minutes at a time while
   // the cache had in fact appeared within five seconds.
@@ -172,8 +204,13 @@ try {
     const t0 = Date.now();
     for (;;) {
       // eslint-disable-next-line no-await-in-loop
-      const keys = await page.evaluate('caches.keys()');
-      if (keys.includes(name)) return true;
+      const ready = await page.evaluate(`(async () => {
+        const keys = await caches.keys();
+        if (!keys.includes(${JSON.stringify(name)})) return false;
+        const c = await caches.open(${JSON.stringify(name)});
+        return !!(await c.match('./index.html'));
+      })()`);
+      if (ready) return true;
       if (Date.now() - t0 > ms) return false;
       // eslint-disable-next-line no-await-in-loop
       await page.waitForTimeout(1000);
@@ -185,6 +222,7 @@ try {
   for (let i = 0; i < 3 && !hasMuseum; i++) {
     await page.reload({ waitUntil: 'load' });
     reloads++;
+    bootLabel = `4: reload ${reloads} after the deploy`;
     await boot();
     hasMuseum = await page.evaluate('typeof window.__test?.museum === "function"');
     if (!hasMuseum) await waitForCache(swVersion);
@@ -217,12 +255,19 @@ try {
   // OFFERED, not forced, and accepting must land on the newer build.
   const newerRoot = join(work, 'newer');
   mkdirSync(newerRoot, { recursive: true });
+  // Copy the SITE, not the repository. `cp -a` of the whole tree pulls in
+  // screenshots/final (622 PNGs, ~600 MB) and tools/node_modules, which is most
+  // of a gigabyte of irrelevant IO in the middle of a timing-sensitive test.
+  // This is the same set tools/gen-sw.mjs precaches, plus what it needs to run.
+  const SITE = ['index.html', 'manifest.webmanifest', 'favicon.png', '.nojekyll',
+    'css', 'js', 'vendor', 'assets', 'sw.js', 'tools/gen-sw.mjs', 'tools/package.json'];
   execFileSync('bash', ['-c',
-    `cp -a ${JSON.stringify(repo)}/. ${JSON.stringify(newerRoot)}/ && rm -rf ${JSON.stringify(newerRoot)}/.git`]);
+    `cd ${JSON.stringify(repo)} && mkdir -p ${JSON.stringify(newerRoot)}/tools && `
+    + SITE.map((f) => `cp -a --parents ${JSON.stringify(f)} ${JSON.stringify(newerRoot)}/`).join(' && ')]);
   // one byte of real difference, so the content hash and the worker both change
   execFileSync('bash', ['-c',
     `printf '\n// upgrade-path probe\nwindow.__UPGRADE_PROBE__ = true;\n' >> ${JSON.stringify(newerRoot)}/js/core/version.js`
-    + ` && cd ${JSON.stringify(newerRoot)}/tools && node gen-sw.mjs >/dev/null`]);
+    + ` && cd ${JSON.stringify(newerRoot)} && node tools/gen-sw.mjs >/dev/null`]);
   ROOT = newerRoot;
   console.log('server switched to a NEWER build');
 
