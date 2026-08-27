@@ -694,7 +694,13 @@ label.srow > input[type=range] { flex: 1 1 100%; }
      and this can sit where it reads best. Clear of #weapons, which starts at
      bottom:174px. */
   position: absolute;
-  left: 50%; bottom: 18px;
+  left: 50%;
+  /* Above the ammo readout, not beside it. The prompt is centred on the
+     viewport and #ammo is pinned to right:182px, so on the 667px-wide SE the
+     two met: the prompt ran 229..438 and the ammo starts at 413. Derived, not
+     picked: #ammo is bottom 22 and 28 tall, so it ends at 50, and 58 leaves the
+     8px gutter. Still well clear of #weapons, which starts at bottom 174. */
+  bottom: 58px;
   transform: translateX(-50%);
   max-width: calc(100% - 380px);
   display: flex; align-items: center; gap: 8px;
