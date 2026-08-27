@@ -9,8 +9,11 @@ import { clipFor, findBone, groundOffset, soleDropOf, footBoneY } from '../anim/
 import { neighbors } from './crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
 import { capsuleVsWorld } from '../physics/collide.js';
-import { createBody } from '../physics/pworld.js';
+import { createBody, releaseBody } from '../physics/pworld.js';
 import { removeSphere } from '../world/destruction.js';
+
+// Shared, because setFromAxisAngle is called every frame a monster is eating.
+const UP = new THREE.Vector3(0, 1, 0);
 import { burstBlood, burstDust } from '../engine/particles.js';
 import { addBlob, removeBlob } from '../engine/blobshadows.js';
 import { addBloodDecal } from '../world/debris.js';
@@ -216,11 +219,20 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
             t.x = t.px = m.x + Math.sin(m.yaw) * 1.4;
             t.z = t.pz = m.z + Math.cos(m.yaw) * 1.4;
             t.y = m.y + m.targetH * 0.55;   // held at the monster's chest
+            // The RENDER transform too, and it has to be said explicitly. npc.js
+            // returns early from move() for state 'carried' and only writes
+            // root.position when carryQuat is set — which the player's grab
+            // handle sets and this did not. The victim's simulation position
+            // came here while their mesh stayed standing at the spot they were
+            // taken from, upright, for the whole 1.9s.
+            t.carryY = t.y;
+            (t.carryQuat || (t.carryQuat = new THREE.Quaternion()))
+              .setFromAxisAngle(UP, m.yaw + Math.PI);
             // head-dip "eating" read
             m.root.rotation.x = Math.sin(m.stateT * 12) * 0.08;
           }
           if (m.stateT <= 0) {
-            if (t) { t.y = m.y; npcSys.kill(t, 'eaten', 4); }
+            if (t) { t.y = m.y; t.carryQuat = null; npcSys.kill(t, 'eaten', 4); }
             m.heldNpc = null;
             m.root.rotation.x = 0;
             m.state = 'rampage';
@@ -367,6 +379,7 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
     if (!t) return;
     m.heldNpc = null;
     m.root.rotation.x = 0;
+    t.carryQuat = null;
     if (t.state !== 'carried') return;
     t.y = groundHeight(t.x, t.z);
     t.state = 'panic';
@@ -437,7 +450,7 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
       m.x = m.body.x; m.z = m.body.z;
       m.root.position.set(m.x, Math.max(m.body.y - 0.8, groundHeight(m.x, m.z) + m.footY), m.z);
       m.root.rotation.y = m.body.ry;
-      if (m.body.asleep) { m.body = null; m.deadT = 0; m.blobOn = false; }
+      if (m.body.asleep) { releaseBody(m.body); m.body = null; m.deadT = 0; m.blobOn = false; }
     } else {
       m.deadT = (m.deadT || 0) + dt;
       if (m.deadT > 14) {
@@ -450,6 +463,10 @@ export function createMonsters(scene, npcSys, player, cam, hurtPlayer) {
 
   function despawn(m) {
     scene.remove(m.root);
+    // Anything holding a reference to this monster past the splice — a queued
+    // bark, a scheduled effect — needs to be able to ask whether it is still a
+    // thing in the world, and `monsters.indexOf` is not available to them.
+    m.despawned = true;
     // The blob-shadow slot has to go back. followers[] in engine/blobshadows.js
     // only ever grew, so every monster the director despawned kept its slot for
     // the rest of the session and after ~47 spawns nothing in the game — monster,

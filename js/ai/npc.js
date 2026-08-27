@@ -14,7 +14,7 @@ import { capsuleVsWorld, blockedAt } from '../physics/collide.js';
 import { pickGoal, routeTo } from './schedule.js';
 import { rebuildHash, neighbors } from './crowd.js';
 import { groundHeight } from '../physics/heightfield.js';
-import { createBody } from '../physics/pworld.js';
+import { createBody, releaseBody } from '../physics/pworld.js';
 import { addBlob } from '../engine/blobshadows.js';
 import { addBloodDecal } from '../world/debris.js';
 import { burstBlood } from '../engine/particles.js';
@@ -289,6 +289,10 @@ export function createNPCs(scene, city, player) {
       n.root.rotation.set(n.body.rx * 0.5, n.body.ry, n.body.rz * 0.5);
       if (n.body.asleep) {
         n.root.rotation.set(0, n.body.ry, Math.PI / 2 * 0.96);   // rolled onto its side
+        // Hand the body back before dropping the reference. Nulling it alone
+        // left the body in pworld.sleeping with nothing pointing at it, and the
+        // pile it raised under the corpse never came down.
+        releaseBody(n.body);
         n.body = null;
         settleCorpse(n);
         addBloodDecal(n.x, n.z, 0.55);
@@ -576,6 +580,12 @@ export function createNPCs(scene, city, player) {
         release: () => {
           if (n.state !== 'carried') return;
           n.carryQuat = null;
+          // The neck correction is the PLAYER's carry, and tryGrab sets these
+          // fresh every time. Leaving them set meant a later carry by anything
+          // else — a monster's 'eat', which drives the same 'carried' state —
+          // would land the throat on a fist position captured in a grab that
+          // ended minutes ago.
+          n.neckBone = null;
           if (wasDead || n.dead) {
             // a body goes back to being a body, wherever you dropped it
             n.state = 'dead';
@@ -590,11 +600,15 @@ export function createNPCs(scene, city, player) {
         },
         launch: (from, vx, vy, vz) => {
           n.carryQuat = null;
+          n.neckBone = null;
           n.x = from.x; n.z = from.z; n.y = from.y;
           if (n.dead) {
             // already a corpse: re-launch the body rather than killing it twice
             n.settled = false;
             n.state = 'dead';
+            // A corpse thrown again before the previous throw had settled still
+            // owns a live body; overwriting the field would orphan it.
+            releaseBody(n.body);
             n.body = createBody({
               kind: 'corpse', x: n.x, y: n.y, z: n.z,
               vx, vy: vy + 4, vz, wy: (rand() - 0.5) * 8, wx: 0, wz: 0,

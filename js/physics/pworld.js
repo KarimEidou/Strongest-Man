@@ -189,6 +189,28 @@ export function wakeRadius(x, z, r, impulse) {
   }
 }
 
+// Hand a body back. Corpses are the reason this exists: npc.js and monster.js
+// both null out `n.body`/`m.body` the moment it falls asleep, which left the
+// body itself in `sleeping` with nothing referencing it. Nothing ever spliced it
+// out, so every death in the session added one permanent entry to a list that
+// wakeRadius walks on every single explosion, and the pile it raised under the
+// corpse stayed raised — the street grew a bump where each body had landed.
+// Re-throwing one corpse then created a FRESH body each time, so the loop was
+// unbounded.
+//
+// Safe to call at any point in the step: the removal from `active` goes through
+// the same deferral as sleepBody's.
+export function releaseBody(b) {
+  if (!b) return;
+  const k = sleeping.indexOf(b);
+  if (k >= 0) sleeping.splice(k, 1);
+  else dropFromActive(b);
+  if (b.pileCell >= 0) { removePile(b.pileCell, b.pileAmount); b.pileCell = -1; b.pileAmount = 0; }
+  b.dead = true;
+  b.onMove = null;
+  b.onSleep = null;
+}
+
 // installed by world/destruction.js so debris pushes out of intact wall cells
 export let collideWorld = null;
 export function setWorldCollider(fn) { collideWorld = fn; }

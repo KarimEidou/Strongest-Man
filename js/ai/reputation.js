@@ -103,14 +103,34 @@ export function initReputation(npcSys, monsterSys, player, city) {
         n.district = d;
       }
       for (let i = 0; i < 4; i++) districtRep[i] = sums[i] / counts[i];
-      // shops shutter where a feared strongman is known
+      // Shops shutter where a feared strongman is known.
+      //
+      // The flag has to land on the POI, not only on the building spec. NPC
+      // routing reads `n.goal?.closed`, and world/city.js builds `pois` as brand
+      // new objects — `{ type, building, x, z, district }` — which are not the
+      // building objects and never gained the property. `closed` was therefore
+      // permanently undefined at the only place that tests it, and the whole
+      // shuttering feature had no effect on anything in the game.
       const kb = karmaBand();
+      const shut = kb === 'feared' || kb === 'monster';
       for (const s of city.buildings) {
         if (s.type === 'shop' || s.type === 'diner') {
-          s.closed = (kb === 'feared' || kb === 'monster') && districtRep[s.district] >= 30;
+          s.closed = shut && districtRep[s.district] >= 30;
+          const poi = poiOf(s.id);
+          if (poi) poi.closed = s.closed;
         }
       }
     }
+  }
+
+  // building id -> poi, built on first use. One poi per building spec.
+  let poiIndex = null;
+  function poiOf(id) {
+    if (!poiIndex) {
+      poiIndex = new Map();
+      for (const p of city.pois) poiIndex.set(p.building, p);
+    }
+    return poiIndex.get(id);
   }
 
   // live proximity behavior: fear, distance-keeping, staring

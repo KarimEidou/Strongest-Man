@@ -79,13 +79,28 @@ Line:`;
     const n = scratch.find((o) => o.panicLevel > 0 && o.state !== 'dead');
     if (n && rand() < 0.4) bark(n, 'panic_scream', { cls: 'scream' });
   });
-  on(EV.MONSTER_SPAWNED, ({ monster }) => {
-    setTimeout(() => {
-      neighbors(monster.x, monster.z, 45, scratch);
+  // The beat before someone notices the monster. This used to be a bare
+  // setTimeout, which is wall-clock: pausing inside those 1.2s put a scream
+  // bubble over the pause overlay and burned the barked NPC's 6s cooldown on a
+  // line the player never saw. The handle was not kept either, so nothing could
+  // cancel it, and the closure held a monster that may have been killed and
+  // despawned before it fired.
+  //
+  // On the fixed step instead, so it inherits the pause, the sim clock and
+  // slow-motion, and the monster is re-checked at the moment it fires.
+  const pendingSpots = [];
+  on(EV.MONSTER_SPAWNED, ({ monster }) => { pendingSpots.push({ monster, t: 1.2 }); });
+  function spotTick(dt) {
+    for (let i = pendingSpots.length - 1; i >= 0; i--) {
+      const p = pendingSpots[i];
+      if ((p.t -= dt) > 0) continue;
+      pendingSpots.splice(i, 1);
+      if (p.monster.dead || p.monster.despawned) continue;
+      neighbors(p.monster.x, p.monster.z, 45, scratch);
       const n = scratch.find((o) => o.state !== 'dead');
       if (n) bark(n, 'monster_spot', { cls: 'scream', force: true });
-    }, 1200);
-  });
+    }
+  }
   on(EV.MONSTER_DIED, ({ byPlayer, x, z }) => {
     if (!byPlayer) return;
     // Thanking him requires him to be there. One of these lines is "Did you see
@@ -110,6 +125,7 @@ Line:`;
   function fixedUpdate(dt) {
     now += dt;
     groqTick(dt);
+    spotTick(dt);
     // Anything that takes them out of the conversation ends it: fleeing a
     // monster, being grabbed, hiding indoors, dying. Only closeChat() clears
     // input.textFocus, so without this the panel — and the input lock with it —
@@ -287,6 +303,7 @@ Line:`;
   function frameUpdate(dt) {
     bubblesFrame(dt);
   }
+
 
   window.__test.talk = onInteract;
   window.__test.chatSay = async (text) => {
