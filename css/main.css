@@ -13,6 +13,13 @@
   --orange-shadow: #904818;
   --navy-bg: #0d1b3e;
   --ink: #eaf2ff;
+  /* Spacing scale. Every gap, pad and margin that is not derived from a
+     measured position is one of these five. docs/STYLE.md is the reference. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 16px;
+  --s4: 24px;
+  --s5: 32px;
   --sa-t: env(safe-area-inset-top, 0px);
   --sa-r: env(safe-area-inset-right, 0px);
   --sa-b: env(safe-area-inset-bottom, 0px);
@@ -535,7 +542,7 @@ button { font: inherit; color: inherit; }
   background: linear-gradient(180deg, rgba(13,27,62,0), var(--navy-bg) 40%);
 }
 #settings-panel h2, #pause-panel h2, #shop-panel h2 { margin: 4px 0 16px; letter-spacing: 3px; color: var(--orange-bright); }
-#shop-panel h2 { margin: 0 0 8px; font-size: 19px; }
+#shop-panel h2 { margin: 0 0 var(--s1); font-size: 19px; }
 #shop-panel { padding-top: 14px; }
 /* Every control in this panel is at least 44px in its short axis. A range
    thumb, a checkbox and a select were 20-34px, which is a miss waiting to
@@ -607,9 +614,13 @@ label.srow > input[type=range] { flex: 1 1 100%; }
 
 /* ---------- armoury ---------- */
 #shop-panel { width: min(680px, 92vw); }
-#shop-balance { margin: -10px 0 10px; font-size: 11px; letter-spacing: 2px; opacity: 0.85; }
+/* The gap under the heading is the HEADING's margin. This used to be
+   `margin: -10px 0 10px`, a subtitle dragged up through the element above it —
+   which meant the two could never be moved independently and the real gap
+   (8 - 10 = -2px) was nowhere in the source. */
+#shop-balance { margin: 0 0 var(--s2); font-size: 11px; letter-spacing: 2px; opacity: 0.85; }
 #shop-points { color: var(--orange-bright); font-weight: 900; font-size: 18px; }
-#shop-list { display: grid; gap: 6px; text-align: left; }
+#shop-list { display: grid; gap: var(--s1); text-align: left; }
 .gun-row {
   display: grid;
   grid-template-columns: 1fr auto;
