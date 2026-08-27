@@ -18,7 +18,7 @@
 // engine and it catches a different class of bug from Chromium, but it is a proxy.
 import { chromium, webkit } from 'playwright-core';
 import { spawn } from 'child_process';
-import { mkdirSync, writeFileSync, readdirSync, rmSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { cpus } from 'os';
@@ -247,7 +247,19 @@ for (const engineName of engines) {
 
 if (server) server.kill();
 
-writeFileSync(join(OUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+// --keep re-shoots a subset into an existing set, so the report has to MERGE
+// rather than replace: a targeted re-run of one scene would otherwise leave a
+// report claiming the set contains ten captures when it contains six hundred.
+// Rows are keyed by engine+device+orientation+scene, and the new run wins.
+let merged = report;
+if (KEEP && existsSync(join(OUT, 'report.json'))) {
+  const key = (r) => `${r.engine}|${r.device}|${r.orientation}|${r.scene}`;
+  const fresh = new Set(report.map(key));
+  const prior = JSON.parse(readFileSync(join(OUT, 'report.json'), 'utf8'));
+  merged = [...prior.filter((r) => !fresh.has(key(r))), ...report];
+  console.log(`\nmerged into ${prior.length} existing rows -> ${merged.length}`);
+}
+writeFileSync(join(OUT, 'report.json'), `${JSON.stringify(merged, null, 2)}\n`);
 const shots = report.filter((r) => r.file).length;
 const dirty = report.filter((r) => r.problems && r.problems.length);
 console.log(`\n${shots} screenshots -> screenshots/${SET}/`);

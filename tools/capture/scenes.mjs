@@ -107,7 +107,13 @@ export const SCENES = [
     id: 'landmark',
     query: DAY,
     note: 'The samosa landmark, for asset and signage quality.',
-    setup: () => window.__test.warpTo(30, -30, Math.PI * 0.25),
+    // lookFrom, not warpTo. The generator puts the two samosas at (-35.5,-47.5)
+    // and (28.5,47.5); the old viewpoint stood at (30,-30) facing PI*0.25, which
+    // is 77m from the nearer one and pointed away from it, so this scene spent
+    // its life photographing an office wall while its note claimed a landmark.
+    // lookFrom aims the camera AT a world point and turns occlusion off, which
+    // is what a beauty shot of a 33m object needs.
+    setup: () => window.__test.lookFrom(28.5, 16, 6, 28.5, 12, 47.5),
     steps: 30,
   },
 
