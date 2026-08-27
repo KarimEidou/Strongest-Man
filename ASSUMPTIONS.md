@@ -85,12 +85,26 @@ where the picture fills a 430 pt viewport at DPR 3 and costs no texture memory.
 ~300 screen px and 512 is already oversampled. Four framed paintings then cost
 ~3 MB of VRAM instead of ~12. 168 KB on disk for all eight files.
 
-## 8. Titles were invented from the images
+## 8. The works are numbered, not titled
 
-Each of the four names something unambiguously present in its own drawing, and
-the reasoning for each is written out in `docs/MUSEUM.md`. There was no case
-where the subject could not honestly be read, so no work is `Untitled`. Titles
-live in `assets/art/plaques.json` and are editable without touching code.
+**Superseded by instruction.** Each work first carried a descriptive title
+invented from its own drawing — the reasoning for each is still in
+`docs/MUSEUM.md` — and the owner then asked for them to be numbered `I`–`IV`
+instead, keeping `Inder` as the artist.
+
+That is the better answer and it is worth saying why rather than just complying.
+Every one of those titles was *this project's reading* of somebody else's
+drawing, and a reading presented on a wall label is indistinguishable from the
+artist's own words. A numeral makes no claim about the picture: it says only
+that this is the first of four, which is a fact about the hang and is the
+curator's to assert. Numbering is also a standing museum convention rather than
+a fallback, and it sits consistently with the plaques reading `Undated` (§16c)
+for exactly the same reason.
+
+The numbers run in hanging order along the natural walkthrough, so the labels
+and the route tell the same story. Titles live in `assets/art/plaques.json` and
+are editable without touching code; the file slugs still carry the old
+descriptive names because they are file keys, not titles.
 
 ## 9. The service worker calls `skipWaiting()`, and defers deleting old caches
 
@@ -228,11 +242,12 @@ hour and a half.
 ## 16c. The plaques say "Undated", and that is not a placeholder
 
 The four works are photographs of graphite drawings on paper — two of them carry
-Inder's signature. The titles are the game's invention and `docs/MUSEUM.md` says
-so and says what each is drawn from; a title is a reading of an image. A **date**
-is a claim of fact about someone else's work, and it is not known here, so the
-plaques carry the ordinary museum convention for that case rather than a year
-that would be made up. The medium is a description, not a guess.
+Inder's signature. The plaques carry numerals rather than titles (§8), which
+sidesteps the question of putting a reading on someone else's image. A **date**
+raises the same question and answers it worse: it is a claim of fact about
+someone else's work, it is not known here, and the plaques therefore carry the
+ordinary museum convention for that case rather than a year that would be made
+up. The medium is a description, not a guess.
 
 ## 17. No webfont is bundled
 
