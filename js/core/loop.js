@@ -2,6 +2,7 @@
 // rAF delivers (120 on ProMotion). Render state interpolates between the last
 // two fixed steps via `alpha`, so 120 Hz displays actually see 120 Hz motion.
 import { game } from './state.js';
+import { flags } from './debug.js';
 
 const FIXED_DT = 1 / 60;
 // Cap on catch-up steps per frame. At 3 the simulation silently falls behind
@@ -32,7 +33,11 @@ export function createLoop({ fixed, frame, render }) {
     requestAnimationFrame(tick);
     if (halfRate && (skip = !skip)) return;
 
-    let dt = Math.min((tMs - last) / 1000, 0.1);
+    // Capture mode renders on a metronome: same dt every frame, so damping,
+    // interpolation and every decaying effect land in the same place on two
+    // different runs. Without it a screenshot is a photograph of whatever the
+    // machine's load happened to be.
+    let dt = flags.capture ? FIXED_DT : Math.min((tMs - last) / 1000, 0.1);
     last = tMs;
     dt *= game.slowmo;
 

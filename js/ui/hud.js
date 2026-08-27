@@ -215,3 +215,33 @@ export function flashVignette(strength = 0.8) {
   clearTimeout(flashVignette._t);
   flashVignette._t = setTimeout(() => { v.style.opacity = 0; }, 180);
 }
+
+// Every readout at once, at the worst value it can hold: the state the capture
+// harness photographs to prove nothing overflows, collides or clips at 667x375.
+// Driven through the same event handlers the game uses, not by writing the DOM,
+// so what the screenshot shows is what a player would actually see.
+if (typeof window !== 'undefined') {
+  addEventListener('load', () => {
+    if (!window.__test) return;
+    window.__test.hudStress = () => {
+      setHealth({ hp: 1, max: 200 });
+      // eight digits and a loss pop, which is the longest this row ever gets
+      setPoints(99999999, -12500, 'CIVILIAN DOWN');
+      setAmmo(0, 200, 'RELOADING');
+      // a full armoury: six chips plus FISTS, which is what wraps the rail
+      if (weapons) {
+        for (const id of ['pistol', 'smg', 'rifle', 'shotgun', 'sniper', 'cannon']) {
+          if (!save.owned.includes(id)) save.owned.push(id);
+        }
+        buildRail();
+        markRail('cannon');
+      }
+      el('reticle').classList.remove('hidden');
+      repHint('THE WHOLE CITY KNOWS WHAT YOU DID TO THAT BUILDING');
+      import('./overlays.js').then((m) => m.toast(
+        'Points buy guns. SHOP, top right. This is the longest line the toast ever carries.', 60000,
+      ));
+      return true;
+    };
+  });
+}

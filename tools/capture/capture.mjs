@@ -1,0 +1,209 @@
+// Screenshot capture harness.
+//
+//   node tools/capture/capture.mjs --set baseline
+//   node tools/capture/capture.mjs --set final --engine both
+//   node tools/capture/capture.mjs --set final --only museum
+//
+// Drives tools/test/serve.mjs, which mounts the site at /Strongest-Man/ exactly
+// as GitHub Pages does — so a root-absolute path that works on a local root
+// server fails here too, which is the whole point of not using `npx serve`.
+//
+// SAFE AREAS: no headless browser reports env(safe-area-inset-*). The harness
+// injects the real per-device values as the --sa-* custom properties css/main.css
+// already reads, asymmetrically, and captures BOTH landscape orientations so the
+// notch swapping sides is actually exercised. This is emulation, not the device;
+// VERIFICATION.md says so plainly and §5.5 covers the rest.
+//
+// WEBKIT is Playwright's WebKit, not Mobile Safari. It is the closest automatable
+// engine and it catches a different class of bug from Chromium, but it is a proxy.
+import { chromium, webkit } from 'playwright-core';
+import { spawn } from 'child_process';
+import { mkdirSync, writeFileSync, readdirSync, rmSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { DEVICES, ORIENTATIONS, insetsFor, viewportFor } from './devices.mjs';
+import { SCENES, PORTRAIT_SCENES, artworkScenes } from './scenes.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = join(here, '..', '..');
+const PORT = Number(process.env.PORT || 8080);
+const ORIGIN = `http://127.0.0.1:${PORT}/Strongest-Man/`;
+
+// ---- args -----------------------------------------------------------------
+const argv = process.argv.slice(2);
+const arg = (name, def) => {
+  const i = argv.indexOf(`--${name}`);
+  return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : def;
+};
+const has = (name) => argv.includes(`--${name}`);
+const SET = arg('set', 'final');
+const ENGINE = arg('engine', 'chromium');       // chromium | webkit | both
+const ONLY = arg('only', '');
+const DEVICE_FILTER = arg('device', '');
+const KEEP = has('keep');
+
+const OUT = join(root, 'screenshots', SET);
+if (!KEEP && existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
+mkdirSync(OUT, { recursive: true });
+
+// ---- chromium binary ------------------------------------------------------
+function findChrome() {
+  const base = '/opt/pw-browsers';
+  for (const d of readdirSync(base)) {
+    if (d.startsWith('chromium') && !d.includes('headless_shell')) {
+      const p = join(base, d, 'chrome-linux', 'chrome');
+      try { readdirSync(join(base, d, 'chrome-linux')); return p; } catch { /* keep looking */ }
+    }
+  }
+  throw new Error('chromium not found under /opt/pw-browsers');
+}
+
+// ---- server ---------------------------------------------------------------
+async function serverUp() {
+  try {
+    const r = await fetch(ORIGIN);
+    return r.ok;
+  } catch { return false; }
+}
+
+let server = null;
+if (!(await serverUp())) {
+  server = spawn(process.execPath, [join(root, 'tools', 'test', 'serve.mjs')], {
+    stdio: 'ignore', detached: false,
+  });
+  for (let i = 0; i < 60 && !(await serverUp()); i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  if (!(await serverUp())) throw new Error(`static server did not come up on ${ORIGIN}`);
+}
+
+// ---- launch ---------------------------------------------------------------
+const engines = ENGINE === 'both' ? ['chromium', 'webkit'] : [ENGINE];
+const report = [];
+let failures = 0;
+
+for (const engineName of engines) {
+  let browser;
+  try {
+    browser = engineName === 'webkit'
+      ? await webkit.launch()
+      : await chromium.launch({
+        executablePath: findChrome(),
+        // SwiftShader: the container has no GPU. Slow, but it renders the real
+        // shaders rather than skipping them.
+        args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      });
+  } catch (e) {
+    console.error(`\n!! ${engineName} could not launch — skipping this engine`);
+    console.error(`   ${String(e).split('\n')[0]}`);
+    report.push({ engine: engineName, skipped: String(e).split('\n')[0] });
+    failures++;
+    continue;
+  }
+
+  // the artwork list drives part of the matrix, so read it from the game once
+  const probe = await browser.newPage({ viewport: { width: 852, height: 393 } });
+  await probe.goto(`${ORIGIN}?autoplay=1&seed=42&capture=1&nomonsters=1`, { waitUntil: 'load' });
+  await probe.waitForFunction('window.__READY__ === true', null, { timeout: 180000 });
+  const works = await probe.evaluate('window.__test.museum().works');
+  await probe.close();
+
+  const landscapeScenes = [...SCENES, ...artworkScenes(works)]
+    .filter((s) => !ONLY || s.id.includes(ONLY));
+  const portraitScenes = PORTRAIT_SCENES.filter((s) => !ONLY || s.id.includes(ONLY));
+
+  for (const device of DEVICES) {
+    if (DEVICE_FILTER && device.id !== DEVICE_FILTER) continue;
+    for (const orientation of [...ORIENTATIONS, 'portrait']) {
+      const scenes = orientation === 'portrait' ? portraitScenes : landscapeScenes;
+      // portrait is a single-device check by design (§5.3): the overlay is not
+      // device-specific and forty more portrait shots prove nothing
+      if (orientation === 'portrait' && device.id !== 'ip16pro') continue;
+      if (!scenes.length) continue;
+
+      const vp = viewportFor(device, orientation);
+      const insets = insetsFor(device, orientation);
+      const ctx = await browser.newContext({
+        viewport: vp,
+        deviceScaleFactor: device.dpr,
+        isMobile: device.id !== 'desktop',
+        hasTouch: device.id !== 'desktop',
+        // the game refuses to register a SW off localhost/https; block it here so
+        // one capture run cannot serve a stale build to the next
+        serviceWorkers: 'block',
+      });
+      // Inject the safe-area values before any of the page's own script runs.
+      await ctx.addInitScript(`(() => {
+        const css = ':root{--sa-t:${insets.top}px;--sa-r:${insets.right}px;'
+          + '--sa-b:${insets.bottom}px;--sa-l:${insets.left}px;}';
+        const add = () => {
+          const st = document.createElement('style');
+          st.id = 'capture-safe-area';
+          st.textContent = css;
+          document.head.appendChild(st);
+        };
+        if (document.head) add();
+        else addEventListener('DOMContentLoaded', add);
+      })()`);
+
+      for (const scene of scenes) {
+        const page = await ctx.newPage();
+        const problems = [];
+        page.on('console', (m) => {
+          if (m.type() === 'error' || m.type() === 'warning') problems.push(`[${m.type()}] ${m.text()}`);
+        });
+        page.on('pageerror', (e) => problems.push(`[pageerror] ${String(e)}`));
+        page.on('requestfailed', (r) => problems.push(`[requestfailed] ${r.url()} ${r.failure()?.errorText}`));
+
+        const name = `${scene.id}_${device.id}_${orientation}`;
+        const file = join(OUT, `${engineName === 'webkit' ? 'wk_' : ''}${name}.png`);
+        try {
+          await page.goto(`${ORIGIN}?${scene.query}`, { waitUntil: 'load' });
+          await page.waitForFunction('window.__READY__ === true', null, { timeout: 180000 });
+          if (scene.setup) {
+            await page.evaluate(typeof scene.setup === 'string' ? scene.setup : scene.setup);
+          }
+          if (scene.steps) await page.evaluate(`window.__test.step(${scene.steps / 60})`);
+          // two rAFs: one to run the frame systems on the new state, one to
+          // present it
+          await page.evaluate(
+            'new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))',
+          );
+          await page.screenshot({ path: file, fullPage: false });
+          report.push({
+            engine: engineName, device: device.id, orientation, scene: scene.id,
+            note: scene.note, file: file.slice(root.length + 1), problems,
+          });
+          if (problems.length) failures++;
+          process.stdout.write(problems.length ? 'x' : '.');
+        } catch (e) {
+          failures++;
+          report.push({
+            engine: engineName, device: device.id, orientation, scene: scene.id,
+            note: scene.note, file: null, problems: [`[capture] ${String(e).split('\n')[0]}`],
+          });
+          process.stdout.write('E');
+        }
+        await page.close();
+      }
+      await ctx.close();
+    }
+  }
+  await browser.close();
+}
+
+if (server) server.kill();
+
+writeFileSync(join(OUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+const shots = report.filter((r) => r.file).length;
+const dirty = report.filter((r) => r.problems && r.problems.length);
+console.log(`\n${shots} screenshots -> screenshots/${SET}/`);
+if (dirty.length) {
+  console.log(`\n${dirty.length} capture(s) with console problems:`);
+  for (const d of dirty.slice(0, 25)) {
+    console.log(`  ${d.scene} ${d.device} ${d.orientation}`);
+    for (const p of [...new Set(d.problems)].slice(0, 4)) console.log(`     ${p.slice(0, 180)}`);
+  }
+}
+process.exit(failures ? 1 : 0);

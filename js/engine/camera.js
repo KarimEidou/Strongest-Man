@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { clamp, damp, dampAngle, shortAngle } from '../core/mathx.js';
 import { consumeLook } from '../core/input.js';
 import { groundHeight } from '../physics/heightfield.js';
+import { flags } from '../core/debug.js';
 
 const DIST = 6.2;
 // -0.18 was fine while the only reach was a fist. A gun has to be able to point
@@ -123,7 +124,10 @@ export function createCamera() {
 
   return {
     camera, st, frameUpdate,
-    shake(amount) { st.trauma = Math.min(1, st.trauma + amount); },
+    // Trauma is time-and-noise driven (performance.now() inside frameUpdate), so
+    // it is the one thing in the camera that cannot be made reproducible. In
+    // capture mode it is simply off.
+    shake(amount) { if (!flags.capture) st.trauma = Math.min(1, st.trauma + amount); },
     frameTwoShot(a, b) {
       if (!st.framing) st.framingPrevDist = st.dist;   // combat may own dist (carrying)
       st.framing = { a, b };
