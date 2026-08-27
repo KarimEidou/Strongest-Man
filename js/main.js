@@ -10,7 +10,7 @@ import { initSky } from './engine/sky.js';
 import { applyQuality, probeTier, tierOf } from './engine/quality.js';
 import { createCamera } from './engine/camera.js';
 import { initHUD, hudFrame } from './ui/hud.js';
-import { initOverlays, loadingProgress, showUpdate, loadingFailed, toast, toastFrame } from './ui/overlays.js';
+import { initOverlays, loadingProgress, loadingComplete, showUpdate, loadingFailed, toast, toastFrame } from './ui/overlays.js';
 import { initSettings } from './ui/settings.js';
 import { PAL } from './core/palette.js';
 import { on as onEvent, EV } from './core/events.js';
@@ -367,7 +367,10 @@ window.__test.plaqueShot = (slug, dist = 1.05) => {
 };
 
 clearBootGuards();
-loadingProgress(1, 'ready');
+// Not 'ready' — the bar sits here for as long as the first frame takes to draw
+// (see loadingComplete), and a screen that says ready while it is not is the
+// small lie that makes a slow launch feel broken.
+loadingProgress(1, 'first frame…');
 window.__test.city = () => ({ buildings: city.buildings.length, cells: buildingsReg.cells.length, props: propsReg.all.length });
 window.__test.showcase = (names) => {
   const { staticGeometry } = window.__assets;
@@ -475,6 +478,11 @@ function render() {
     const s = window.__bodyStats ? window.__bodyStats() : { active: 0, sleeping: 0 };
     return { activeBodies: s.active, sleeping: s.sleeping };
   });
+  // The frame is drawn. NOW the loading screen can come down — see the note on
+  // loadingComplete(). Both flags mean the same thing and the capture harness
+  // waits on the second, so they are set at the same moment, which is also the
+  // moment the player first has something to look at.
+  loadingComplete();
   window.__ready = true;
   // The capture harness waits on this name; keep both, they are one flag.
   window.__READY__ = true;
