@@ -606,7 +606,7 @@
     {
       "where": "museum desktop landscape-left",
       "seen": [
-        "#art-prompt: none visible",
+        "#art-prompt 208.2x48.0",
         "#btn-punch 86.0x86.0",
         "#btn-pause 44.0x44.0"
       ]

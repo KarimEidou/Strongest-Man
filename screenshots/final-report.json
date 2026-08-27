@@ -12,6 +12,15 @@
     "engine": "chromium",
     "device": "se3",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_se3_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "se3",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_se3_landscape-left.png",
@@ -87,6 +96,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_se3_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "se3",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_se3_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "se3",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_se3_landscape-left.png",
     "problems": []
   },
   {
@@ -264,6 +291,15 @@
     "engine": "chromium",
     "device": "se3",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_se3_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "se3",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_se3_landscape-right.png",
@@ -339,6 +375,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_se3_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "se3",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_se3_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "se3",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_se3_landscape-right.png",
     "problems": []
   },
   {
@@ -516,6 +570,15 @@
     "engine": "chromium",
     "device": "ip14",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_ip14_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip14",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_ip14_landscape-left.png",
@@ -591,6 +654,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_ip14_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip14",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_ip14_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip14",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_ip14_landscape-left.png",
     "problems": []
   },
   {
@@ -768,6 +849,15 @@
     "engine": "chromium",
     "device": "ip14",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_ip14_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip14",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_ip14_landscape-right.png",
@@ -843,6 +933,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_ip14_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip14",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_ip14_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip14",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_ip14_landscape-right.png",
     "problems": []
   },
   {
@@ -1020,6 +1128,15 @@
     "engine": "chromium",
     "device": "ip16pro",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_ip16pro_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16pro",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_ip16pro_landscape-left.png",
@@ -1095,6 +1212,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_ip16pro_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16pro",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_ip16pro_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16pro",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_ip16pro_landscape-left.png",
     "problems": []
   },
   {
@@ -1272,6 +1407,15 @@
     "engine": "chromium",
     "device": "ip16pro",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_ip16pro_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16pro",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_ip16pro_landscape-right.png",
@@ -1347,6 +1491,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_ip16pro_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16pro",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_ip16pro_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16pro",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_ip16pro_landscape-right.png",
     "problems": []
   },
   {
@@ -1533,6 +1695,15 @@
     "engine": "chromium",
     "device": "ip16promax",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_ip16promax_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16promax",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_ip16promax_landscape-left.png",
@@ -1608,6 +1779,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_ip16promax_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16promax",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_ip16promax_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16promax",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_ip16promax_landscape-left.png",
     "problems": []
   },
   {
@@ -1785,6 +1974,15 @@
     "engine": "chromium",
     "device": "ip16promax",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_ip16promax_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16promax",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_ip16promax_landscape-right.png",
@@ -1860,6 +2058,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_ip16promax_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16promax",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_ip16promax_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "ip16promax",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_ip16promax_landscape-right.png",
     "problems": []
   },
   {
@@ -2037,6 +2253,15 @@
     "engine": "chromium",
     "device": "desktop",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_desktop_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "desktop",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_desktop_landscape-left.png",
@@ -2112,6 +2337,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_desktop_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "desktop",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_desktop_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "desktop",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_desktop_landscape-left.png",
     "problems": []
   },
   {
@@ -2289,6 +2532,15 @@
     "engine": "chromium",
     "device": "desktop",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/loading_desktop_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "desktop",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/settings_desktop_landscape-right.png",
@@ -2364,6 +2616,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/street_desktop_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "desktop",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/landmark_desktop_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "chromium",
+    "device": "desktop",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/landmark-sign_desktop_landscape-right.png",
     "problems": []
   },
   {
@@ -2541,6 +2811,15 @@
     "engine": "webkit",
     "device": "se3",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_se3_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "se3",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_se3_landscape-left.png",
@@ -2616,6 +2895,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_se3_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "se3",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_se3_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "se3",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_se3_landscape-left.png",
     "problems": []
   },
   {
@@ -2793,6 +3090,15 @@
     "engine": "webkit",
     "device": "se3",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_se3_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "se3",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_se3_landscape-right.png",
@@ -2868,6 +3174,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_se3_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "se3",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_se3_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "se3",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_se3_landscape-right.png",
     "problems": []
   },
   {
@@ -3045,6 +3369,15 @@
     "engine": "webkit",
     "device": "ip14",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_ip14_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip14",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_ip14_landscape-left.png",
@@ -3120,6 +3453,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_ip14_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip14",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_ip14_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip14",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_ip14_landscape-left.png",
     "problems": []
   },
   {
@@ -3297,6 +3648,15 @@
     "engine": "webkit",
     "device": "ip14",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_ip14_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip14",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_ip14_landscape-right.png",
@@ -3372,6 +3732,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_ip14_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip14",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_ip14_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip14",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_ip14_landscape-right.png",
     "problems": []
   },
   {
@@ -3549,6 +3927,15 @@
     "engine": "webkit",
     "device": "ip16pro",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_ip16pro_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16pro",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_ip16pro_landscape-left.png",
@@ -3624,6 +4011,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_ip16pro_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16pro",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_ip16pro_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16pro",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_ip16pro_landscape-left.png",
     "problems": []
   },
   {
@@ -3801,6 +4206,15 @@
     "engine": "webkit",
     "device": "ip16pro",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_ip16pro_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16pro",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_ip16pro_landscape-right.png",
@@ -3876,6 +4290,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_ip16pro_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16pro",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_ip16pro_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16pro",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_ip16pro_landscape-right.png",
     "problems": []
   },
   {
@@ -4062,6 +4494,15 @@
     "engine": "webkit",
     "device": "ip16promax",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_ip16promax_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16promax",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_ip16promax_landscape-left.png",
@@ -4137,6 +4578,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_ip16promax_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16promax",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_ip16promax_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16promax",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_ip16promax_landscape-left.png",
     "problems": []
   },
   {
@@ -4314,6 +4773,15 @@
     "engine": "webkit",
     "device": "ip16promax",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_ip16promax_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16promax",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_ip16promax_landscape-right.png",
@@ -4389,6 +4857,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_ip16promax_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16promax",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_ip16promax_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "ip16promax",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_ip16promax_landscape-right.png",
     "problems": []
   },
   {
@@ -4566,6 +5052,15 @@
     "engine": "webkit",
     "device": "desktop",
     "orientation": "landscape-left",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_desktop_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "desktop",
+    "orientation": "landscape-left",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_desktop_landscape-left.png",
@@ -4641,6 +5136,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_desktop_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "desktop",
+    "orientation": "landscape-left",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_desktop_landscape-left.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "desktop",
+    "orientation": "landscape-left",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_desktop_landscape-left.png",
     "problems": []
   },
   {
@@ -4818,6 +5331,15 @@
     "engine": "webkit",
     "device": "desktop",
     "orientation": "landscape-right",
+    "scene": "loading",
+    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
+    "file": "screenshots/final/wk_loading_desktop_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "desktop",
+    "orientation": "landscape-right",
     "scene": "settings",
     "note": "Settings panel: every control, including the long Groq hint.",
     "file": "screenshots/final/wk_settings_desktop_landscape-right.png",
@@ -4893,6 +5415,24 @@
     "scene": "street",
     "note": "Spawn view: the road, the pavement, traffic and the gallery facade.",
     "file": "screenshots/final/wk_street_desktop_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "desktop",
+    "orientation": "landscape-right",
+    "scene": "landmark",
+    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
+    "file": "screenshots/final/wk_landmark_desktop_landscape-right.png",
+    "problems": []
+  },
+  {
+    "engine": "webkit",
+    "device": "desktop",
+    "orientation": "landscape-right",
+    "scene": "landmark-sign",
+    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
+    "file": "screenshots/final/wk_landmark-sign_desktop_landscape-right.png",
     "problems": []
   },
   {
@@ -5055,546 +5595,6 @@
     "scene": "inspect-the-reader",
     "note": "\"The Reader\" in inspect mode: fullscreen at native aspect, caption, CLOSE.",
     "file": "screenshots/final/wk_inspect-the-reader_desktop_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "se3",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_se3_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "se3",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_se3_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip14",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_ip14_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip14",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_ip14_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16pro",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_ip16pro_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16pro",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_ip16pro_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16promax",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_ip16promax_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16promax",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_ip16promax_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "desktop",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_desktop_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "desktop",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/loading_desktop_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "se3",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_se3_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "se3",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_se3_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip14",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_ip14_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip14",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_ip14_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16pro",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_ip16pro_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16pro",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_ip16pro_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16promax",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_ip16promax_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16promax",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_ip16promax_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "desktop",
-    "orientation": "landscape-left",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_desktop_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "desktop",
-    "orientation": "landscape-right",
-    "scene": "loading",
-    "note": "Boot progress bar mid-load. Nothing may sit under the notch.",
-    "file": "screenshots/final/wk_loading_desktop_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "se3",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_se3_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "se3",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_se3_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "se3",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_se3_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "se3",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_se3_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip14",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_ip14_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip14",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_ip14_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip14",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_ip14_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip14",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_ip14_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16pro",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_ip16pro_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16pro",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_ip16pro_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16pro",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_ip16pro_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16pro",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_ip16pro_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16promax",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_ip16promax_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16promax",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_ip16promax_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16promax",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_ip16promax_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "ip16promax",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_ip16promax_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "desktop",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_desktop_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "desktop",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_desktop_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "desktop",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/landmark_desktop_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "chromium",
-    "device": "desktop",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/landmark-sign_desktop_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "se3",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_se3_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "se3",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_se3_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "se3",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_se3_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "se3",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_se3_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip14",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_ip14_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip14",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_ip14_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip14",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_ip14_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip14",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_ip14_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16pro",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_ip16pro_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16pro",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_ip16pro_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16pro",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_ip16pro_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16pro",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_ip16pro_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16promax",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_ip16promax_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16promax",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_ip16promax_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16promax",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_ip16promax_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "ip16promax",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_ip16promax_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "desktop",
-    "orientation": "landscape-left",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_desktop_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "desktop",
-    "orientation": "landscape-left",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_desktop_landscape-left.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "desktop",
-    "orientation": "landscape-right",
-    "scene": "landmark",
-    "note": "The samosa landmark in its block: 33 m of pastry, the crossroads it stands on, and the second one on the skyline behind it.",
-    "file": "screenshots/final/wk_landmark_desktop_landscape-right.png",
-    "problems": []
-  },
-  {
-    "engine": "webkit",
-    "device": "desktop",
-    "orientation": "landscape-right",
-    "scene": "landmark-sign",
-    "note": "The samosa's signage band square on: INDER'S / BIG SAMOSA, projected onto the pastry rather than bolted in front of it, and legible.",
-    "file": "screenshots/final/wk_landmark-sign_desktop_landscape-right.png",
     "problems": []
   }
 ]
