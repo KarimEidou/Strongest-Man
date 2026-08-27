@@ -22,8 +22,8 @@ numbers are that build's, not the current tree's.
   one of its 90 captured screens** (`screenshots/baseline-report.json`).
 - Each candidate reproduced before it was written down, and re-reproduced after
   the fix. Findings that did not survive that step are not in this document.
-- **The screenshots were then reviewed, and reviewing them found more.** Seven
-  entries here (#107–#113) exist because 622 captures were looked at rather
+- **The screenshots were then reviewed, and reviewing them found more.** Nine
+  entries here (#107–#113, #116, #117) exist because 622 captures were looked at rather
   than counted: a museum label with a hole under it, an armed weapon chip half
   off the screen, five wall-clock timers running behind the pause panel, a
   prompt drawn over the ammo readout at 667×375, a loading screen that comes
@@ -37,6 +37,13 @@ numbers are that build's, not the current tree's.
   update offer with a hole in the middle of it, and a boot watchdog that
   reported a slow first install to the player as a failure. Neither was
   reachable without driving a real worker through a real deploy.
+- **And the review pass found two more again, the second time round.** When
+  the works were renumbered `I`–`IV`, the matrix was re-shot and re-read, and
+  #116 and #117 came out of reading it: a gesture hint with the artwork drawn
+  across its last word on the smallest screen, and Roman numerals set in a
+  sans face in two of the three places the game prints them, where an `I` is a
+  bare vertical stroke. Both are the same lesson as #107–#113 — the pass is
+  worth running every time the pictures change, not once.
 
 **Reading an entry.** *Repro* is the exact steps that produced the behaviour.
 *Expected* and *Actual* are what should happen and what did, with the mechanism.
@@ -50,14 +57,14 @@ The commit named is where the behaviour actually changed.
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
 | Major | 55 | a feature does not work, leaks, or is unusable on the target device |
-| Minor | 49 | wrong, but survivable |
+| Minor | 51 | wrong, but survivable |
 | Polish | 4 | correct, and not good enough |
-| **Total** | **112** | from 115 raw findings; 3 were the same defect seen by two sweeps |
+| **Total** | **114** | from 117 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
 | Logic | 22 |
-| UI | 19 |
+| UI | 20 |
 | Render | 16 |
 | Touch | 16 |
 | HUD | 13 |
@@ -66,6 +73,7 @@ The commit named is where the behaviour actually changed.
 | SW | 6 |
 | Deploy | 2 |
 | Audio | 1 |
+| Layout | 1 |
 
 ## Resolving commits
 
@@ -93,6 +101,7 @@ The commit named is where the behaviour actually changed.
 | `42e3709` | fix(boot): the loading screen came down before there was anything behind it |
 | `90ca0e0` | fix(world): open the doors, and photograph the art instead of the man in front of it |
 | `da7578b` | fix(pwa): an update nobody was offered, and a watchdog that called a slow boot a failure |
+| `ff8a4d2` | fix(ui): set the numerals in a serif, and stop the artwork covering the hint |
 
 ## Index
 
@@ -206,6 +215,8 @@ The commit named is where the behaviour actually changed.
 | 103 | Minor | Logic | `js/dialogue/groq.js:157` | The daily request cap never persists for player conversations — dayCount is only written to loc… | `708a37d` |
 | 109 | Minor | HUD | `js/ui/hud.js:231` | Every timed HUD affordance is on setTimeout, so it counts down behind the pause panel | `b31524c` |
 | 113 | Minor | UI | `tools/capture/scenes.mjs:169` | The artwork scenes photographed the player's back instead of the artwork | `90ca0e0` |
+| 116 | Minor | Layout | `css/main.css:814` | Inspect mode's gesture hint is drawn under the artwork at 667x375, and the last word is cut off | `ff8a4d2` |
+| 117 | Minor | UI | `css/main.css:723` | The Roman numerals are set in the UI sans stack in the prompt and the inspect caption, so "I" r… | `ff8a4d2` |
 | 12 | Polish | Render | `js/main.js:331` | Billboards and the sky dome are posed from the previous frame's camera | `9ab347f` |
 | 65 | Polish | HUD | `css/main.css:212` | #down-banner clears the action-button cluster by 0.5px at 667x375 | `5aa9e2e` |
 | 66 | Polish | UI | `css/main.css:441` | Spacing is off the stated 4/8/16/24/32 scale throughout, including a negative-margin hack that … | `f7ff336` |
@@ -1518,6 +1529,30 @@ The commit named is where the behaviour actually changed.
 **Actual.** The scenes used __test.warpTo, which moves the PLAYER. The camera is a shoulder camera, so the body is always between the lens and whatever the player is facing. plaque-* already had the right treatment (plaqueShot puts the camera on the plate); the artwork shots did not.
 
 **Remedy.** __test.artShot(slug), mirroring plaqueShot: camera on the wall normal at the work's own hanging height, occlusion off, with the camera rig's shoulder and head offsets backed out so the optical centre lands on the picture centre.
+
+### 116. Inspect mode's gesture hint is drawn under the artwork at 667x375, and the last word is cut off
+
+**Minor · Layout · `css/main.css:814` · fixed in `ff8a4d2`**
+
+**Repro.** screenshots/final/inspect-*_se3_landscape-{left,right}.png. Enter inspect mode on any of the four works on a 667x375 viewport and read the hint line in the top left corner.
+
+**Expected.** Every word of the hint is readable, at every viewport, for a work of any aspect ratio.
+
+**Actual.** #inspect-hint was absolutely positioned at top-left with max-width:45%, and #inspect-stage takes all the free height, so the image is sized from the height and centred. On a 375pt-tall screen a 0.55-aspect work is about 187pt wide and its left edge lands at x=250 - six points inside where the hint ends, so the image covers the last letters of "reset". Narrowing the hint does not fix this, it only moves the viewport at which it happens: the image's left edge is (stageW - imgW)/2, so a work wide enough collides with any left-aligned text at the top of the stage. The four works here are all portrait, which is why it took a small viewport to surface a defect that a single landscape work would have made obvious.
+
+**Remedy.** Move the hint out of the overlay and into the flex column, under the caption and centred. The column already reserves its rows, so the stage cannot reach it at any viewport or aspect - and it costs one 10px line rather than the 44pt row that reserving space at the TOP would have needed on the shortest screen. CLOSE stays floated: it has its own fill and border and reads over the artwork the way a lightbox control should.
+
+### 117. The Roman numerals are set in the UI sans stack in the prompt and the inspect caption, so "I" renders as a bare vertical bar
+
+**Minor · UI · `css/main.css:723` · fixed in `ff8a4d2`**
+
+**Repro.** screenshots/final/museum-prompt_se3_landscape-left.png and inspect-the-visitor_*.png, taken after the works were renumbered I-IV. Read the title in the prompt pill and in the inspect caption.
+
+**Expected.** A numeral reads as a numeral wherever the game prints it.
+
+**Actual.** The wall label had already been moved to a serif face for exactly this reason - a Roman "I" in Helvetica has no serifs and is a plain vertical stroke, indistinguishable from a divider, a tick or a text cursor - but the same string is printed in two other places, #art-prompt-text and #inspect-title, and both were left on the system sans stack. In the caption it is worst: the numeral sits alone on its own centred line above "Inder", with nothing around it to imply it is a number at all.
+
+**Remedy.** Georgia / Times / serif on both, sized up slightly so the numeral holds the line. The "VIEW" prefix on the prompt is UI voice rather than part of the title, so its ::before is put back on the project's own sans stack. No webfont: the target device ships both faces.
 
 ### 12. Billboards and the sky dome are posed from the previous frame's camera
 

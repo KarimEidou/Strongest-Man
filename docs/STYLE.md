@@ -85,12 +85,22 @@ wrong.
 sans-serif` — San Francisco on the target device, already installed. See
 `ATTRIBUTIONS.md` for why.
 
+**One exception, and it is a legibility fix rather than a flourish.** The four
+museum works are numbered `I`–`IV`, and a Roman `I` in San Francisco is a bare
+vertical stroke — a tick, a divider, a text cursor, anything but a number. So the
+three places the game prints a work's title are set in `Georgia, "Times New
+Roman", Times, serif`: the wall label (drawn to a canvas in
+`js/world/museum.js`), the proximity prompt, and the inspect caption. Serifs are
+what make an `I` a one, and it is also the convention a real wall label follows —
+the number gets serifs, the catalogue data under it does not. Still no webfont:
+both faces ship on the target device and the fallback is the platform serif.
+
 | Role | Size | Weight | Tracking |
 |---|---|---|---|
 | Loading title | 40 | 900 | 3 |
 | Panel heading | ~19–21 | 700 | 3 |
 | Primary button | 17 | 900 | 2 |
-| Inspect title | 17 | 800 | 2 |
+| **Work numeral** (serif) | 15 prompt / 21 caption | 700 | 2–3 |
 | **Any text input** | **16** | 400 | — |
 | Panel body / row label | 14 | 400 | — |
 | Chat line, bubble | 13 | 400 | — |

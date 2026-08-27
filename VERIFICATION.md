@@ -328,7 +328,7 @@ which is expected and is why the townsfolk get blob shadows rather than real one
 ### What reviewing them found
 
 The pictures were then opened and looked at, which is §5.7 of the brief and is
-not a formality. Seven defects came out of that pass and only that pass:
+not a formality. Nine defects came out of that pass and only that pass:
 
 | # | What the screenshot showed |
 |---|---|
@@ -339,6 +339,13 @@ not a formality. Seven defects came out of that pass and only that pass:
 | 111 | The loading screen down five seconds before there was anything behind it |
 | 112 | **A solid wooden door across every entrance the player is meant to walk through** |
 | 113 | The four artwork scenes photographing the player's back instead of the artwork |
+| 116 | At 667×375, the artwork drawn across the last word of the gesture hint |
+| 117 | The Roman numerals set in the UI sans face, where an `I` is a bare vertical bar |
+
+\#116 and #117 are the second round: the works were renumbered `I`–`IV` after the
+first pass, the matrix was re-shot, and reading it again found two more. That is
+the argument for the pass in one line — it is worth running every time the
+pictures change, not once.
 
 \#112 is the one worth naming twice. `physics/collide.js` gives every floor-0
 door cell a 1.3 m walkable gap — that is how you get inside any of the thirty
