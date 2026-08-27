@@ -451,6 +451,7 @@ function frame(dt, alpha) {
 // city rather than warmUp's throwaway frame the instant PLAY hides the title.
 const titleEl = document.getElementById('title-screen');
 let primedFrames = 0;
+let captureFrozen = false;
 const worldVisible = () => (primedFrames < 3 ? (primedFrames++, true) : titleEl.hidden);
 
 function render() {
@@ -474,6 +475,20 @@ function render() {
   window.__ready = true;
   // The capture harness waits on this name; keep both, they are one flag.
   window.__READY__ = true;
+  // A capture must be a pure function of (scene setup, step count) and nothing
+  // else. It was not: the loop goes on stepping the world at a fixed dt while
+  // Playwright does its round trips, so however many rAF frames happened to run
+  // between boot and the shutter was baked into the picture. On an idle machine
+  // that was a handful; under load it was fewer. Scenes that could see out of a
+  // doorway differed by up to 142,000 pixels between two runs of identical code
+  // because the townsfolk and the traffic outside had walked a different
+  // distance — and scenes with no view out were byte-identical, which is what
+  // identified it.
+  //
+  // So: the first render of a capture run is the last thing the loop does by
+  // itself. Everything after it is driven explicitly by __test.step() and
+  // __test.renderNow(), both synchronous.
+  if (flags.capture && !captureFrozen) { captureFrozen = true; loop.suspend(true); }
 }
 
 const loop = createLoop({ fixed, frame, render });
@@ -504,6 +519,9 @@ window.__test.loseContext = () => {
   return true;
 };
 window.__test.loopSuspended = () => loop.suspended;
+// Drive one render by hand. Called from inside a rAF callback by the capture
+// harness so the compositor presents the frame that was just drawn.
+window.__test.renderNow = () => { render(); return true; };
 // The loop handle was unreachable: createLoop's return value went into a const
 // and nothing ever read halfRate or refreshHz again, so neither the adaptive
 // half-rate nor the display probe could be observed or asserted on.

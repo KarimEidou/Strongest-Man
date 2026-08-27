@@ -21,6 +21,7 @@ import { spawn } from 'child_process';
 import { mkdirSync, writeFileSync, readdirSync, rmSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { cpus } from 'os';
 import { DEVICES, ORIENTATIONS, insetsFor, viewportFor } from './devices.mjs';
 import { SCENES, PORTRAIT_SCENES, artworkScenes } from './scenes.mjs';
 
@@ -41,6 +42,10 @@ const ENGINE = arg('engine', 'chromium');       // chromium | webkit | both
 const ONLY = arg('only', '');
 const DEVICE_FILTER = arg('device', '');
 const KEEP = has('keep');
+// How many scenes are captured at once. Each lane is a browser page rendering
+// the whole city through SwiftShader, so this is CPU-bound: one lane per core
+// with one core left for the server, the harness and the compositor.
+const LANES = Math.max(1, Math.min(8, Number(arg('lanes', 0)) || (cpus().length - 1)));
 
 const OUT = join(root, 'screenshots', SET);
 if (!KEEP && existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
@@ -135,8 +140,18 @@ for (const engineName of engines) {
       });
       // Inject the safe-area values before any of the page's own script runs.
       await ctx.addInitScript(`(() => {
+        // Safe-area insets, plus: no CSS transitions or animations.
+        //
+        // Everything in the SIMULATION is on a fixed step, but CSS is on the
+        // wall clock, and the two are not the same clock. #art-prompt fades in
+        // over 0.18s, so whether the shutter caught it at 0.7 opacity or at 1.0
+        // depended on how fast the machine was — 196,819 pixels of difference
+        // between two runs of identical code, all of it inside that one pill.
+        // Killing the transitions puts every DOM overlay at its settled state,
+        // which is the state worth photographing anyway.
         const css = ':root{--sa-t:${insets.top}px;--sa-r:${insets.right}px;'
-          + '--sa-b:${insets.bottom}px;--sa-l:${insets.left}px;}';
+          + '--sa-b:${insets.bottom}px;--sa-l:${insets.left}px;}'
+          + '*,*::before,*::after{transition:none!important;animation:none!important;}';
         const add = () => {
           const st = document.createElement('style');
           st.id = 'capture-safe-area';
@@ -147,7 +162,25 @@ for (const engineName of engines) {
         else addEventListener('DOMContentLoaded', add);
       })()`);
 
-      for (const scene of scenes) {
+      // Scenes run CONCURRENTLY across a small pool of pages.
+      //
+      // Safe because a capture is not wall-clock dependent: ?capture=1 pins the
+      // frame loop to a fixed dt, freezes the day cycle and the shake, and seeds
+      // Math.random, and every scene advances the world with __test.step(), a
+      // whole number of fixed steps. Two scenes racing on two cores therefore
+      // produce byte-comparable images to the same two scenes run one after the
+      // other — the only thing that changes is how long the run takes.
+      //
+      // It matters a great deal: the full matrix is ~600 boots and each boot is
+      // ~20s of city generation, model decode and shader compilation. Serially
+      // that is most of a working day.
+      const queue = scenes.map((scene, i) => ({ scene, i }));
+      const slots = new Array(scenes.length);
+      const worker = async () => {
+      for (;;) {
+        const job = queue.shift();
+        if (!job) return;
+        const { scene } = job;
         const page = await ctx.newPage();
         const problems = [];
         // Noise the HARNESS causes, not the app. Everything else counts.
@@ -175,28 +208,37 @@ for (const engineName of engines) {
             await page.evaluate(typeof scene.setup === 'string' ? scene.setup : scene.setup);
           }
           if (scene.steps) await page.evaluate(`window.__test.step(${scene.steps / 60})`);
-          // two rAFs: one to run the frame systems on the new state, one to
-          // present it
-          await page.evaluate(
-            'new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))',
-          );
+          // The loop froze itself after its first render (see js/main.js), so
+          // nothing has advanced since except the steps just asked for. Draw the
+          // frame from inside a rAF callback so the compositor presents what was
+          // drawn, then take a second rAF to be sure it has been presented
+          // before the shutter.
+          await page.evaluate(`new Promise((r) => requestAnimationFrame(() => {
+            window.__test.renderNow();
+            requestAnimationFrame(r);
+          }))`);
           await page.screenshot({ path: file, fullPage: false });
-          report.push({
+          slots[job.i] = {
             engine: engineName, device: device.id, orientation, scene: scene.id,
             note: scene.note, file: file.slice(root.length + 1), problems,
-          });
+          };
           if (problems.length) failures++;
           process.stdout.write(problems.length ? 'x' : '.');
         } catch (e) {
           failures++;
-          report.push({
+          slots[job.i] = {
             engine: engineName, device: device.id, orientation, scene: scene.id,
             note: scene.note, file: null, problems: [`[capture] ${String(e).split('\n')[0]}`],
-          });
+          };
           process.stdout.write('E');
         }
         await page.close();
       }
+      };
+      await Promise.all(Array.from({ length: Math.min(LANES, scenes.length) }, worker));
+      // written back in scene order, so the report reads the same whatever
+      // order the pool happened to finish in
+      for (const r of slots) if (r) report.push(r);
       await ctx.close();
     }
   }

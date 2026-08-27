@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import { FLOOR_H } from '../world/city.js';
 import { PROP_TYPES } from '../world/props.js';
+import { flags } from '../core/debug.js';
 
 export const LAYER_SHADOW = 2;
 export const LAYER_OCCLUDER = 3;
@@ -73,6 +74,16 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier, p
   // -1, so the first beforeRender lands on frame 0 and updates immediately
   // rather than letting two more unshadowed frames through.
   let extent = 34, every = 3, enabled = false, frame = -1;
+  // The cadence is a RENDER-frame counter, and render frames come from rAF —
+  // which is the one thing in the capture path that is not on the fixed step.
+  // __test.step() advances the simulation and the frame systems but never
+  // renders, so how many rAFs had run before the shutter depended on how loaded
+  // the machine was, and the shadow map landed in a different phase of its
+  // three-frame cycle from run to run. Measured: 13,337 pixels different on
+  // museum-hall-wide between a loaded run and an idle one, max channel delta 72.
+  // Refreshing every frame during a capture removes the phase entirely, so the
+  // shadow map is a function of the camera and nothing else.
+  const CAPTURE_EVERY = flags.capture ? 1 : 0;
   let props = false;
 
   function setTier(t) {
@@ -96,7 +107,7 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier, p
     // softer edge — resolution and normalBias buy the quality back instead.
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.shadowMap.autoUpdate = false;
-    every = t.shadowEvery || 3;
+    every = CAPTURE_EVERY || t.shadowEvery || 3;
     // Dropping to the low tier used to leave the 3072x3072 depth target
     // allocated for the rest of the session — 36 MB of VRAM held by a feature
     // that has just been switched off, on the tier that exists precisely because
