@@ -23,7 +23,8 @@ export function createLoop({ fixed, frame, render }) {
   // way back in is what stops him walking through a wall on return.
   let hidden = document.visibilityState === 'hidden';
   let suspended = false;
-  const resetClock = () => { last = performance.now(); acc = 0; };
+  let prevTick = 0;               // last delivered rAF timestamp, for the display probe
+  const resetClock = () => { last = performance.now(); acc = 0; prevTick = 0; };
   addEventListener('visibilitychange', () => {
     hidden = document.visibilityState === 'hidden';
     if (!hidden) resetClock();
@@ -40,9 +41,45 @@ export function createLoop({ fixed, frame, render }) {
   // to 30 — at 30 the sim keeps stepping at 60 and it reads as stutter, not as
   // a smooth lower framerate. So measure the display first and only allow it on
   // a genuinely high-refresh panel.
-  let refreshHz = 0;
-  let refreshFrames = 0, refreshT0 = 0;
+  //
+  // The measurement has to be of the DISPLAY, and the obvious version is not.
+  // Counting rendered frames over the first 60 of the game measures achieved
+  // throughput through the most expensive frames the app will ever run — first
+  // shader compiles, first shadow pass, first texture uploads. A 120Hz iPhone
+  // scores about 40 there, `refreshHz > 90` is false, and half-rate can never
+  // engage on the exact hardware it was written for. It was also one-shot, so a
+  // probe that landed during a stall was wrong for the rest of the session.
+  //
+  // Two sources instead, both measuring the interval BETWEEN callbacks rather
+  // than work done inside them:
+  //   1. an idle burst before the first heavy frame — empty callbacks, so the
+  //      deltas are the panel's frame period and nothing else;
+  //   2. the smallest delta seen in each 2s window afterwards, which can only
+  //      ever be a whole number of vsyncs and so can only ever under-report.
+  // A display cannot be slower than the fastest delivery observed on it, so the
+  // two combine with max().
+  let refreshHz = 0;         // from the idle burst
+  let observedHz = 0;        // from the rolling minimum delta
+  let minDelta = Infinity;
+  const displayHz = () => Math.max(refreshHz, observedHz);
   let overBudget = 0;
+
+  // 14 empty rAF callbacks, median delta. Median, not mean: the first delta
+  // after boot is long and the browser occasionally drops one, and neither
+  // should move the answer.
+  (function probeRefresh() {
+    const t = [];
+    const step = (now) => {
+      t.push(now);
+      if (t.length <= 14) { requestAnimationFrame(step); return; }
+      const d = [];
+      for (let i = 1; i < t.length; i++) d.push(t[i] - t[i - 1]);
+      d.sort((a, b) => a - b);
+      const med = d[d.length >> 1];
+      if (med > 0.5) refreshHz = 1000 / med;
+    };
+    requestAnimationFrame(step);
+  }());
 
   function tick(tMs) {
     if (!running) return;
@@ -74,11 +111,13 @@ export function createLoop({ fixed, frame, render }) {
     frame(dt, alpha);
     render();
 
-    // display refresh probe (first ~60 frames)
-    if (refreshHz === 0) {
-      if (refreshT0 === 0) refreshT0 = tMs;
-      else if (++refreshFrames >= 60) refreshHz = refreshFrames / ((tMs - refreshT0) / 1000);
+    // Rolling display probe: the shortest gap between two delivered callbacks.
+    // Guarded against the resume case, where the gap spans a suspension.
+    if (prevTick > 0) {
+      const d = tMs - prevTick;
+      if (d > 0.5 && d < 200) minDelta = Math.min(minDelta, halfRate ? d / 2 : d);
     }
+    prevTick = tMs;
 
     // Adaptive half-rate, high-refresh displays only. Judged on the p90 of the
     // window rather than the mean, so one GC spike can't latch it on forever,
@@ -89,7 +128,12 @@ export function createLoop({ fixed, frame, render }) {
     if (tMs - lastPerfCheck > 2000) {
       frameTimes.sort((a, b) => a - b);
       const p90 = frameTimes[Math.min(frameTimes.length - 1, Math.floor(frameTimes.length * 0.9))] || 0;
-      const allowed = refreshHz > 90;
+      if (minDelta < Infinity) observedHz = Math.max(observedHz, 1000 / minDelta);
+      minDelta = Infinity;
+      // Never in capture mode: skipping every other frame would make a
+      // screenshot depend on how loaded the machine was, which is the one thing
+      // the capture path exists to remove.
+      const allowed = !flags.capture && displayHz() > 90;
       if (allowed && !halfRate && p90 > 11) {
         if (++overBudget >= 2) halfRate = true;
       } else if (halfRate && p90 < 6) {
@@ -111,7 +155,7 @@ export function createLoop({ fixed, frame, render }) {
     suspend(v) { suspended = !!v; if (!v) resetClock(); },
     get suspended() { return suspended || hidden; },
     get halfRate() { return halfRate; },
-    get refreshHz() { return refreshHz; },
+    get refreshHz() { return displayHz(); },
   };
 }
 

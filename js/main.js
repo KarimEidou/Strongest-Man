@@ -51,9 +51,20 @@ initHUD();
 initOverlays();
 initSettings();
 
-// system lists (systems register during boot below)
+// System lists (systems register during boot below).
+//
+// The render-frame pass is in TWO halves with the camera solve between them,
+// because a single list forces one of two wrong orders. cam.frameUpdate() reads
+// what player/combat/weapons wrote this frame and writes camera.position and the
+// view matrix; the sky dome, the city-light billboards, the monster health pips
+// and the speech bubbles all read that transform back. Solving the camera after
+// one flat list posed every one of those from the PREVIOUS frame's camera —
+// visible as bubbles lagging a head during a fast turn and the dome swimming.
+// Solving it before the list instead would only move the lag onto the camera
+// itself, which is worse. So: producers, camera, consumers.
 const fixedSystems = [];
 const frameSystems = [];
+const lateFrameSystems = [];
 
 loadingProgress(0.05, 'sky…');
 const sky = await initSky(scene, renderer, tierOf((flags.quality || settings.quality) === 'auto' ? 'high' : (flags.quality || settings.quality)));
@@ -153,15 +164,10 @@ frameSystems.push(profile('combat.frame', (dt) => combat.frameUpdate(dt)));
 // After combat, and it has to be: combat owns pose.update(), and the aim twists
 // are applied ON TOP of the pose it writes rather than under it.
 frameSystems.push(profile('weapons.frame', (dt) => weapons.frameUpdate(dt)));
-// Paused means paused. main.js keeps frameSystems running while 'paused' so the
-// world stays rendered behind an overlay — but that also kept particles
-// integrating, hydrant jets emitting and tracers flying the whole time the pause
-// panel was up, so a player who paused mid-collapse came back to a settled
-// street and a dust cloud that had aged out. The blobs still update, because
-// they only follow positions and would pop if they stopped.
+// dt is already zero while paused — frame() gates the whole list. blobFrame()
+// takes none, because it only follows positions and would pop if it stopped.
 frameSystems.push(profile('fx.frame', (dt) => {
-  const d = game.state === 'playing' ? dt : 0;
-  debrisFrame(d); particlesFrame(d); tracersFrame(d); blobFrame();
+  debrisFrame(dt); particlesFrame(dt); tracersFrame(dt); blobFrame();
 }));
 window.__bodyStats = bodyStats;
 window.__pworld = pworld;   // test hook: the live active/sleeping body arrays
@@ -215,7 +221,7 @@ window.__quality = (name) => applyQuality(name, qualityCtx);
 
 const { initCityLights } = await import('./engine/citylights.js');
 const cityLights = initCityLights(propsReg);
-frameSystems.push(profile('citylights', () => cityLights.frameUpdate(cam.camera)));
+lateFrameSystems.push(profile('citylights', () => cityLights.frameUpdate(cam.camera)));
 
 const { initShop } = await import('./ui/shop.js');
 const { bindWeapons } = await import('./ui/hud.js');
@@ -230,7 +236,10 @@ fixedSystems.push(profile('dialogue', (dt) => {
   dialogue.fixedUpdate(dt);
   if (inputRef.interactPressed) dialogue.onInteract();
 }));
-frameSystems.push((dt) => dialogue.frameUpdate(dt));
+// Also on the pause gate: a bubble lives speakDuration + 1.2s, under 8 seconds,
+// so pausing to read what somebody just said used to destroy the line you
+// paused to read. It still tracks the head, which is dt-free.
+lateFrameSystems.push((dt) => dialogue.frameUpdate(dt));
 const { input: inputRef } = await import('./core/input.js');
 
 const { initAudio } = await import('./engine/audio.js');
@@ -239,14 +248,15 @@ initAudio();
 initOutfit(player);
 frameSystems.push(profile('chars.frame', (dt, alpha) => {
   npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha);
-  healthPipsFrame(dt, monsters.monsters, MONSTER_MAX_HP);
 }));
+// camera-facing quads, so they belong after the camera solve
+lateFrameSystems.push(profile('pips.frame', (dt) => healthPipsFrame(dt, monsters.monsters, MONSTER_MAX_HP)));
 if (flags.time >= 0) game.timeOfDay = flags.time;
 fixedSystems.push((dt) => {
   if (flags.capture) return;   // a screenshot must not depend on how long it took
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
 });
-frameSystems.push(profile('sky.frame', (dt) => sky.frameUpdate(dt, game.timeOfDay, cam.camera)));
+lateFrameSystems.push(profile('sky.frame', (dt) => sky.frameUpdate(dt, game.timeOfDay, cam.camera)));
 window.__npcs = npcs;
 window.__trafficList = traffic.list;
 window.__trafficState = traffic.hooks.lightState;
@@ -320,6 +330,23 @@ window.__test.inspect = (slug) => {
   return true;
 };
 window.__test.isInspecting = () => isInspecting();
+// Scene load/unload, for the leak check in tools/test/metrics.mjs. The gallery
+// is the one part of the world that is built as a unit and can be taken down as
+// one — the city itself is generated once at boot — so it is what a "load and
+// unload a scene twenty times" measurement has to use here.
+window.__test.museumCycle = async () => {
+  const mod = await import('./world/museum.js');
+  mod.disposeMuseum(scene);
+  await mod.initMuseum(scene, renderer);
+  return true;
+};
+window.__test.gpuInfo = () => ({
+  geometries: renderer.info.memory.geometries,
+  textures: renderer.info.memory.textures,
+  programs: renderer.info.programs?.length ?? 0,
+  calls: renderer.info.render.calls,
+  triangles: renderer.info.render.triangles,
+});
 // Park the camera on one wall label at reading distance, square to the plate.
 // The follow camera adds HEAD (1.55 m) and a 0.55 m shoulder offset to whatever
 // target it is given, so both are subtracted out here — otherwise the plaque
@@ -386,25 +413,60 @@ function frame(dt, alpha) {
   lastDt = dt;
   if (game.state === 'playing' || game.state === 'paused') {
     const t0 = performance.now();
-    for (const s of frameSystems) s(dt, alpha);
-    cam.frameUpdate(dt);
+    // ONE pause gate, here, for every render-frame system.
+    //
+    // The world keeps being drawn behind the pause panel, so the frame pass has
+    // to keep running — but it was running on the real dt while the fixed step
+    // that drives it was stopped. Every mixer, the pose layer, the recoil decay,
+    // the carry sway, the particle integrators, the hydrant jets and the speech
+    // bubbles' own lifetimes all advanced against a simulation that did not.
+    // A player who paused mid-collapse came back to a settled street; a player
+    // who paused to read a line watched it fade; a scheduled strike came out of
+    // the pause desynced from the punch clip that was supposed to carry it.
+    //
+    // Zero dt freezes all of it and costs nothing: positional interpolation runs
+    // off `alpha`, and the things that must keep tracking while paused — the
+    // camera transform, blob shadows, bubble projection — are position-driven
+    // and take no dt at all.
+    const fdt = game.state === 'playing' ? dt : 0;
+    for (const s of frameSystems) s(fdt, alpha);
+    cam.frameUpdate(fdt);
+    for (const s of lateFrameSystems) s(fdt, alpha);
     hudFrame();
     addSimTime(performance.now() - t0);
   }
 }
 
+// The title screen is an opaque navy panel with a full-bleed splash image on
+// top of it, so every draw call behind it lands on pixels nobody can see — the
+// whole city, the shadow pass and the god-ray pass, at full cost, on the screen
+// an installed PWA sits on longest. A player who opens the app and puts the
+// phone down was heating it indefinitely for nothing.
+//
+// The pause, settings and armoury overlays are 0.82 alpha over a backdrop blur
+// and genuinely do show the world through them, so they keep drawing. Only the
+// title (and the loading panel above it) is opaque.
+//
+// The first few frames draw regardless, so the canvas holds a real image of the
+// city rather than warmUp's throwaway frame the instant PLAY hides the title.
+const titleEl = document.getElementById('title-screen');
+let primedFrames = 0;
+const worldVisible = () => (primedFrames < 3 ? (primedFrames++, true) : titleEl.hidden);
+
 function render() {
   renderer.info.reset();
-  // Order matters: the god-ray mask is its own render(), and
-  // shadowMap.needsUpdate is consumed by whichever render() comes next — so the
-  // shadow update has to be flagged BETWEEN the mask and the main pass, or the
-  // mask would eat it and the main pass would use a stale shadow map.
-  const rays = godrays.prepare(cam.camera, sky.sunDir, sky.sample().sun);
-  if (rays) godrays.renderMask(scene);
-  shadows.beforeRender(player.p, cam.camera, sky.lightDir);
-  renderer.setRenderTarget(null);
-  renderer.render(scene, cam.camera);
-  if (rays) godrays.composite();
+  if (worldVisible()) {
+    // Order matters: the god-ray mask is its own render(), and
+    // shadowMap.needsUpdate is consumed by whichever render() comes next — so the
+    // shadow update has to be flagged BETWEEN the mask and the main pass, or the
+    // mask would eat it and the main pass would use a stale shadow map.
+    const rays = godrays.prepare(cam.camera, sky.sunDir, sky.sample().sun);
+    if (rays) godrays.renderMask(scene);
+    shadows.beforeRender(player.p, cam.camera, sky.lightDir);
+    renderer.setRenderTarget(null);
+    renderer.render(scene, cam.camera);
+    if (rays) godrays.composite();
+  }
   perfFrame(renderer, lastDt, () => {
     const s = window.__bodyStats ? window.__bodyStats() : { active: 0, sleeping: 0 };
     return { activeBodies: s.active, sleeping: s.sleeping };
@@ -442,6 +504,10 @@ window.__test.loseContext = () => {
   return true;
 };
 window.__test.loopSuspended = () => loop.suspended;
+// The loop handle was unreachable: createLoop's return value went into a const
+// and nothing ever read halfRate or refreshHz again, so neither the adaptive
+// half-rate nor the display probe could be observed or asserted on.
+window.__test.loop = () => ({ halfRate: loop.halfRate, refreshHz: +loop.refreshHz.toFixed(1), suspended: loop.suspended });
 
 // Screen Wake Lock. A phone left to its own devices dims and locks after thirty
 // seconds of no touch, and this game is played with long stretches of nothing
@@ -492,7 +558,7 @@ window.__test.profile = () => {
   }
   return out;
 };
-export { scene, renderer, cam, fixedSystems, frameSystems };
+export { scene, renderer, cam, fixedSystems, frameSystems, lateFrameSystems };
 
 // Service worker: content-hash-versioned precache, generated by tools/gen-sw.mjs.
 //

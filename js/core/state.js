@@ -88,5 +88,9 @@ export function persist() {
 export function setGameState(s) {
   if (game.state === s) return;
   game.state = s;
+  // Hit-stop is cleared by combat.fixedUpdate, which only runs while 'playing'.
+  // Pausing inside the 0.45s of a charged hit therefore latched a 0.25x
+  // timescale onto everything that DOES keep running behind the panel.
+  if (s !== 'playing') game.slowmo = 1;
   emit(EV.GAME_STATE, { state: s });
 }
