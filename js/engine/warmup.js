@@ -30,7 +30,12 @@ export async function warmUp(renderer, scene, camera, extraMaterials = []) {
   });
 
   try {
-    if (renderer.compileAsync) await renderer.compileAsync(scene, camera);
+    // compileAsync polls KHR_parallel_shader_compile and logs a warning on every
+    // driver that lacks it (SwiftShader, some older mobile GL). Ask first: with
+    // the extension it is a genuine win, without it compileAsync does exactly
+    // what compile() does and only adds a console warning to every boot.
+    const parallel = renderer.extensions?.has?.('KHR_parallel_shader_compile');
+    if (parallel && renderer.compileAsync) await renderer.compileAsync(scene, camera);
     else renderer.compile(scene, camera);
     // one real frame: builds depth/shadow program variants too. The loading
     // overlay is opaque and still up, so nothing of this reaches the player.

@@ -70,7 +70,9 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier, p
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 220;
 
-  let extent = 34, every = 3, enabled = false, frame = 0;
+  // -1, so the first beforeRender lands on frame 0 and updates immediately
+  // rather than letting two more unshadowed frames through.
+  let extent = 34, every = 3, enabled = false, frame = -1;
   let props = false;
 
   function setTier(t) {
@@ -80,6 +82,14 @@ export function initShadows(renderer, scene, sun, buildingsReg, traffic, tier, p
     propProxy.visible = props;
     canopyProxy.visible = props;
     renderer.shadowMap.enabled = enabled;
+    // Build the map on the very NEXT render, whatever that is. autoUpdate is off
+    // and beforeRender only flags an update on its cadence, so without this the
+    // first frames — including engine/warmup.js's throwaway one — draw every
+    // shadow-receiving material with no depth texture bound. three then binds its
+    // 1x1 default to a sampler2DShadow and the driver logs GL_INVALID_OPERATION
+    // "Mismatch between texture format and sampler type" once per draw call:
+    // ~170 console warnings at every boot, and two frames of unshadowed city.
+    if (enabled) renderer.shadowMap.needsUpdate = true;
     // PCFShadowMap, deliberately, at every tier. PCFSoftShadowMap renders the
     // entire lit scene black on at least one driver we can test against
     // (ANGLE/SwiftShader), which is a catastrophic failure mode for a marginally
