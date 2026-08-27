@@ -78,7 +78,7 @@ if (process.env.GROQSTUB) {
       body: JSON.stringify({ choices: [{ message: { content: STUB_LINE } }] }),
     });
   });
-  await page.addInitScript(() => { try { localStorage.setItem('sm_groq_key', 'gsk_test'); } catch {} });
+  await page.addInitScript(() => { try { localStorage.setItem('sm_groq_key', 'gsk_test'); } catch { /* storage can be unavailable; the test does not need it */ } });
 }
 
 await page.goto(`http://127.0.0.1:8080/Strongest-Man/${suffix}`, { waitUntil: 'load' });

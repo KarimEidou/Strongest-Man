@@ -6,7 +6,7 @@ function findChrome() {
   for (const d of readdirSync(base)) {
     if (d.startsWith('chromium')) {
       const p = join(base, d, 'chrome-linux', 'chrome');
-      try { readdirSync(join(base, d, 'chrome-linux')); return p; } catch {}
+      try { readdirSync(join(base, d, 'chrome-linux')); return p; } catch { /* this build has no chrome-linux; keep looking */ }
     }
   }
   throw new Error('no chromium');

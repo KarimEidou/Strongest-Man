@@ -142,6 +142,9 @@ async function serverMessage(res) {
     const body = await res.json();
     return body?.error?.message || body?.message || '';
   } catch {
+    // A non-JSON error body (a proxy's HTML page, an empty 502). The caller
+    // falls back to the status line, which is better than nothing and is never
+    // invented — see the note on printing whatever the server said, verbatim.
     return '';
   }
 }
@@ -321,6 +324,8 @@ async function probeWith(key) {
     const ids = new Set((data.data || []).map((m) => m.id));
     return MODEL_PREFERENCE.find((id) => ids.has(id)) || null;
   } catch {
+    // Offline, aborted at 4s, or a key the catalogue refuses. All three mean the
+    // same thing to the caller — no usable model — and testKey reports which.
     return null;
   } finally {
     clearTimeout(timer);
