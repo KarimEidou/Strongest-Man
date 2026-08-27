@@ -20,14 +20,6 @@ numbers are that build's, not the current tree's.
   one of its 90 captured screens** (`screenshots/baseline/report.json`).
 - Each candidate reproduced before it was written down, and re-reproduced after
   the fix. Findings that did not survive that step are not in this document.
-- **The screenshots were then reviewed, and reviewing them found more.** Five
-  entries here (#107–#111) exist because 602 captures were looked at rather than
-  counted — a museum label with a hole under it, an armed weapon chip half off
-  the screen, a HUD that keeps five wall-clock timers running behind a pause
-  panel, a prompt drawn over the ammo readout on the smallest phone, and a
-  loading screen that comes down five seconds before there is anything behind
-  it. §5.7 of the brief asks for that pass because it is the one that finds
-  these; it is not a formality.
 
 **Reading an entry.** *Repro* is the exact steps that produced the behaviour.
 *Expected* and *Actual* are what should happen and what did, with the mechanism.
@@ -40,17 +32,17 @@ The commit named is where the behaviour actually changed.
 | Severity | Count | Meaning |
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
-| Major | 52 | a feature does not work, leaks, or is unusable on the target device |
-| Minor | 48 | wrong, but survivable |
+| Major | 53 | a feature does not work, leaks, or is unusable on the target device |
+| Minor | 49 | wrong, but survivable |
 | Polish | 4 | correct, and not good enough |
-| **Total** | **108** | from 111 raw findings; 3 were the same defect seen by two sweeps |
+| **Total** | **110** | from 113 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
 | Logic | 22 |
-| UI | 17 |
+| UI | 18 |
+| Render | 16 |
 | Touch | 16 |
-| Render | 15 |
 | HUD | 13 |
 | Perf | 10 |
 | PWA | 6 |
@@ -82,6 +74,7 @@ The commit named is where the behaviour actually changed.
 | `b31524c` | fix(hud): a label cut to its text, an armed chip you can see, and no wall clocks |
 | `37f79d9` | fix(hud): the gallery prompt sat on top of the ammo readout on the SE |
 | `42e3709` | fix(boot): the loading screen came down before there was anything behind it |
+| `90ca0e0` | fix(world): open the doors, and photograph the art instead of the man in front of it |
 
 ## Index
 
@@ -143,6 +136,7 @@ The commit named is where the behaviour actually changed.
 | 108 | Major | HUD | `js/ui/hud.js:155` | The armed weapon chip can sit off the edge of the rail with nothing to say it is there | `b31524c` |
 | 110 | Major | HUD | `css/main.css:751` | The gallery prompt is drawn on top of the ammo readout at 667x375 | `37f79d9` |
 | 111 | Major | UI | `js/ui/overlays.js:84` | The loading screen comes down before there is anything behind it | `42e3709` |
+| 112 | Major | Render | `js/world/buildings.js:61` | Every walkable front door in the city is drawn shut, and the player passes through the leaf | `90ca0e0` |
 | 7 | Minor | Perf | `js/engine/warmup.js:43` | warmUp disposes three's module-level shared Sprite geometry | `5418f1e` |
 | 8 | Minor | Render | `js/engine/blobshadows.js:25` | Blob-shadow CanvasTexture carries colour but is left at NoColorSpace, so shadows render as ligh… | `5418f1e` |
 | 9 | Minor | Render | `js/engine/godrays.js:40` | God-ray composite adds linear-light values onto an already tone-mapped, sRGB-encoded framebuffer | `9456ab7` |
@@ -191,6 +185,7 @@ The commit named is where the behaviour actually changed.
 | 102 | Minor | PWA | `js/dialogue/groq.js:223` | The Groq client is never skipped offline — no navigator.onLine check exists anywhere in the app | `708a37d` |
 | 103 | Minor | Logic | `js/dialogue/groq.js:157` | The daily request cap never persists for player conversations — dayCount is only written to loc… | `708a37d` |
 | 109 | Minor | HUD | `js/ui/hud.js:231` | Every timed HUD affordance is on setTimeout, so it counts down behind the pause panel | `b31524c` |
+| 113 | Minor | UI | `tools/capture/scenes.mjs:169` | The artwork scenes photographed the player's back instead of the artwork | `90ca0e0` |
 | 12 | Polish | Render | `js/main.js:331` | Billboards and the sky dome are posed from the previous frame's camera | `9ab347f` |
 | 65 | Polish | HUD | `css/main.css:212` | #down-banner clears the action-button cluster by 0.5px at 667x375 | `5aa9e2e` |
 | 66 | Polish | UI | `css/main.css:441` | Spacing is off the stated 4/8/16/24/32 scale throughout, including a negative-margin hack that … | `f7ff336` |
@@ -878,6 +873,18 @@ The commit named is where the behaviour actually changed.
 
 **Remedy.** loadingComplete(), called from inside render() after the frame is drawn, and the only thing in the tree that hides #loading. The bar's last message is "first frame…" rather than "ready", because a screen that says ready while it is not is what makes a slow launch feel broken.
 
+### 112. Every walkable front door in the city is drawn shut, and the player passes through the leaf
+
+**Major · Render · `js/world/buildings.js:61` · fixed in `90ca0e0`**
+
+**Repro.** screenshots/final/museum-entrance_se3_landscape-right.png, cropped to the opening: the player stands in the doorway with a solid brown panel behind him and no interior visible. The museum door instance is at x=-8.65, z=23.5 — the wall plane — and physics/collide.js:82 gives that cell a 1.3 m walkable gap, so walking in means walking through it. doorGeo() merges a 1.2 x 2.2 leaf at 0x5a3a20 into the shared door archetype, and every one of the 29 door instances in the city carries it.
+
+**Expected.** A door you can walk through looks like one, and a building with FREE ADMISSION lettered over the entrance is not sealed.
+
+**Actual.** The geometry contradicted the collision on every building in the game that has an interior. From the street the gallery read as closed; from inside, the doorway was a brown rectangle rather than a view of the forecourt.
+
+**Remedy.** Delete the leaf. Nothing has to replace it: the two jambs and the head are already full wall thickness, so removing it leaves a real 0.3 m reveal and the interior is visible through the opening.
+
 ### 7. warmUp disposes three's module-level shared Sprite geometry
 
 **Minor · Perf · `js/engine/warmup.js:43` · fixed in `5418f1e`**
@@ -1455,6 +1462,18 @@ The commit named is where the behaviour actually changed.
 **Actual.** Five separate wall-clock timers, none of them aware of game.state. It is also the last clock in the game a screenshot could not pin down: whether the reputation hint appeared in a capture depended on whether the machine took more or less than three seconds to get from the scene setup to the shutter — 196,819 differing pixels between two runs of identical code.
 
 **Remedy.** One countdown each, decremented in hudFrame(dt), which frame() hands a zero dt whenever the state is not playing. toastFrame is called from main.js rather than hud.js so the deliberate hud->overlays import break stays broken.
+
+### 113. The artwork scenes photographed the player's back instead of the artwork
+
+**Minor · UI · `tools/capture/scenes.mjs:169` · fixed in `90ca0e0`**
+
+**Repro.** screenshots/final/art-riverbank_ip14_landscape-left.png: the player stands centred in front of the picture, covering its lower half. All four art-* scenes did this, on every device, in both orientations, in both engines — 80 captures whose stated purpose is asset quality and which show a blue hoodie.
+
+**Expected.** A scene whose note says "head-on: native aspect, even lighting, frame depth, contact shadow" shows the work.
+
+**Actual.** The scenes used __test.warpTo, which moves the PLAYER. The camera is a shoulder camera, so the body is always between the lens and whatever the player is facing. plaque-* already had the right treatment (plaqueShot puts the camera on the plate); the artwork shots did not.
+
+**Remedy.** __test.artShot(slug), mirroring plaqueShot: camera on the wall normal at the work's own hanging height, occlusion off, with the camera rig's shoulder and head offsets backed out so the optical centre lands on the picture centre.
 
 ### 12. Billboards and the sky dome are posed from the previous frame's camera
 
