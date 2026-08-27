@@ -171,9 +171,22 @@ for (const device of DEVICES) {
       hasTouch: device.id !== 'desktop',
       serviceWorkers: 'block',
     });
+    // Safe-area insets, plus: no CSS transitions or animations.
+    //
+    // The transition kill is not cosmetic here, it decides whether a check runs
+    // at all. boxes() drops anything at computed opacity 0, and #art-prompt
+    // fades in over 0.18s on the wall clock while the state setup advances the
+    // SIM by a fixed 0.5s — two different clocks. So whether the prompt was
+    // measured depended on which side of the fade the two rAFs landed on, and
+    // on the runs where it landed at exactly 0 the report said "none visible"
+    // and the #art-prompt/#ammo overlap assertions — the regression guard for
+    // AUDIT.md #110 — silently did not run. A check that sometimes does not
+    // happen is worse than one that fails. Killing the transitions puts every
+    // DOM overlay at its settled state, which is the state worth measuring.
     await ctx.addInitScript(`(() => {
       const css = ':root{--sa-t:${insets.top}px;--sa-r:${insets.right}px;'
-        + '--sa-b:${insets.bottom}px;--sa-l:${insets.left}px;}';
+        + '--sa-b:${insets.bottom}px;--sa-l:${insets.left}px;}'
+        + '*,*::before,*::after{transition:none!important;animation:none!important;}';
       const add = () => { const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); };
       if (document.head) add(); else addEventListener('DOMContentLoaded', add);
     })()`);
