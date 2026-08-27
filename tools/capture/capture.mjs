@@ -211,11 +211,19 @@ for (const engineName of engines) {
           // The loop froze itself after its first render (see js/main.js), so
           // nothing has advanced since except the steps just asked for. Draw the
           // frame from inside a rAF callback so the compositor presents what was
-          // drawn, then take a second rAF to be sure it has been presented
-          // before the shutter.
+          // drawn — and then wait TWO more frames before the shutter.
+          //
+          // Two, not one, and it is not superstition. renderNow() rasterizes the
+          // whole city in software inside its rAF, which is seconds long here;
+          // the compositor can commit the surface from BEFORE that frame, and a
+          // screenshot taken then is the previous composite. It showed up as
+          // `loading` captures that were bare canvas with no panel on them —
+          // the panel had been made visible by the scene's setup a moment
+          // earlier and simply had not been painted yet. One in 602, on a
+          // different device each run, which is what a timing race looks like.
           await page.evaluate(`new Promise((r) => requestAnimationFrame(() => {
             window.__test.renderNow();
-            requestAnimationFrame(r);
+            requestAnimationFrame(() => requestAnimationFrame(r));
           }))`);
           await page.screenshot({ path: file, fullPage: false });
           slots[job.i] = {
