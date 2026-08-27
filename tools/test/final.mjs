@@ -499,14 +499,26 @@ results.punchWhileCarrying = await page.evaluate(() => {
 // 19) and that punch is a SWING of the thing you are holding, which kills what
 // is in front of you and does not move you
 results.carriedSwing = await page.evaluate(() => {
-  // still holding the car from the previous fixture; put someone in front of it
+  // Still holding someone from the previous fixture; put a victim in front.
+  //
+  // The victim has to STAND there. Left in 'commute' they walk off at about
+  // 1.4 m/s, and the 0.35 s between being placed and the swing landing was
+  // enough to carry them out of its arc — the check passed or failed on where
+  // an NPC's own errand happened to take them, which is the run and not the
+  // game. Same mistake as armedCarry and grounding made, in a third place.
   const p0 = window.__test.playerStats();
   const v = window.__npcs.npcs.find((n) => !n.dead) || window.__npcs.npcs[0];
-  v.x = v.px = p0.x + Math.sin(p0.yaw) * 2.4;
-  v.z = v.pz = p0.z + Math.cos(p0.yaw) * 2.4;
-  v.y = 0; v.dead = false; v.settled = false; v.state = 'commute'; v.body = null;
+  const place = () => {
+    v.x = v.px = p0.x + Math.sin(p0.yaw) * 2.4;
+    v.z = v.pz = p0.z + Math.cos(p0.yaw) * 2.4;
+    v.y = 0;
+  };
+  v.dead = false; v.settled = false; v.body = null;
+  v.state = 'at_poi'; v.stateT = 99; v.targetSpeed = 0; v.speed = 0;
+  place();
   window.__test.step(0.2);
   const holding = window.__test.carry().kind;
+  place();                       // and again, immediately before the swing
   window.__test.press('punchDown'); window.__test.step(0.05); window.__test.press('punchUp');
   // punchUp only queues the edge — the swing starts on the NEXT fixed step, so
   // reading the phase before stepping always reported 'carrying'
@@ -924,9 +936,23 @@ results.perf = await page.evaluate('window.__perf');
 if (simTimeouts.length) results.simStarved = { timeouts: simTimeouts, ok: false };
 
 console.log(JSON.stringify(results, null, 1));
+
+// A suite that prints "ok: false" and then exits 0 is not a suite, it is a
+// report. This exited on console errors alone, so a failed assertion was
+// invisible to anything reading the exit code — CI, a shell loop, or a person
+// running it between other work. Found by carriedSwing failing while the run
+// still reported success.
+const failedChecks = Object.entries(results)
+  .filter(([, v]) => v && typeof v === 'object' && v.ok === false)
+  .map(([k]) => k);
+if (failedChecks.length) {
+  console.error(`\nFAILED (${failedChecks.length}): ${failedChecks.join(', ')}`);
+}
 if (errors.length) {
   console.error('CONSOLE ERRORS:');
   for (const e of errors) console.error('  ' + e);
 }
+const checked = Object.values(results).filter((v) => v && typeof v === 'object' && 'ok' in v).length;
+console.error(`\n${checked - failedChecks.length}/${checked} assertions ok, ${errors.length} console error(s)`);
 await browser.close();
-process.exit(errors.length ? 1 : 0);
+process.exit(errors.length || failedChecks.length ? 1 : 0);
