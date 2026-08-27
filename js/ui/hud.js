@@ -94,7 +94,6 @@ function setHealth({ hp, max }) {
 }
 
 // ---- points ---------------------------------------------------------------
-let popTimer = 0;
 function setPoints(total, delta, what) {
   el('points-val').textContent = total.toLocaleString('en-US');
   if (!delta) return;
@@ -112,8 +111,7 @@ function setPoints(total, delta, what) {
   pop.classList.toggle('gain', delta > 0);
   pop.classList.toggle('loss', delta < 0);
   pop.classList.add('show');
-  clearTimeout(popTimer);
-  popTimer = setTimeout(() => pop.classList.remove('show'), delta > 0 ? 900 : 1400);
+  popT = delta > 0 ? 0.9 : 1.4;
 }
 
 // ---- ammo -----------------------------------------------------------------
@@ -153,23 +151,54 @@ function buildRail() {
 }
 
 function markRail(id) {
-  for (const b of document.querySelectorAll('#weapons .wchip')) {
-    b.classList.toggle('on', b.dataset.id === (id || ''));
+  const rail = el('weapons');
+  let sel = null;
+  for (const b of rail.querySelectorAll('.wchip')) {
+    const on = b.dataset.id === (id || '');
+    b.classList.toggle('on', on);
+    if (on) sel = b;
+  }
+  // …and scroll it into view. The rail is one row that scrolls, and with all
+  // seven weapons owned it is wider than the screen: arming the CANNON put the
+  // one chip you most need to see half off the right edge, with nothing to tell
+  // you it was there. scrollLeft rather than scrollIntoView, which is entitled
+  // to scroll ancestors as well and there is nothing above this that may move.
+  if (!sel || !rail.clientWidth) return;
+  const pad = 10;                       // matches .wchip::after's hit slop
+  const left = sel.offsetLeft, right = left + sel.offsetWidth;
+  if (left - pad < rail.scrollLeft) rail.scrollLeft = Math.max(0, left - pad);
+  else if (right + pad > rail.scrollLeft + rail.clientWidth) {
+    rail.scrollLeft = right + pad - rail.clientWidth;
   }
 }
 
-let hitTimer = 0;
 function hitMarker() {
   const r = el('reticle');
   r.classList.remove('hit');
   void r.offsetWidth;               // restart the animation
   r.classList.add('hit');
-  clearTimeout(hitTimer);
-  hitTimer = setTimeout(() => r.classList.remove('hit'), 200);
+  hitT = 0.2;
 }
 
-// called every render frame
-export function hudFrame() {
+// Timed HUD affordances, on the FRAME clock rather than on setTimeout.
+//
+// Wall-clock timers do not belong in a HUD that sits over a pausable game: a
+// reputation hint raised a moment before the player paused counted its three
+// seconds down behind the panel and was gone when they came back, and a toast
+// or a hit marker did the same. It is also the last clock in the game that a
+// screenshot could not pin down — the reputation hint was present or absent in
+// the capture depending on whether the machine took more or less than three
+// seconds to get from the scene's setup to the shutter, which is exactly the
+// kind of thing a deterministic harness is for.
+//
+// frame() hands this a zero dt while paused, so these hold.
+let repT = 0, vigT = 0, hitT = 0, popT = 0;
+
+export function hudFrame(dt = 0) {
+  if (repT > 0 && (repT -= dt) <= 0) el('rep-hint').classList.add('hidden');
+  if (vigT > 0 && (vigT -= dt) <= 0) el('vignette').style.opacity = 0;
+  if (hitT > 0 && (hitT -= dt) <= 0) el('reticle').classList.remove('hit');
+  if (popT > 0 && (popT -= dt) <= 0) el('points-pop').classList.remove('show');
   const punchBtn = el('btn-punch');
   // The ring is a CHARGE meter, and a trigger does not charge: with a gun out
   // the same held button is firing, and a ring filling behind it reads as a
@@ -216,15 +245,12 @@ export function repHint(text) {
   const h = el('rep-hint');
   h.textContent = text;
   h.classList.remove('hidden');
-  clearTimeout(repHint._t);
-  repHint._t = setTimeout(() => h.classList.add('hidden'), 3000);
+  repT = 3;
 }
 
 export function flashVignette(strength = 0.8) {
-  const v = document.getElementById('vignette');
-  v.style.opacity = strength;
-  clearTimeout(flashVignette._t);
-  flashVignette._t = setTimeout(() => { v.style.opacity = 0; }, 180);
+  el('vignette').style.opacity = strength;
+  vigT = 0.18;
 }
 
 // Every readout at once, at the worst value it can hold: the state the capture

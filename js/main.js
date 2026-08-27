@@ -10,7 +10,7 @@ import { initSky } from './engine/sky.js';
 import { applyQuality, probeTier, tierOf } from './engine/quality.js';
 import { createCamera } from './engine/camera.js';
 import { initHUD, hudFrame } from './ui/hud.js';
-import { initOverlays, loadingProgress, showUpdate, loadingFailed, toast } from './ui/overlays.js';
+import { initOverlays, loadingProgress, showUpdate, loadingFailed, toast, toastFrame } from './ui/overlays.js';
 import { initSettings } from './ui/settings.js';
 import { PAL } from './core/palette.js';
 import { on as onEvent, EV } from './core/events.js';
@@ -432,7 +432,10 @@ function frame(dt, alpha) {
     for (const s of frameSystems) s(fdt, alpha);
     cam.frameUpdate(fdt);
     for (const s of lateFrameSystems) s(fdt, alpha);
-    hudFrame();
+    hudFrame(fdt);
+    // Called from here, not from hud.js, which stays out of a static import of
+    // overlays.js on purpose — see the note beside the dynamic import there.
+    toastFrame(fdt);
     addSimTime(performance.now() - t0);
   }
 }

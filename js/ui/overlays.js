@@ -110,13 +110,18 @@ export function loadingFailed(reason) {
   }, { once: true });
 }
 
-let toastTimer = 0;
+// On the frame clock, like every other timed thing in the HUD (see ui/hud.js):
+// a toast raised a moment before the player paused used to spend its life behind
+// the pause panel and be gone when they came back.
+let toastT = 0;
 export function toast(text, ms = 2200) {
   const t = el('toast');
   t.textContent = text;
   t.classList.remove('hidden');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
+  toastT = ms / 1000;
+}
+export function toastFrame(dt) {
+  if (toastT > 0 && (toastT -= dt) <= 0) el('toast').classList.add('hidden');
 }
 
 // A new build is installed and waiting. The worker deliberately did not take

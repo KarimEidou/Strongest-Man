@@ -69,7 +69,14 @@ const CANVAS_H = 1.62;
 const CANVAS_CY = 1.52;        // centre height — gallery standard
 const FRAME_W = 0.075;         // border width on every side
 const FRAME_D = 0.09;          // how far the frame stands off the wall
-const PLAQUE_W = 0.46, PLAQUE_H = 0.30, PLAQUE_CY = 1.15;
+// The plate's WIDTH is fixed; its height comes from the text (see plaqueTexture).
+// It used to be a fixed 0.46 x 0.30, which put the four lines in the top 43% of
+// the plate and left the rest of it blank — a label with a hole under it. Real
+// wall labels are cut to their content, and so is this one, which also means a
+// longer title cannot run out of plate.
+const PLAQUE_W = 0.46, PLAQUE_CY = 1.15;
+const PLAQUE_PAD = 54;            // canvas px at 1024 across, so ~24 mm
+const PLAQUE_PX_PER_M = 1024 / PLAQUE_W;
 const PLAQUE_GAP = 0.30;       // clear space between frame edge and plaque edge
 
 const INTERACT_R = 3.4;        // metres at which the prompt appears
@@ -157,7 +164,18 @@ function canvasTexture(canvas, srgb = true) {
 // 3x iPhone can resolve at reading distance, so the text stays crisp when the
 // player walks right up to it.
 function plaqueTexture(work, artist) {
-  const W = 1024, H = Math.round(W * (PLAQUE_H / PLAQUE_W));
+  const W = 1024;
+  const pad = PLAQUE_PAD;
+  // Lay the block out first so the plate can be cut to it. Each entry is the
+  // advance to that line's BASELINE from the previous one.
+  const TITLE = 58, RULE = 22, ARTIST = 62, YEAR = 50, MEDIUM = 46;
+  const yTitle = pad + TITLE;
+  const yRule = yTitle + RULE;
+  const yArtist = yRule + ARTIST;
+  const yYear = yArtist + YEAR;
+  const yMedium = yYear + MEDIUM;
+  const DESCENDER = 12;                       // the 42px face's, below its baseline
+  const H = Math.round(yMedium + DESCENDER + pad);
   const c = makeCanvas(W, H);
   const g = c.getContext('2d');
 
@@ -170,32 +188,25 @@ function plaqueTexture(work, artist) {
   g.lineWidth = 8;
   g.strokeRect(4, 4, W - 8, H - 8);
 
-  const pad = 54;
-  let y = pad + 58;
   g.fillStyle = '#141821';
   g.textBaseline = 'alphabetic';
   g.font = '700 74px "Helvetica Neue", Helvetica, Arial, sans-serif';
-  g.fillText(work.title, pad, y);
+  g.fillText(work.title, pad, yTitle);
 
-  y += 22;
   g.strokeStyle = '#c0b8a4';
   g.lineWidth = 3;
-  g.beginPath(); g.moveTo(pad, y); g.lineTo(W - pad, y); g.stroke();
+  g.beginPath(); g.moveTo(pad, yRule); g.lineTo(W - pad, yRule); g.stroke();
 
-  y += 62;
   g.fillStyle = '#2a3040';
   g.font = '600 52px "Helvetica Neue", Helvetica, Arial, sans-serif';
-  g.fillText(artist, pad, y);
+  g.fillText(artist, pad, yArtist);
 
-  y += 50;
   g.fillStyle = '#4d5566';
   g.font = '400 42px "Helvetica Neue", Helvetica, Arial, sans-serif';
-  g.fillText(work.year, pad, y);
+  g.fillText(work.year, pad, yYear);
+  g.fillText(work.medium, pad, yMedium);
 
-  y += 46;
-  g.fillText(work.medium, pad, y);
-
-  return canvasTexture(c);
+  return { tex: canvasTexture(c), height: H / PLAQUE_PX_PER_M };
 }
 
 // Fascia lettering over the door. Dark plate, light letters, so it reads against
@@ -591,9 +602,11 @@ export async function initMuseum(scene, renderer) {
     node.add(sh);
     disposables.push(shGeo, shMat);
 
-    // plaque, on the same wall, to the frame's right as the viewer faces it
-    const plaqueGeo = new THREE.PlaneGeometry(PLAQUE_W, PLAQUE_H);
-    const plaqueMat = new THREE.MeshBasicMaterial({ map: plaqueTexture(w, artist) });
+    // plaque, on the same wall, to the frame's right as the viewer faces it.
+    // The plate is cut to its own text, so the plane takes the height back.
+    const label = plaqueTexture(w, artist);
+    const plaqueGeo = new THREE.PlaneGeometry(PLAQUE_W, label.height);
+    const plaqueMat = new THREE.MeshBasicMaterial({ map: label.tex });
     const plaque = new THREE.Mesh(plaqueGeo, plaqueMat);
     plaque.position.set(fw / 2 + PLAQUE_GAP + PLAQUE_W / 2, PLAQUE_CY, 0.014);
     node.add(plaque);
