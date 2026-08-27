@@ -351,6 +351,33 @@ window.__test.gpuInfo = () => ({
 // The follow camera adds HEAD (1.55 m) and a 0.55 m shoulder offset to whatever
 // target it is given, so both are subtracted out here — otherwise the plaque
 // lands off-centre and half a metre low, and the screenshot proves nothing.
+// engine/camera.js's own constants, backed out so a framed shot lands where it
+// is asked to. Kept beside the only code that needs them rather than exported,
+// because they are the camera's business and nothing in the game should be
+// undoing them.
+const CAM_SHOULDER = 0.55, CAM_HEAD = 1.55;
+
+// Frame a work head-on with the camera on the wall's normal, at the work's own
+// centre height. warpTo cannot do this: it is a shoulder camera, so the player's
+// body stands between the lens and the picture and the shot that exists to show
+// the artwork shows his back instead.
+window.__test.artShot = (slug, dist = 2.1) => {
+  const w = museum.works.find((k) => k.slug === slug);
+  if (!w) return false;
+  const st = cam.st;
+  st.freeCam = true;
+  st.noOcclusion = true;
+  st.yaw = Math.atan2(w.nx, w.nz); st.curYaw = st.yaw;
+  st.pitch = 0; st.curPitch = 0;
+  st.dist = dist; st.curDist = dist;
+  // frameUpdate looks at target.y + HEAD and offsets sideways by SHOULDER, so
+  // both are backed out here to put the optical centre on the picture's centre.
+  const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw);
+  st.target.set(w.x - cy * CAM_SHOULDER, museum.canvasCY - CAM_HEAD, w.z + sy * CAM_SHOULDER);
+  st.smoothed.copy(st.target);
+  return true;
+};
+
 window.__test.plaqueShot = (slug, dist = 1.05) => {
   const w = museum.works.find((k) => k.slug === slug);
   if (!w) return false;

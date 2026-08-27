@@ -697,6 +697,7 @@ export async function initMuseum(scene, renderer) {
     works,
     door: { x: MUSEUM.x1 + 1.6, z: doorZ },
     bounds: { ...IN },
+    canvasCY: CANVAS_CY,        // hanging height, for the capture harness's art shot
   };
 }
 

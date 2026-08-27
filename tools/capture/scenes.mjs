@@ -175,9 +175,10 @@ export function artworkScenes(works) {
       id: `art-${w.slug}`,
       query: DAY,
       note: `"${w.title}" head-on: native aspect, even lighting, frame depth, contact shadow.`,
-      setup: `(() => { const w = window.__test.museum().works.find(k => k.slug === '${w.slug}');
-        window.__test.warpTo(w.viewX, w.viewZ, Math.atan2(w.viewX - w.x, w.viewZ - w.z)); })()`,
-      steps: 30,
+      // artShot, not warpTo: warpTo is the shoulder camera, so the player's back
+      // stood between the lens and the picture in every one of these.
+      setup: `window.__test.artShot('${w.slug}')`,
+      steps: 4,
     });
     out.push({
       id: `plaque-${w.slug}`,

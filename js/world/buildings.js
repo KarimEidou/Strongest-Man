@@ -66,9 +66,17 @@ function doorGeo() {
   parts.push(boxTagged(sideW, fh, fd, 0xffffff).translate(-fw / 2 + sideW / 2, 0, 0));
   parts.push(boxTagged(sideW, fh, fd, 0xffffff).translate(fw / 2 - sideW / 2, 0, 0));
   parts.push(boxTagged(dw, topH, fd, 0xffffff).translate(0, fh / 2 - topH / 2, 0));
-  const door = boxTagged(dw, dh, fd - 0.14, 0x5a3a20, 0, 1, SURF.WOOD);
-  door.translate(0, -fh / 2 + dh / 2, 0);
-  parts.push(door);
+  // The opening is OPEN, and there is no leaf in it.
+  //
+  // physics/collide.js gives EVERY floor-0 door cell a walkable gap — that is
+  // how you get inside any of the thirty buildings that have an interior — so a
+  // solid door drawn across it was geometry contradicting the collision. The
+  // player walked through visible wood, and the gallery, which has FREE
+  // ADMISSION lettered over its door, read as shut.
+  //
+  // Nothing has to be added to replace it: the two jambs and the head are full
+  // wall thickness, so removing the leaf leaves a real 0.3 m reveal and you see
+  // into the building. That is the whole point of a door you can walk through.
   const g = mergeGeometries(parts);
   markInnerFaces(g);
   return faceShade(g);
