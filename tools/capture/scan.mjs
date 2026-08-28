@@ -24,15 +24,14 @@
 // hide-the-overlay timer fired after the scene had made it visible again.
 // Nothing else in the run said a word.
 //
-// (3) is a pass/fail, and it is normalised for a reason. The first version of
-// it simply asked whether the mean |Δ| under a w/k shift was small, and flagged
-// the two portrait `rotate` captures — a navy field with one centred glyph and
-// one line of text, where EVERY shift is near zero because there is almost
-// nothing there to differ. The signal is not "the shifted difference is small",
-// it is "the shifted difference is small compared to this image's own". A
-// genuinely mosaiced frame scores 0.006 on that ratio; the least self-different
-// real capture in a 622-frame matrix scores 0.657.
+// (3) is a pass/fail and lives in `tiling.mjs`, because `capture.mjs` asks the
+// same question at the shutter — one bad frame costs a retry there instead of a
+// re-run discovered an hour later — and the two must not drift. It has now
+// caught two mosaics that every other measurement here passed, the second of
+// them a `loading` frame with a standard deviation of 9.8: comfortably above
+// the blank floor, and nothing on it but the background repeated six times.
 import sharp from '../node_modules/sharp/lib/index.js';
+import { tiling, TILE_RATIO } from './tiling.mjs';
 import { readdirSync, existsSync } from 'fs';
 import { join, dirname, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
@@ -50,21 +49,6 @@ if (!existsSync(DIR)) { console.error(`no such directory: ${DIR}`); process.exit
 // Below either of these, a frame is worth a human look.
 const SD_FLOOR = 6;      // largest channel stdev, 0-255
 const EDGE_FLOOR = 1.0;  // mean |dx| in greyscale levels
-
-// Above this ratio a frame is not a mosaic. Measured: 0.006 for a real
-// 3x4-tiled capture, 0.657 for the least self-different of 622 good ones.
-const TILE_RATIO = 0.25;
-const TILE_W = 240;      // thumbnail width for the shift test
-
-// mean |difference| between the image and itself shifted s pixels left
-const shiftDiff = (data, w, h, s) => {
-  let acc = 0, cnt = 0;
-  for (let y = 0; y < h; y += 2) {
-    const row = y * w;
-    for (let x = 0; x + s < w; x += 2) { acc += Math.abs(data[row + x] - data[row + x + s]); cnt++; }
-  }
-  return cnt ? acc / cnt : 0;
-};
 
 const files = readdirSync(DIR).filter((f) => f.endsWith('.png')).sort();
 if (!files.length) { console.error(`no PNGs in ${DIR}`); process.exit(2); }
@@ -87,25 +71,9 @@ for (const f of files) {
     flagged.push({ f, sd: +sd.toFixed(1), edge: +edge.toFixed(2), blank: sd < SD_FLOOR });
   }
 
-  // the repeat test, on its own slightly larger thumbnail
-  const t = await sharp(join(DIR, f)).resize(TILE_W, null, { fit: 'inside' })
-    .greyscale().raw().toBuffer({ resolveWithObject: true });
-  const tw = t.info.width, th = t.info.height;
-  // 0.29w and 0.41w cannot be a tile period for k = 2, 3 or 4, so they measure
-  // how different this image is from itself in general
-  const ref = Math.max(shiftDiff(t.data, tw, th, Math.round(tw * 0.29)),
-                       shiftDiff(t.data, tw, th, Math.round(tw * 0.41)));
-  let best = { k: 0, d: Infinity };
-  for (const k of [2, 3, 4]) {
-    const s = Math.round(tw / k);
-    if (s < 8) continue;
-    const d = shiftDiff(t.data, tw, th, s);
-    if (d < best.d) best = { k, d };
-  }
-  // ref === 0 means a perfectly uniform image, which (1) already reports as
-  // blank; there is no period to find in it and no denominator to divide by.
-  const ratio = ref > 0 ? best.d / ref : 1;
-  if (ratio < TILE_RATIO) tiled.push({ f, k: best.k, ratio: +ratio.toFixed(3) });
+  // the repeat test — see tiling.mjs, which capture.mjs uses at the shutter
+  const rep = await tiling(join(DIR, f));
+  if (rep.ratio < TILE_RATIO) tiled.push({ f, k: rep.k, ratio: +rep.ratio.toFixed(3) });
 
   if (++n % 100 === 0) process.stdout.write(`${n} `);
 }

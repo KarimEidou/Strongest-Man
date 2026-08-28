@@ -16,6 +16,7 @@
 // centred glyph, every shift of it is near zero, and an unnormalised test calls
 // it a mosaic.
 import sharp from '../node_modules/sharp/lib/index.js';
+import { looksTiled } from './tiling.mjs';
 import { execFileSync } from 'child_process';
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
@@ -76,6 +77,7 @@ cases.push(['rotate-like.png', navy]);
 
 const dir = mkdtempSync(join(tmpdir(), 'scan-selftest-'));
 let failures = 0;
+let checks = 0;
 try {
   for (const [name, buf] of cases) await sharp(buf).toFile(join(dir, name));
 
@@ -89,6 +91,7 @@ try {
   process.stdout.write(out);
 
   const check = (label, ok) => {
+    checks++;
     console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${label}`);
     if (!ok) failures++;
   };
@@ -97,9 +100,19 @@ try {
   check('the flat centred-glyph frame is not called tiled', !/TILED\s+rotate-like\.png/.test(out));
   check('the good frame is not called blank', !/BLANK\s+good\.png/.test(out));
   check('a tiled frame fails the run', code === 1);
+
+  // capture.mjs gates its one retry on looksTiled() rather than on scan.mjs's
+  // CLI, so the wrapper gets its own checks — including the one that matters
+  // most in a two-hour run: a checker that throws on its own read error and
+  // takes the harness down with it is worse than no checker.
+  check('looksTiled() agrees on the tiled frame', await looksTiled(join(dir, 'tiled.png')) === true);
+  check('looksTiled() agrees on the good frame', await looksTiled(join(dir, 'good.png')) === false);
+  check('looksTiled() agrees on the flat frame', await looksTiled(join(dir, 'rotate-like.png')) === false);
+  check('looksTiled() returns false rather than throwing on a missing file',
+    await looksTiled(join(dir, 'does-not-exist.png')) === false);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }
 
-console.log(failures ? `\n${failures} check(s) failed` : '\n5/5 checks passed');
+console.log(failures ? `\n${failures} of ${checks} check(s) failed` : `\n${checks}/${checks} checks passed`);
 process.exit(failures ? 1 : 0);

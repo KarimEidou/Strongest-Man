@@ -14,7 +14,7 @@ insets. Same scene, same device, same insets; only the code differs.
 
 | Scene | Device | Orientation | What it shows |
 |---|---|---|---|
-| `hud-idle` | ip16pro | landscape-left | The HUD at rest. Before: the crosshair is centred on the safe box, not the canvas. |
+| `hud-idle` | ip16pro | landscape-left | The HUD at rest, and the GALLERY quick-travel button third in the top-right cluster. Before: the crosshair is centred on the safe box, not the canvas. |
 | `hud-bright` | se3 | landscape-right | Midday, smallest screen. Before: the karma and reputation readouts sit at 1.90:1 and 1.66:1 against the sky. |
 | `shop` | se3 | landscape-left | The armoury at 667x375. Before: DONE — the only way out — is entirely below the fold. |
 | `pause` | ip16pro | landscape-left | Paused. Before: the panel is 20px taller than the viewport and loses its top and bottom borders. |
@@ -46,8 +46,8 @@ nothing there to photograph.
 | `inspect-riverbank` | ip16pro | landscape-left | Inspect mode: work II. |
 | `inspect-reach` | ip16pro | landscape-left | Inspect mode: work III. |
 | `inspect-the-reader` | ip16pro | landscape-left | Inspect mode: work IV. |
-| `hud-stress` | ip16pro | landscape-left | Everything that can overflow, at once: 1 hp, eight digits, the full weapon rail, an empty magazine, the longest reputation string and the longest toast. |
-| `hud-down` | se3 | landscape-left | Going down, and what it costs. |
+| `hud-stress` | ip16pro | landscape-left | Everything that can overflow, at once: 1 hp, eight digits, the full weapon rail, an empty magazine, the longest reputation string and the longest toast — the string that finding 119 caught being drawn under the new button. |
+| `hud-down` | se3 | landscape-left | Going down, and what it costs. GALLERY is dimmed: quick travel is not an escape from a knockout, and the guard reads on the screen rather than only in the code. |
 | `landmark` | ip16pro | landscape-left | One of the two giant samosas, in its block. |
 | `landmark-sign` | ip16pro | landscape-left | Its signage band square on, projected onto the pastry rather than bolted in front of it. |
 | `rotate` | ip16pro | portrait | Portrait: a hard input block, and the only thing on screen. |

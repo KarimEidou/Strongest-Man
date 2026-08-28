@@ -24,6 +24,7 @@ import { fileURLToPath } from 'url';
 import { cpus } from 'os';
 import { DEVICES, ORIENTATIONS, insetsFor, viewportFor } from './devices.mjs';
 import { SCENES, PORTRAIT_SCENES, artworkScenes } from './scenes.mjs';
+import { looksTiled } from './tiling.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
@@ -87,8 +88,33 @@ if (!(await serverUp())) {
   if (!(await serverUp())) throw new Error(`static server did not come up on ${ORIGIN}`);
 }
 
+// ---- the shutter's own sanity check ----------------------------------------
+//
+// A capture can come back as the frame tiled across itself, with everything the
+// scene was for missing. scan.mjs catches it afterwards, which turns one bad
+// frame into a re-run of the whole scene discovered an hour later — cheaper to
+// ask at the shutter. The measurement lives in tiling.mjs, because scan.mjs
+// needs the same one and the two must not drift.
+
+// Shoot, look at what came back, and shoot again once if it is a mosaic. One
+// retry, not a loop: if the second frame is tiled too then something is wrong
+// with the scene rather than with the compositor, and quietly re-shooting until
+// it looks acceptable is how a harness starts lying.
+async function shoot(page, file) {
+  await page.screenshot({ path: file, fullPage: false });
+  if (!(await looksTiled(file))) return false;
+  await page.evaluate('window.__test.renderNow()');
+  await page.evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
+  await page.waitForTimeout(250);
+  await page.evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
+  await page.screenshot({ path: file, fullPage: false });
+  return true;
+}
+
 // ---- launch ---------------------------------------------------------------
 const engines = ENGINE === 'both' ? ['chromium', 'webkit'] : [ENGINE];
+let retried = 0;
+let stillTiled = [];
 const report = [];
 let failures = 0;
 
@@ -268,13 +294,18 @@ for (const engineName of engines) {
               .map((i) => i.decode().catch(() => {})));
           })()`);
           await page.evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
-          await page.screenshot({ path: file, fullPage: false });
+          const wasTiled = await shoot(page, file);
+          if (wasTiled) {
+            retried++;
+            if (await looksTiled(file)) stillTiled.push(`${engineName} ${device.id} ${orientation} ${scene.id}`);
+          }
           slots[job.i] = {
             engine: engineName, device: device.id, orientation, scene: scene.id,
             note: scene.note, file: file.slice(root.length + 1), problems,
+            ...(wasTiled ? { reshot: 'came back tiled; shot again' } : {}),
           };
           if (problems.length) failures++;
-          process.stdout.write(problems.length ? 'x' : '.');
+          process.stdout.write(problems.length ? 'x' : (wasTiled ? 'R' : '.'));
         } catch (e) {
           failures++;
           slots[job.i] = {
@@ -311,6 +342,14 @@ if (KEEP && existsSync(join(OUT, 'report.json'))) {
   console.log(`\nmerged into ${prior.length} existing rows -> ${merged.length}`);
 }
 writeFileSync(join(OUT, 'report.json'), `${JSON.stringify(merged, null, 2)}\n`);
+if (retried) {
+  console.log(`\n${retried} capture(s) came back tiled and were shot again.`);
+  if (stillTiled.length) {
+    failures++;
+    console.log(`${stillTiled.length} still tiled after the retry — these need a look, not another shot:`);
+    for (const t of stillTiled) console.log(`  ${t}`);
+  }
+}
 const shots = report.filter((r) => r.file).length;
 const dirty = report.filter((r) => r.problems && r.problems.length);
 console.log(`\n${shots} screenshots -> screenshots/${SET}/`);
