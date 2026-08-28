@@ -67,6 +67,15 @@ const STATES = [
     controls: ['#btn-punch', '#btn-jump', '#btn-grab', '#btn-interact', '#btn-pause', '#btn-gallery'],
     // pairs that must not overlap, and why each pair matters
     noOverlap: [
+      // The action arc. Each of the three secondaries is spaced off the primary
+      // AND off its neighbours by the same 14px; the first cut of the arc had
+      // two of these pairs overlapping by more than 11px, which is two 44pt
+      // targets sharing pixels. These five are every pair that touches.
+      ['#btn-punch', '#btn-jump'],
+      ['#btn-punch', '#btn-grab'],
+      ['#btn-punch', '#btn-interact'],
+      ['#btn-jump', '#btn-grab'],
+      ['#btn-grab', '#btn-interact'],
       ['#toast', '#btns'],
       ['#toast', '#btn-gallery'],
       ['#toast', '#btn-pause'],
@@ -233,9 +242,21 @@ for (const device of DEVICES) {
                 rr = Math.min(rr, cr.right); bb = Math.min(bb, cr.bottom);
                 onScreen = rr - x > 0.5 && bb - y > 0.5;
               }
+              // Round or rectangular? It decides which overlap test is
+              // truthful. A circular control's hit area IS the circle — a
+              // browser hit-tests border-radius, a tap in the corner of the box
+              // falls through — so for two circles on a diagonal the box test
+              // reports an overlap that neither the eye nor a thumb can find.
+              // The action arc is four circles with 14px of real clearance whose
+              // BOXES touch by 19x4px, and reporting that as a failure would
+              // push the design around for nothing.
+              const cs2 = getComputedStyle(e);
+              const rad = parseFloat(cs2.borderTopLeftRadius) || 0;
+              const round = Math.abs(r.width - r.height) < 0.5
+                && rad >= r.width / 2 - 0.5;
               // w/h stay the element's OWN size — a 28px target is 28px
               // wherever it happens to be scrolled to.
-              return { sel, x, y, w: r.width, h: r.height, r: rr, b: bb, onScreen };
+              return { sel, x, y, w: r.width, h: r.height, r: rr, b: bb, onScreen, round };
             });
           const out = { small: [], outside: [], indicator: [], overlaps: [], offscreen: [], seen: [] };
           const vw = innerWidth, vh = innerHeight;
@@ -254,10 +275,28 @@ for (const device of DEVICES) {
               if (ins.bottom > 0 && b.b > vh - homeIndicator + 0.5) out.indicator.push(b);
             }
           }
+          // Shape-aware. Two circles overlap when their centres are closer than
+          // the sum of their radii; a circle and a rectangle overlap when the
+          // rectangle's nearest point is inside the circle; two rectangles when
+          // their extents cross. The rectangle case is the original test and is
+          // unchanged, so nothing that used to fail stops failing.
+          const hits = (p, q) => {
+            const pc = { x: (p.x + p.r) / 2, y: (p.y + p.b) / 2, r: p.w / 2 };
+            const qc = { x: (q.x + q.r) / 2, y: (q.y + q.b) / 2, r: q.w / 2 };
+            if (p.round && q.round) return Math.hypot(pc.x - qc.x, pc.y - qc.y) < pc.r + qc.r;
+            const circleVsRect = (ci, re) => {
+              const nx = Math.max(re.x, Math.min(ci.x, re.r));
+              const ny = Math.max(re.y, Math.min(ci.y, re.b));
+              return Math.hypot(ci.x - nx, ci.y - ny) < ci.r;
+            };
+            if (p.round) return circleVsRect(pc, q);
+            if (q.round) return circleVsRect(qc, p);
+            return p.x < q.r && p.r > q.x && p.y < q.b && p.b > q.y;
+          };
           for (const [a, c] of noOverlap) {
             for (const ba of boxes(a)) {
               for (const bc of boxes(c)) {
-                if (ba.x < bc.r && ba.r > bc.x && ba.y < bc.b && ba.b > bc.y) {
+                if (hits(ba, bc)) {
                   out.overlaps.push({ a, c, ax: ba.x, ar: ba.r, ay: ba.y, ab: ba.b, cx: bc.x, cr: bc.r, cy: bc.y, cb: bc.b });
                 }
               }

@@ -60,11 +60,13 @@
 <div id="hud" hidden>
   <div id="stick"><div id="stick-nub"></div></div>
 
+  <!-- The action arc. Sizes and positions are per-id in css/main.css, where the
+       arc arithmetic is; the class is what they have in common, not a size. -->
   <div id="btns">
-    <button id="btn-interact" class="abtn small" aria-label="talk">TALK</button>
-    <button id="btn-grab" class="abtn small" aria-label="grab or throw">GRAB</button>
+    <button id="btn-interact" class="abtn" aria-label="talk">TALK</button>
+    <button id="btn-grab" class="abtn" aria-label="grab or throw">GRAB</button>
     <button id="btn-jump" class="abtn" aria-label="jump">JUMP</button>
-    <button id="btn-punch" class="abtn big" aria-label="punch, hold to charge"><span id="charge-ring"></span>PUNCH</button>
+    <button id="btn-punch" class="abtn" aria-label="punch, hold to charge"><span id="charge-ring"></span>PUNCH</button>
   </div>
 
   <button id="btn-pause" aria-label="pause">II</button>

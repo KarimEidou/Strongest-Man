@@ -381,9 +381,14 @@ results.playerSize = await page.evaluate(() => {
 results.carryPerson = await page.evaluate(() => {
   const npcs = window.__npcs.npcs;
   for (const c of window.__trafficList) { c.mode = 'held'; c.x = 500; c.z = 500; }   // cars out-reach props/people
-  let got = null;
-  for (let a = 0; a < 20 && !got; a++) {
-    const n = npcs.find((o) => o.state !== 'dead' && o.state !== 'carried');
+  // Iterate CANDIDATES, not attempts — the same fix section 11d already carries.
+  // `npcs.find(...)` returns the FIRST match every time, so if that one happens
+  // to be unreachable all twenty attempts target the same person, and the test
+  // fails saying grabbing is broken while grabbing works perfectly. Which person
+  // is not the point.
+  let got = false;
+  for (const n of npcs.filter((o) => o.state !== 'dead' && o.state !== 'carried')) {
+    if (got) break;
     window.__test.teleport(n.x - Math.sin(n.yaw) * 0.8, n.z - Math.cos(n.yaw) * 0.8);
     window.__test.faceTo(n.x, n.z);
     window.__test.step(0.06); window.__test.press('grab'); window.__test.step(0.25);
@@ -391,12 +396,19 @@ results.carryPerson = await page.evaluate(() => {
   }
   if (!got) return { ok: false, why: 'never grabbed' };
   window.__test.step(1.2);
-  const standing = { clear: window.__test.carryLowest().clear, pose: window.__test.carryLowest().pose, throat: window.__test.carryContact().throatDist };
+  // And report rather than throw if they left your hands during that settle —
+  // a null here used to take the whole suite down with a TypeError, which says
+  // nothing about what went wrong.
+  const low0 = window.__test.carryLowest();
+  if (!low0) return { ok: false, why: 'let go during the settle' };
+  const standing = { clear: low0.clear, pose: low0.pose, throat: window.__test.carryContact().throatDist };
   window.__test.drive(0, 1);
   let worstClear = 9, worstThroat = 0;
   for (let i = 0; i < 180; i++) {
     window.__test.step(1 / 60);
-    worstClear = Math.min(worstClear, window.__test.carryLowest().clear);
+    const low = window.__test.carryLowest();
+    if (!low) return { ok: false, why: 'let go mid-sprint' };
+    worstClear = Math.min(worstClear, low.clear);
     worstThroat = Math.max(worstThroat, window.__test.carryContact().throatDist);
   }
   const running = window.__test.carryLowest();

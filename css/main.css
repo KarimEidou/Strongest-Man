@@ -13,6 +13,27 @@
   --orange-shadow: #904818;
   --navy-bg: #0d1b3e;
   --ink: #eaf2ff;
+  /* HUD surface language. Every control is the same three things: a translucent
+     dark disc, one thin bright rim, and a soft inner glow that falls off before
+     the rim so the two never merge into a fat outline. The accent is a pale gold
+     rather than the orange the rest of the app uses, because on this HUD orange
+     no longer means anything — the one thing it used to mark, the shop, is gone,
+     and gold against the navy glass is what reads at arm's length in daylight.
+     Alpha values, not opacity: a control has to stay legible over a white
+     crossing stripe and over a shadowed wall, and opacity would take the rim and
+     the glyph down with the plate. */
+  --hud-glass: rgba(9, 17, 38, 0.58);       /* the disc */
+  --hud-glass-lit: rgba(28, 48, 92, 0.72);  /* the disc, pressed */
+  --hud-rim: rgba(255, 252, 244, 0.88);     /* the thin bright edge, primary */
+  --hud-rim-soft: rgba(230, 240, 255, 0.58);/* the thin bright edge, secondary */
+  --hud-gold: #f2dfae;
+  --hud-gold-dim: rgba(242, 223, 174, 0.30);
+  --hud-glow: rgba(150, 190, 255, 0.20);    /* the inner falloff */
+  /* Every control also carries a 1px dark ring OUTSIDE its bright rim. Without
+     it the rim is the only edge, and over a white crossing stripe or a sunlit
+     concrete pavement a near-white rim on a translucent plate has nothing to sit
+     against. The dark ring is what makes the same control read on both. */
+  --hud-edge: rgba(4, 9, 24, 0.55);
   /* Spacing scale. Every gap, pad and margin that is not derived from a
      measured position is one of these five. docs/STYLE.md is the reference. */
   --s1: 4px;
@@ -101,47 +122,114 @@ button { font: inherit; color: inherit; }
 }
 #hud[hidden] { display: none; }
 
+/* ---------- the joystick ----------
+   A floating translucent ring: thin bright rim, a soft glow that dies before it
+   reaches the rim, and a gold nub. It is `position: fixed` and core/input.js
+   writes left/top in raw VIEWPORT coordinates every pointermove — so nothing in
+   this file may give #hud a filter, backdrop-filter, transform, perspective,
+   contain:paint or will-change:transform. Any of those makes #hud a containing
+   block for its fixed descendants and the stick lands offset by the safe-area
+   inset, by up to 59px on a notched phone, flipping sides with the orientation.
+   That is why the glass is on the individual controls and never on #hud. */
 #stick {
   position: fixed; /* positioned at touch point in viewport coords */
   left: 120px; top: 60%;
-  width: 112px; height: 112px;
-  margin: -56px 0 0 -56px;
+  width: 124px; height: 124px;
+  margin: -62px 0 0 -62px;
   border-radius: 50%;
-  border: 2px solid rgba(234,242,255,0.35);
-  background: rgba(13,27,62,0.25);
+  border: 2px solid var(--hud-rim);
+  background:
+    radial-gradient(closest-side, var(--hud-glow) 0%, rgba(150,190,255,0) 72%),
+    var(--hud-glass);
+  box-shadow: 0 0 0 1px var(--hud-edge), 0 6px 20px rgba(0, 0, 0, 0.35);
   opacity: 0;
   transition: opacity 0.12s;
   pointer-events: none;
 }
 #stick.active { opacity: 1; }
+/* The nub's `transform` is owned by core/input.js, which rewrites it on every
+   pointermove — anything set here is gone on the first drag. Everything visual
+   has to be background, border or box-shadow. */
 #stick-nub {
   position: absolute; left: 50%; top: 50%;
-  width: 48px; height: 48px;
+  width: 52px; height: 52px;
   border-radius: 50%;
-  background: rgba(240,168,96,0.85);
-  border: 2px solid var(--orange-bright);
+  background: radial-gradient(closest-side at 38% 34%, #fdf6e2 0%, var(--hud-gold) 46%, #c9a95f 100%);
+  border: 2px solid rgba(255, 250, 236, 0.9);
+  box-shadow: 0 0 16px rgba(242, 210, 130, 0.6), 0 2px 8px rgba(0, 0, 0, 0.45);
   transform: translate(-50%,-50%);
 }
 
+/* ---------- the action controls ----------
+   An arc, not a grid. The primary is a big circle in the bottom-right corner
+   where the thumb rests and the three secondaries swing up and to the left of it
+   along one circle centred on the primary — which is the arrangement this kind
+   of HUD uses because a thumb pivots, it does not travel in rows.
+
+   GEOMETRY, all of it derived, and derived in BOTH directions: it is not enough
+   for each secondary to clear the primary, they have to clear each other, and
+   the first cut of this arc had TALK overlapping GRAB by 11.5px and GRAB
+   overlapping JUMP by 12.9px — two 44pt targets sharing pixels, which is worse
+   than either of them being small.
+
+   Work in the container's own frame: origin at its bottom-right corner, `right`
+   growing leftward and `bottom` growing upward. Primary radius 44, secondary
+   radius 28, and one gap of 14px used everywhere.
+
+     arc radius  R = 44 + 14 + 28 = 86
+     angular step, so two ADJACENT secondaries clear by that same 14:
+       chord = 2 R sin(step/2) >= 28 + 28 + 14 = 70
+       step  >= 2 asin(70 / 172) = 48.03deg   -> 48deg, which lands it exactly
+
+     PUNCH  d 88, centred (44, 44)                                right   0    bottom   0
+     JUMP   d 56, at   4deg: (44 + 86cos4,   44 + 86sin4)   = (129.8,  50.0)
+                                                                 right 101.8  bottom  22.0
+     GRAB   d 56, at  52deg: (44 + 86cos52,  44 + 86sin52)  = ( 96.9, 111.8)
+                                                                 right  68.9  bottom  83.8
+     TALK   d 56, at 100deg: (44 + 86cos100, 44 + 86sin100) = ( 29.1, 128.7)
+                                                                 right   1.1  bottom 100.7
+
+   Measured centre-to-centre, every pair: PUNCH to each 86.0 against 72 of radius
+   (14 clear); JUMP-GRAB and GRAB-TALK 70.0 against 56 (14 clear); JUMP-TALK
+   127.8 against 56 (71.8 clear). tools/capture/layout.mjs asserts all five
+   touching pairs, so the day one of these angles moves it fails rather than
+   drifts.
+
+   Union of all four: x 0..157.8, y 0..156.7, so the container is 162 x 157. The
+   162 is 4.2px wider than the arc needs and that is deliberate: #art-prompt's
+   max-width is derived from this box's 172px right edge, and keeping the width
+   identical to the 2x2 grid this replaced keeps that derivation true.
+   Every circle is at or over the 44pt minimum: 88, 56, 56, 56.
+   The bottom-most edge is the container's own bottom at 14px inside #hud, which
+   is already inset by the safe area — vh - 21 - 14 on a notched phone, 15px
+   clear of the 20px home-indicator strip layout.mjs fails on. The extra 5px of
+   height over the old grid goes UPWARD, where there is nothing to hit. */
 #btns {
   position: absolute;
   right: 10px; bottom: 14px;
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 12px;
-  align-items: end;
+  width: 162px; height: 157px;
+  /* The container must NOT take pointer events. It is 162x157 of mostly empty
+     space between four circles, and a thumb landing in the gaps has to reach the
+     canvas underneath, not be swallowed here. */
   pointer-events: none;
 }
 .abtn {
   pointer-events: auto;
+  position: absolute;
   /* border-box + padding:0 or the UA's 1px 6px eats 12px of an already small
      circle — which is what pushed THROW out over the ring. */
   box-sizing: border-box;
-  width: 64px; height: 64px;
   padding: 0;
   border-radius: 50%;
-  border: 2px solid rgba(234,242,255,0.5);
-  background: rgba(13,27,62,0.55);
+  border: 1.5px solid var(--hud-rim-soft);
+  /* Disc, then glow. The glow stops at 62% so it never reaches the rim: a glow
+     that runs into the border reads as a thick soft outline instead of as a lit
+     piece of glass with a hard edge, which is the whole look. */
+  background:
+    radial-gradient(closest-side, var(--hud-glow) 0%, rgba(150,190,255,0) 62%),
+    var(--hud-glass);
+  box-shadow: 0 0 0 1px var(--hud-edge), 0 4px 14px rgba(0, 0, 0, 0.38);
+  color: var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -154,54 +242,77 @@ button { font: inherit; color: inherit; }
   /* letter-spacing also emits a gap AFTER the last glyph, so the centred line
      box puts the ink half a gap to the left. Shift it back. */
   text-indent: calc(var(--ls) / 2);
-  position: relative;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   touch-action: none;
 }
-.abtn.small { width: 54px; height: 54px; font-size: 10px; }
-.abtn.big { width: 86px; height: 86px; font-size: 13px; border-color: var(--orange-bright); }
-.abtn.held { background: rgba(240,168,96,0.4); }
-.abtn.armed { border-color: var(--orange-bright); background: rgba(240,168,96,0.28); }
+/* The four positions from the arc above. */
+#btn-punch { width: 88px; height: 88px; right: 0; bottom: 0; }
+#btn-jump { width: 56px; height: 56px; right: 101.8px; bottom: 22px; }
+#btn-grab { width: 56px; height: 56px; right: 68.9px; bottom: 83.8px; }
+#btn-interact { width: 56px; height: 56px; right: 1.1px; bottom: 100.7px; }
+
+/* The primary reads as the primary: a full-strength rim, a gold cast in the
+   glow, and bigger type. */
+#btn-punch {
+  font-size: 13px;
+  border-color: var(--hud-rim);
+  background:
+    radial-gradient(closest-side, rgba(242, 223, 174, 0.20) 0%, rgba(242,223,174,0) 66%),
+    var(--hud-glass);
+  box-shadow: 0 0 0 1px var(--hud-edge), 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+.abtn:active, .abtn.held { background: var(--hud-glass-lit); border-color: var(--hud-gold); }
+.abtn.armed { border-color: var(--hud-gold); background: var(--hud-glass-lit); color: var(--hud-gold); }
+/* The charge sweep. It stays a <span> INSIDE #btn-punch and it stays driven by
+   the --charge custom property js/ui/hud.js writes every frame: js/ui/hud.js and
+   tools/test/final.mjs both rewrite that button's textContent and re-prepend
+   this element by reference, and final.mjs additionally requires the button to
+   have a bare text node as a direct child.
+   `inset: -4px` grows what is PAINTED to 96px while the button's layout box
+   stays 88px, so getBoundingClientRect — which is what tools/capture/layout.mjs
+   measures and what every overlap assertion is written against — is unchanged.
+   from -90deg so the sweep starts at twelve o'clock. */
 #charge-ring {
-  position: absolute; inset: -2px;
+  position: absolute; inset: -4px;
   border-radius: 50%;
-  background: conic-gradient(var(--orange-bright) calc(var(--charge, 0) * 360deg), transparent 0deg);
-  -webkit-mask: radial-gradient(closest-side, transparent 84%, #000 86%);
-  mask: radial-gradient(closest-side, transparent 84%, #000 86%);
+  background: conic-gradient(from -90deg,
+    var(--hud-gold) calc(var(--charge, 0) * 360deg), var(--hud-gold-dim) 0deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 86%, #000 89%);
+  mask: radial-gradient(closest-side, transparent 86%, #000 89%);
   pointer-events: none;
 }
 
-#btn-pause {
+/* ---------- the top-right icon row ----------
+   Two compact rounded plates in the same glass as the controls. #btn-pause is a
+   hard 44x44 at right:8; #btn-gallery sits beside it at 8 + 44 + 10 = 62, a
+   10px gutter (the 8px the cluster has always used, plus the 1.5px rim on each
+   side rounded up). Both are asserted for size and separation by
+   tools/capture/layout.mjs on every device in both orientations, so the day
+   either number changes it fails rather than drifts. */
+#btn-pause, #btn-gallery {
   pointer-events: auto;
-  position: absolute; top: 8px; right: 8px;
-  width: 44px; height: 44px;
+  position: absolute; top: 8px;
   box-sizing: border-box;
-  border-radius: 10px;
-  border: 1.5px solid rgba(234,242,255,0.4);
-  background: rgba(13,27,62,0.55);
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1.5px solid var(--hud-rim-soft);
+  background:
+    radial-gradient(closest-side, var(--hud-glow) 0%, rgba(150,190,255,0) 70%),
+    var(--hud-glass);
+  box-shadow: 0 0 0 1px var(--hud-edge), 0 3px 12px rgba(0, 0, 0, 0.34);
+  color: var(--ink);
   font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
-#btn-pause:active { background: rgba(48,144,240,0.35); }
-
-/* Quick travel, now second of two in the top-right cluster: [GALLERY] [II].
-   The armoury button used to sit between them at right:62, so this sat at 137
-   to clear it. With the shop gone it moves into that slot: #btn-pause is 44
-   wide at right:8, so 8 + 44 + 10 = 62 leaves a 10px gutter — the 8px the
-   cluster used, plus the 1.5px border on each side rounded up.
-   The type stays a step down from the pause glyph's — 10px on 1px — because
+#btn-pause { right: 8px; width: 44px; height: 44px; font-size: 13px; letter-spacing: 2px; }
+/* The type is a step down from the pause glyph's — 10px on 1px — because
    "GALLERY" is seven characters and the tightest viewport in the matrix is a
-   667px SE. tools/capture/layout.mjs asserts the gap on every device in both
-   orientations, so the day it changes it fails rather than drifts. */
-#btn-gallery {
-  pointer-events: auto;
-  position: absolute; top: 8px; right: 62px;
-  min-height: 44px; min-width: 44px; padding: 0 12px;
-  box-sizing: border-box;
-  border-radius: 10px;
-  border: 1.5px solid rgba(234,242,255,0.4);
-  background: rgba(13,27,62,0.55);
-  font-size: 10px; font-weight: 800; letter-spacing: 1px;
+   667px SE. */
+#btn-gallery { right: 62px; min-width: 44px; padding: 0 14px; font-size: 10px; letter-spacing: 1px; }
+#btn-pause:active, #btn-gallery:active {
+  background: var(--hud-glass-lit);
+  border-color: var(--hud-gold);
 }
-#btn-gallery:active { background: rgba(48,144,240,0.35); }
 /* Nothing to travel to while the shell is being rebuilt, and nothing to travel
    FROM while he is on the pavement — see the guard in js/main.js. */
 #btn-gallery[disabled] { opacity: 0.38; pointer-events: none; }
@@ -669,5 +780,5 @@ body.has-update #toast { top: 60px; }
   #rotate-icon { animation: none; }
   .bubble { animation: none; }
   .bubble.scream { animation: none; }
-  #title-splash, .mbtn, .abtn, #art-prompt, #update-banner { transition: none; }
+  #title-splash, .mbtn, .abtn, #art-prompt, #update-banner, #stick { transition: none; }
 }

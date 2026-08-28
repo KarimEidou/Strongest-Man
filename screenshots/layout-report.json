@@ -1,30 +1,43 @@
 {
-  "failures": [],
+  "failures": [
+    "hud se3 landscape-left: #btn-punch overlaps #btn-grab (569..657 x 273..361 vs 532..588 x 255..311)",
+    "hud se3 landscape-left: #btn-jump overlaps #btn-grab (499..555 x 283..339 vs 532..588 x 255..311)",
+    "hud se3 landscape-right: #btn-punch overlaps #btn-grab (569..657 x 273..361 vs 532..588 x 255..311)",
+    "hud se3 landscape-right: #btn-jump overlaps #btn-grab (499..555 x 283..339 vs 532..588 x 255..311)",
+    "hud ip14 landscape-left: #btn-punch overlaps #btn-grab (746..834 x 267..355 vs 709..765 x 249..305)",
+    "hud ip14 landscape-left: #btn-jump overlaps #btn-grab (676..732 x 277..333 vs 709..765 x 249..305)",
+    "hud ip14 landscape-right: #btn-punch overlaps #btn-grab (699..787 x 267..355 vs 662..718 x 249..305)",
+    "hud ip14 landscape-right: #btn-jump overlaps #btn-grab (629..685 x 277..333 vs 662..718 x 249..305)",
+    "hud ip16pro landscape-left: #btn-punch overlaps #btn-grab (754..842 x 270..358 vs 717..773 x 252..308)",
+    "hud ip16pro landscape-left: #btn-jump overlaps #btn-grab (684..740 x 280..336 vs 717..773 x 252..308)",
+    "hud ip16pro landscape-right: #btn-punch overlaps #btn-grab (695..783 x 270..358 vs 658..714 x 252..308)",
+    "hud ip16pro landscape-right: #btn-jump overlaps #btn-grab (625..681 x 280..336 vs 658..714 x 252..308)",
+    "hud ip16promax landscape-left: #btn-punch overlaps #btn-grab (834..922 x 307..395 vs 797..853 x 289..345)",
+    "hud ip16promax landscape-left: #btn-jump overlaps #btn-grab (764..820 x 317..373 vs 797..853 x 289..345)",
+    "hud ip16promax landscape-right: #btn-punch overlaps #btn-grab (775..863 x 307..395 vs 738..794 x 289..345)",
+    "hud ip16promax landscape-right: #btn-jump overlaps #btn-grab (705..761 x 317..373 vs 738..794 x 289..345)",
+    "hud desktop landscape-left: #btn-punch overlaps #btn-grab (1822..1910 x 978..1066 vs 1785..1841 x 960..1016)",
+    "hud desktop landscape-left: #btn-jump overlaps #btn-grab (1752..1808 x 988..1044 vs 1785..1841 x 960..1016)",
+    "hud desktop landscape-right: #btn-punch overlaps #btn-grab (1822..1910 x 978..1066 vs 1785..1841 x 960..1016)",
+    "hud desktop landscape-right: #btn-jump overlaps #btn-grab (1752..1808 x 988..1044 vs 1785..1841 x 960..1016)"
+  ],
   "measured": [
     {
       "where": "hud se3 landscape-left",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum se3 landscape-left",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -39,7 +52,6 @@
       "where": "pause se3 landscape-left",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -56,18 +68,6 @@
       ]
     },
     {
-      "where": "shop se3 landscape-left",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat se3 landscape-left",
       "seen": [
         "#chat-close: none visible",
@@ -78,27 +78,19 @@
     {
       "where": "hud se3 landscape-right",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum se3 landscape-right",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -113,7 +105,6 @@
       "where": "pause se3 landscape-right",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -130,18 +121,6 @@
       ]
     },
     {
-      "where": "shop se3 landscape-right",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat se3 landscape-right",
       "seen": [
         "#chat-close: none visible",
@@ -152,27 +131,19 @@
     {
       "where": "hud ip14 landscape-left",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum ip14 landscape-left",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -187,7 +158,6 @@
       "where": "pause ip14 landscape-left",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -204,18 +174,6 @@
       ]
     },
     {
-      "where": "shop ip14 landscape-left",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat ip14 landscape-left",
       "seen": [
         "#chat-close: none visible",
@@ -226,27 +184,19 @@
     {
       "where": "hud ip14 landscape-right",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum ip14 landscape-right",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -261,7 +211,6 @@
       "where": "pause ip14 landscape-right",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -278,18 +227,6 @@
       ]
     },
     {
-      "where": "shop ip14 landscape-right",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat ip14 landscape-right",
       "seen": [
         "#chat-close: none visible",
@@ -300,27 +237,19 @@
     {
       "where": "hud ip16pro landscape-left",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum ip16pro landscape-left",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -335,7 +264,6 @@
       "where": "pause ip16pro landscape-left",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -352,18 +280,6 @@
       ]
     },
     {
-      "where": "shop ip16pro landscape-left",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat ip16pro landscape-left",
       "seen": [
         "#chat-close: none visible",
@@ -374,27 +290,19 @@
     {
       "where": "hud ip16pro landscape-right",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum ip16pro landscape-right",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -409,7 +317,6 @@
       "where": "pause ip16pro landscape-right",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -426,18 +333,6 @@
       ]
     },
     {
-      "where": "shop ip16pro landscape-right",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat ip16pro landscape-right",
       "seen": [
         "#chat-close: none visible",
@@ -448,27 +343,19 @@
     {
       "where": "hud ip16promax landscape-left",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum ip16promax landscape-left",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -483,7 +370,6 @@
       "where": "pause ip16promax landscape-left",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -500,18 +386,6 @@
       ]
     },
     {
-      "where": "shop ip16promax landscape-left",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat ip16promax landscape-left",
       "seen": [
         "#chat-close: none visible",
@@ -522,27 +396,19 @@
     {
       "where": "hud ip16promax landscape-right",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum ip16promax landscape-right",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -557,7 +423,6 @@
       "where": "pause ip16promax landscape-right",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -574,18 +439,6 @@
       ]
     },
     {
-      "where": "shop ip16promax landscape-right",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0 (scrolled out)"
-      ]
-    },
-    {
       "where": "chat ip16promax landscape-right",
       "seen": [
         "#chat-close: none visible",
@@ -596,27 +449,19 @@
     {
       "where": "hud desktop landscape-left",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum desktop landscape-left",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -631,7 +476,6 @@
       "where": "pause desktop landscape-left",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -648,18 +492,6 @@
       ]
     },
     {
-      "where": "shop desktop landscape-left",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0"
-      ]
-    },
-    {
       "where": "chat desktop landscape-left",
       "seen": [
         "#chat-close: none visible",
@@ -670,27 +502,19 @@
     {
       "where": "hud desktop landscape-right",
       "seen": [
-        "#btn-punch 86.0x86.0",
-        "#btn-jump 64.0x64.0",
-        "#btn-grab 54.0x54.0",
-        "#btn-interact 54.0x54.0",
+        "#btn-punch 88.0x88.0",
+        "#btn-jump 56.0x56.0",
+        "#btn-grab 56.0x56.0",
+        "#btn-interact 56.0x56.0",
         "#btn-pause 44.0x44.0",
-        "#btn-shop 67.2x44.0",
-        "#btn-gallery 80.4x44.0",
-        ".wchip 59.3x44.0",
-        ".wchip 67.9x44.0",
-        ".wchip 51.8x44.0",
-        ".wchip 83.0x44.0",
-        ".wchip 59.9x44.0",
-        ".wchip 69.2x44.0",
-        ".wchip 75.9x44.0"
+        "#btn-gallery 84.4x44.0"
       ]
     },
     {
       "where": "museum desktop landscape-right",
       "seen": [
         "#art-prompt 118.1x48.0",
-        "#btn-punch 86.0x86.0",
+        "#btn-punch 88.0x88.0",
         "#btn-pause 44.0x44.0"
       ]
     },
@@ -705,7 +529,6 @@
       "where": "pause desktop landscape-right",
       "seen": [
         "#btn-resume 220.0x48.0",
-        "#btn-pause-shop 220.0x48.0",
         "#btn-pause-settings 220.0x48.0"
       ]
     },
@@ -719,18 +542,6 @@
         "#set-sens 500.0x44.0",
         "#set-invy 44.0x44.0",
         "#set-audio 44.0x44.0"
-      ]
-    },
-    {
-      "where": "shop desktop landscape-right",
-      "seen": [
-        "#btn-shop-done 129.1x48.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0",
-        ".gun-buy 96.0x44.0"
       ]
     },
     {

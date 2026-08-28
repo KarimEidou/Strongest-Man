@@ -18,43 +18,74 @@ Declared once as custom properties on `:root`.
 | `--blue-deep` | `#003090` | — |
 | `--blue` | `#1848c0` | loading gradient |
 | `--blue-mid` | `#1878d8` | panel borders, field borders |
-| `--blue-bright` | `#3090f0` | positive karma, secondary control borders, focus |
+| `--blue-bright` | `#3090f0` | secondary control borders, focus |
 | `--blue-sky` | `#48a8f0` | — |
 | `--orange` | `#d89048` | player speech |
-| `--orange-bright` | `#f0a860` | **the action colour**: primary buttons, the armed state, points |
-| `--orange-deep` | `#c07830` | primary button gradient foot, negative karma |
+| `--orange-bright` | `#f0a860` | **the action colour** in the shell: primary buttons, the gallery prompt |
+| `--orange-deep` | `#c07830` | primary button gradient foot |
 | `--orange-shadow` | `#904818` | the 4px seat under a primary button |
 
-Semantic colours outside the token set, used only where they carry meaning:
-health green `#6ef0a8`→`#23b673`, hurt amber `#ffd06a`→`#e08a2a`, critical red
-`#ff9a7a`→`#d02c2c`, loss `#ff8a6a`, gain `#7ef0a8`.
+**Orange means "you can act on this."** Blue means "this is state." That rule
+governs the SHELL — the title screen, the panels, the gallery prompt.
 
-**Orange means "you can act on this."** Blue means "this is state." Nothing else
-is orange, which is why the PUNCH button, the armed weapon chip, the points
-readout and the gallery prompt all read as one family.
+### The HUD's own surface language
+
+The in-game HUD is a separate, smaller vocabulary, because it has a job the shell
+does not: it sits over gameplay and has to stay legible against a white crossing
+stripe and a shadowed wall in the same frame.
+
+Every control is the same three things — **a translucent dark disc, one thin
+bright rim, and a soft inner glow that dies before it reaches the rim.** The glow
+stopping short is what makes a control read as a lit piece of glass with a hard
+edge rather than as a fat soft outline.
+
+| Token | Value | Used for |
+|---|---|---|
+| `--hud-glass` | `rgba(9,17,38,0.58)` | the disc |
+| `--hud-glass-lit` | `rgba(28,48,92,0.72)` | the disc, pressed or held |
+| `--hud-rim` | `rgba(255,252,244,0.88)` | the bright edge on the primary and the joystick |
+| `--hud-rim-soft` | `rgba(230,240,255,0.58)` | the bright edge on everything else |
+| `--hud-edge` | `rgba(4,9,24,0.55)` | a 1px dark ring OUTSIDE the bright rim |
+| `--hud-gold` | `#f2dfae` | the joystick nub, the charge sweep, the pressed rim |
+| `--hud-gold-dim` | `rgba(242,223,174,0.30)` | the charge sweep's unfilled track |
+| `--hud-glow` | `rgba(150,190,255,0.20)` | the inner falloff |
+
+Two of these exist for reasons that are not obvious.
+
+`--hud-edge` is the dark ring outside the bright one. Without it the rim is the
+only edge the control has, and over sunlit concrete a near-white rim on a
+translucent plate has nothing to sit against. The dark ring is what makes the
+same control read on asphalt and on a crossing stripe.
+
+The accent is a **pale gold rather than the shell's orange**. On this HUD orange
+no longer means anything: the one thing it marked, the shop, is gone. Gold
+against the navy glass is what reads at arm's length in daylight, and it is
+reserved for the two things that are *live* — the joystick nub under your thumb,
+and the charge filling behind PUNCH.
+
+**Alpha, never `opacity`.** Every value above is an alpha on a colour. Fading a
+control with `opacity` would take its rim and its glyph down with the plate, and
+the rim is the part that has to survive.
 
 ### Contrast
 
 Body text is `--ink` on `--navy-bg`: **14.9:1**. Every panel clears AA
 comfortably because every panel is opaque.
 
-The HUD is the hard case, because it sits over gameplay whose brightness runs
-from a midday sky to a moonlit street. A text shadow is **not** contrast — it
-raises legibility against some backgrounds and none against others, and it cannot
-be measured. So the two top-centre readouts that used to rely on one
-(`#karma-label` at 1.90:1 and `#rep-hint` at 1.66:1 against the rendered sky) now
-sit on `rgba(6,12,30,0.72)` plates, which puts them past AA against anything the
-sky can do.
+The HUD is the hard case, because it sits over gameplay. A text shadow is **not**
+contrast — it raises legibility against some backgrounds and none against others,
+and it cannot be measured. Two top-centre readouts once relied on one and
+measured 1.90:1 and 1.66:1 against the rendered sky; the rule that came out of
+that is the one the surface language above encodes: **every HUD element carries
+its own plate.** The translucent disc is a measurable backing, and the dark ring
+outside its bright rim is what stops the rim itself washing out over concrete.
 
-Readouts whose background is under our control (the HP bar, the ammo box, the
-toast, every panel) carry their own opaque or near-opaque backing.
-
-**Nothing is encoded in hue alone.** Health is a bar length *and* a colour *and*
-a number. Karma is a bar position *and* a colour *and* a word. Weapon selection
-is a border *and* a fill. A stock dialogue line is a colour *and* a different
-bullet *and* the words "(stock reply)". The one place hue was doing the work
-alone — the canned-vs-live distinction in the chat log, where the marker rule
-was a byte-for-byte duplicate of the rule above it — is fixed.
+**Nothing is encoded in hue alone.** A pressed control is a lighter fill *and* a
+gold rim. The charge is a colour *and* an arc length. A stock dialogue line is a
+colour *and* a different bullet *and* the words "(stock reply)". The one place
+hue was doing the work alone — the canned-vs-live distinction in the chat log,
+where the marker rule was a byte-for-byte duplicate of the rule above it — is
+fixed.
 
 ---
 
@@ -64,38 +95,75 @@ was a byte-for-byte duplicate of the rule above it — is fixed.
 12; panel padding is 20/26; sections are separated by 16.
 
 Positions in the HUD that are not on the scale are *derived*, and each carries the
-arithmetic in a comment. The bottom-right cluster is the example:
+arithmetic in a comment. The action arc is the example, and it is derived in
+**both** directions:
 
 ```
-#btns    right 10, bottom 14, 162 x 152   (64 + 12 + 86 wide, 54 + 12 + 86 tall)
-         → occupies right 10..172, bottom 14..166
-#ammo    right 182, bottom 22             (left of the cluster, at its height)
-#weapons right 10,  bottom 174            (above the cluster, wrapping upward)
+primary r 44, secondary r 28, one gap of 14 used everywhere
+arc radius R = 44 + 14 + 28 = 86
+angular step so two ADJACENT secondaries clear by that same 14:
+  chord = 2 R sin(step/2) >= 28 + 28 + 14 = 70
+  step >= 2 asin(70/172) = 48.03deg          -> 48deg, which lands it exactly
+
+#btns  right 10, bottom 14, 162 x 157        -> occupies right 10..172
+PUNCH  d 88  centred (44, 44)                   right   0    bottom   0
+JUMP   d 56  at   4deg -> (129.8,  50.0)        right 101.8  bottom  22.0
+GRAB   d 56  at  52deg -> ( 96.9, 111.8)        right  68.9  bottom  83.8
+TALK   d 56  at 100deg -> ( 29.1, 128.7)        right   1.1  bottom 100.7
 ```
 
-`182` and `174` are not arbitrary — they are `172 + 10` and `166 + 8`. A derived
-number with its derivation written down is better than a round number that is
-wrong.
+Centre-to-centre, every pair: PUNCH to each 86.0 against 72 of radius, so 14
+clear; JUMP–GRAB and GRAB–TALK 70.0 against 56, so 14 clear; JUMP–TALK 127.8
+against 56.
 
-The top edge works the same way, and one rule governs it:
+**It is not enough for each secondary to clear the primary — they have to clear
+each other.** The first cut of this arc spaced every button off PUNCH correctly
+and had TALK overlapping GRAB by 11.5px and GRAB overlapping JUMP by 12.9px: two
+44pt targets sharing pixels, which is worse than either of them being small.
+`layout.mjs` asserts all five touching pairs.
+
+The container stays **162** wide although the arc only needs 157.8, because
+`#art-prompt`'s `max-width` is derived from this box's 172px right edge:
 
 ```
-#btn-pause    top 8, right 8,   44 x 44    → the row is 8..52 tall
-#btn-shop     top 8, right 62              (8 + 44 + 8, the cluster gutter)
-#btn-gallery  top 8, right 137             (62 + 67.2 + 7.8, same gutter)
-#karma-wrap   top 8, centred, 200 wide     → ends 16.1px short of #btn-gallery
-                                             at 667x375, the tightest viewport
-#rep-hint     top 56                       (52 + 4, BELOW the row)
-#toast        top 86                       (74 + 12, the gap it always had)
+#art-prompt  centred, bottom 14, max-width calc(100% - 344px)
+             a centred width W spans (100% - W)/2 .. (100% + W)/2, so staying
+             left of the cluster's 100% - 172 needs W <= 100% - 344
 ```
 
-**Nothing in the centre stack may start inside the button row's 8..52 band.**
-`#rep-hint` used to sit at 42, ten pixels inside it, and looked fine for as long
-as the middle of that row was empty — both buttons were pinned to the right edge
-and the longest reputation string stopped short of them. Adding a third button
-filled exactly the gap the text ran through, and it was drawn under a control.
-The overlap was always there; only the collision was new. `layout.mjs` asserts
-the pairs now.
+A derived number with its derivation written down is better than a round number
+that is wrong.
+
+The top edge works the same way:
+
+```
+#btn-pause    top 8, right 8,   44 x 44    -> the row is 8..52 tall
+#btn-gallery  top 8, right 62              (8 + 44 + 10, the cluster gutter plus
+                                            the 1.5px rim on each side)
+#toast        top 60                       (52 + 8, BELOW the row)
+```
+
+**Nothing in the centre stack may start inside the button row's 8..52 band.** A
+top-centre readout used to sit at 42, ten pixels inside it, and looked fine for
+as long as the middle of that row was empty — every button was pinned to the
+right edge and the longest string stopped short of them. Adding a button filled
+exactly the gap the text ran through, and it was drawn under a control. The
+overlap was always there; only the collision was new. `layout.mjs` asserts the
+pairs now.
+
+### Overlap is tested by SHAPE, not by box
+
+`layout.mjs` compares two circular controls by centre distance against the sum of
+their radii, a circle and a rectangle by the rectangle's nearest point, and two
+rectangles by their extents. The rectangle case is the original test.
+
+This is not a loosened check, it is a truthful one. A browser hit-tests
+`border-radius`, so a tap in the corner of a round control's box falls through to
+whatever is underneath. Four circles on an arc are diagonal neighbours whose
+**boxes** touch — the arc above overlaps by 19x4px in the corner — while the
+circles themselves clear by 14. Reporting that would push the design around for
+nothing. Verified both ways: tightening the arc until two circles genuinely
+intersect still fails the run.
 
 ---
 
@@ -124,9 +192,8 @@ both faces ship on the target device and the fallback is the platform serif.
 | **Any text input** | **16** | 400 | — |
 | Panel body / row label | 14 | 400 | — |
 | Chat line, bubble | 13 | 400 | — |
-| Action button | 11–13 | 800 | 1 |
+| Action button | 11 secondary / 13 primary | 800 | 1 |
 | Chip, small button | 10–12 | 800 | 1–1.5 |
-| HUD number | 11–15 | 800–900 | 1 |
 | Caption, hint | 9.5–11 | 400–700 | 0.5–2 |
 
 **16px on every text input is a hard rule, not a preference.** Below 16, iOS
@@ -140,13 +207,21 @@ player needs mid-fight.
 
 ### Long strings
 
-Containers flex or truncate; none clip. `#rep-hint`, `#toast`, `#art-prompt` and
+Containers flex or truncate; none clip. `#toast`, `#art-prompt` and
 `#update-banner` take a `max-width` off the safe box and use
-`text-overflow: ellipsis`. `#points-row` is `nowrap` — a payout label used to
-push the `+N` chip onto a second line, away from the score it modifies. The
-`hud-stress` capture state exists to photograph all of it at once: 1 hp, eight
-digits of score, a full weapon rail, an empty magazine, the longest reputation
-string and the longest toast, at 667×375.
+`text-overflow: ellipsis`.
+
+An action button's label is checked differently, and harder:
+`tools/test/final.mjs` puts the four corners of the label's own text rect through
+the **ellipse** equation of its circle. A label that fits the bounding box but
+pokes out of the circle fails. THROW in a 56px circle is the tight case, and it
+is checked by name. This is also why each of the four buttons must keep a **bare
+text node** as a direct child — the test reads it with a `Range`, and wrapping
+the label in a `<span>` throws.
+
+The `hud-stress` capture state photographs the worst case at 667x375: GRAB
+reading THROW, the charge ring full, the impact vignette up and the longest toast
+on screen at once.
 
 ---
 
@@ -159,8 +234,8 @@ applies, **selected**.
 |---|---|
 | Pressed | `:active` — a lighter fill, and a 2px drop on buttons with a seat |
 | Disabled | `opacity: 0.4`, `[disabled]` |
-| Selected | orange border + orange wash (`.wchip.on`, `.abtn.armed`, `.gun-buy.equipped`) |
-| Held | `.held`, added on pointerdown and removed on up, cancel **or lostpointercapture** |
+| Selected | gold rim + lit glass (`.abtn.armed`) |
+| Held | `.held`, added on pointerdown and removed on up, cancel **or lostpointercapture** — same treatment as `:active` |
 
 **No `:hover` anywhere.** On iOS a hover state sticks after a tap and leaves the
 control looking permanently pressed with no way to clear it.
@@ -171,18 +246,13 @@ rule reappears.
 every control has to provide its own — `:active` on all of them is not polish, it
 is the replacement for the thing that was removed.
 
-`.gun-buy.equipped[disabled]` is explicitly `opacity: 1`. It is disabled because
-there is nothing to do, not because it is unavailable — it is the readout telling
-you what is in your hands, and dimming it made the one thing you most need to
-read the faintest thing in the panel.
-
 ---
 
 ## Touch
 
 - **44 × 44 CSS px minimum**, in both axes, for anything tappable. The *visual*
-  pill may be smaller; the target may not. `.wchip` is the clearest case: a 10px
-  label inside a 44px box.
+  pill may be smaller; the target may not. The action arc runs 88 / 56 / 56 / 56;
+  the two top-right plates are 44 tall.
 - `tools/capture/layout.mjs` measures every control in every state on every
   viewport in both orientations and fails on any that is short.
 - `touch-action: none` on `html`, `body`, the canvas and every control;
@@ -232,11 +302,9 @@ reason.
 | — | `#gl`, the canvas, full bleed |
 | 5 | `#bubbles` — full bleed |
 | 8 | `#vignette` |
-| 9 | `#aim-layer` — full bleed |
 | 10 | `#hud` — safe-area inset |
 | 12 | `#chat` |
-| 14 | `#down-banner` — above the chat, because going down is the most important thing the HUD can say |
-| 20 | `#title-screen`, `#settings-screen`, `#pause-screen`, `#shop-screen` |
+| 20 | `#title-screen`, `#settings-screen`, `#pause-screen` |
 | 30 | `#loading` |
 | 35 | `#inspect` |
 | 38 | `#update-banner` — above every panel so it can be taken from a paused game |
@@ -247,10 +315,10 @@ reason.
 
 ## Motion
 
-Transitions are 0.12–0.4s and carry state changes only. Three animations loop:
-the critical-health pulse, the rotate icon, and the scream shake on a bubble.
+Transitions are 0.12–0.4s and carry state changes only. Two animations loop: the
+rotate icon and the scream shake on a bubble.
 
-All three are disabled under `prefers-reduced-motion: reduce`, along with every
+Both are disabled under `prefers-reduced-motion: reduce`, along with every
 transition. That is a vestibular accessibility setting, not a preference about
 polish — and nothing is lost, because every state those animations carry is also
 carried by colour, shape or words.
