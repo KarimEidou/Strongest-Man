@@ -24,8 +24,17 @@ export const save = {
 
 export const game = {
   state: 'title',         // title | playing | paused | settings
-  timeOfDay: 0.70,        // 0..1, game day = 24 real minutes; 0.70 is the low
-                          // warm dusk the palette was authored around
+  // The SIMULATION clock. 0..1, one game day per 24 real minutes. It drives the
+  // townspeople's daily needs (ai/schedule.js) and the hour a conversation
+  // reports (dialogue/conversation.js) — and nothing visual. The sky is pinned
+  // to noon; see `skyTime` below.
+  timeOfDay: 0.70,
+  // The VISUAL clock, sampled by engine/sky.js. The city is always daytime, so
+  // this sits on the one true-noon key in SKY_KEYS (t = 0.50: night 0.00,
+  // sunI 2.45, sun ~64 degrees up). Pinning `timeOfDay` itself would also freeze
+  // pickGoal's need curves, so pedestrians would head for diners forever and
+  // never go home — hence two clocks rather than one.
+  skyTime: 0.50,
   slowmo: 1,              // global timescale (charged-punch hit-stop)
 };
 

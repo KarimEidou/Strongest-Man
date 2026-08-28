@@ -265,19 +265,32 @@ frameSystems.push(profile('chars.frame', (dt, alpha) => {
 }));
 // camera-facing quads, so they belong after the camera solve
 lateFrameSystems.push(profile('pips.frame', (dt) => healthPipsFrame(dt, monsters.monsters, MONSTER_MAX_HP)));
+// `?time=` and `?fastday=` move the SIMULATION clock only — they change who is
+// walking to which door, not what the sky looks like. The city is always
+// daytime, so the sky samples `game.skyTime` (pinned to noon) instead.
 if (flags.time >= 0) game.timeOfDay = flags.time;
+if (flags.skytime >= 0) game.skyTime = flags.skytime;
 fixedSystems.push((dt) => {
   if (flags.capture) return;   // a screenshot must not depend on how long it took
   game.timeOfDay = (game.timeOfDay + dt / (flags.fastday ? 60 : 1440)) % 1;
 });
-lateFrameSystems.push(profile('sky.frame', (dt) => sky.frameUpdate(dt, game.timeOfDay, cam.camera)));
+lateFrameSystems.push(profile('sky.frame', (dt) => sky.frameUpdate(dt, game.skyTime, cam.camera)));
 window.__npcs = npcs;
 window.__trafficList = traffic.list;
 window.__trafficState = traffic.hooks.lightState;
 window.__cityBuildings = city.buildings;
-// night is otherwise seven minutes of play away, which no test is going to wait for
-window.__test.setTimeOfDay = (t) => { game.timeOfDay = ((t % 1) + 1) % 1; return game.timeOfDay; };
+// The city is always daytime in play, so nothing reaches dusk on its own any
+// more. This hook still drives BOTH clocks because it is the only way the sky
+// keyframe sweep in tools/test/final.mjs section 10 — which asserts the key
+// light never dips below the horizon at ANY hour — can reach the other 23.
+window.__test.setTimeOfDay = (t) => {
+  game.timeOfDay = ((t % 1) + 1) % 1;
+  game.skyTime = game.timeOfDay;
+  return game.timeOfDay;
+};
 window.__test.timeOfDay = () => game.timeOfDay;
+// Put the sky back where play keeps it, after a test has swept it elsewhere.
+window.__test.resetSky = () => { game.skyTime = 0.50; return game.skyTime; };
 // #5 regression probe: the key light must never dip below the horizon, or every
 // shadow in the city gets projected upward onto the facades
 window.__test.sun = () => ({

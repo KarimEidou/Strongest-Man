@@ -15,7 +15,8 @@ export const flags = {
   seed: 1337,
   nogroq: false,
   fastday: false,
-  time: -1,               // ?time=0..1 starts the clock at that time of day
+  time: -1,               // ?time=0..1 starts the SIMULATION clock (schedules only)
+  skytime: -1,            // ?skytime=0..1 moves the VISUAL clock — tooling only
   autoplay: false,
   nomonsters: false,
   prof: false,
@@ -36,6 +37,11 @@ export function initDebug() {
   flags.nogroq = q.has('nogroq');
   flags.fastday = q.has('fastday');
   flags.time = q.has('time') ? Math.min(1, Math.max(0, parseFloat(q.get('time')) || 0)) : -1;
+  // The city is always daytime, so `?time=` no longer moves the sky — it moves
+  // the townspeople's schedules. `?skytime=` is the tooling-only escape hatch
+  // that still does, so the capture matrix can shoot a night frame and prove the
+  // lit windows and lamp pools survived a change.
+  flags.skytime = q.has('skytime') ? Math.min(1, Math.max(0, parseFloat(q.get('skytime')) || 0)) : -1;
   flags.autoplay = q.has('autoplay');
   flags.nomonsters = q.has('nomonsters');
   flags.prof = q.has('prof');

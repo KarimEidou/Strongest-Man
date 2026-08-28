@@ -10,9 +10,15 @@
 // captured in both landscape orientations on every device.
 
 const BASE = 'autoplay=1&seed=42&capture=1&nomonsters=1&nogroq=1';
-const DAY = `${BASE}&time=0.42`;      // late morning: the brightest the city gets
-const DUSK = `${BASE}&time=0.70`;     // the palette's home stop
-const NIGHT = `${BASE}&time=0.02`;    // the darkest, for HUD contrast
+// The city is always daytime now, so `?time=` moves the townspeople's schedules
+// and nothing else — every one of these renders the same noon sky. They are kept
+// distinct because they still put DIFFERENT PEOPLE on the street: the morning
+// commute, the evening one, and a near-empty small-hours city.
+const DAY = `${BASE}&time=0.42`;      // late morning: the busiest pavements
+const DUSK = `${BASE}&time=0.70`;     // the evening commute
+// `?skytime=` is the tooling-only visual override. Play never reaches it — this
+// scene exists to prove the lamp pools and lit windows still work.
+const NIGHT = `${BASE}&time=0.02&skytime=0.02`;
 
 export const SCENES = [
   // ---- shell -------------------------------------------------------------
@@ -68,14 +74,15 @@ export const SCENES = [
   {
     id: 'hud-bright',
     query: DAY,
-    note: 'HUD over the brightest daylight the palette reaches — contrast test.',
+    note: 'The city at noon, which is now the only sky there is.',
     setup: () => window.__test.warpTo(2.5, -30, Math.PI),
     steps: 30,
   },
   {
     id: 'hud-dark',
     query: NIGHT,
-    note: 'HUD at night — the other end of the contrast test.',
+    note: 'Night rendering, forced with ?skytime= — lamp pools and lit windows. '
+      + 'Play never reaches this; the city is always daytime.',
     setup: () => window.__test.warpTo(2.5, -30, Math.PI),
     steps: 30,
   },

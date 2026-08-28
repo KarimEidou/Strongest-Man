@@ -257,6 +257,9 @@ results.sunElevation = await page.evaluate(async () => {
     worstSun = Math.min(worstSun, s.sunY);
   }
   window.__test.setTimeOfDay(before);
+  // The sweep drove the VISUAL clock too (that is the only way to reach the
+  // other 23 hours now that the city is always daytime); put it back at noon.
+  window.__test.resetSky();
   return { worstSunY: +worstSun.toFixed(3), worstLightY: +worstLight.toFixed(3), ok: worstLight > 0.02 };
 });
 
@@ -555,7 +558,7 @@ results.nightShot = await (async () => {
   const buf = await page.screenshot({ clip: { x: 0, y: 220, width: 956, height: 220 } });
   return { bytes: buf.length };
 })();
-await page.evaluate(() => { window.__test.setTimeOfDay(0.7); });
+await page.evaluate(() => { window.__test.setTimeOfDay(0.7); window.__test.resetSky(); });
 
 // 21) Grounding. The #13 probe used to measure the same REST box the sole
 // offset was computed from, so it read a perfect 0.000 through a bug that had
