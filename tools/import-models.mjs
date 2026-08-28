@@ -39,11 +39,18 @@ const PACKS = {
 // cars both stand on the street). centerXZ: put the footprint's centre on the
 // origin — everything the city places is positioned by its base centre.
 //
-// rotY: degrees about Y, applied BEFORE the fit, because the whole pack is
-// authored facing -Z (the Blender/glTF convention) and this game's forward is
-// +Z: player yaw is used as (sin, cos), world/traffic.js builds cars nose-first
-// along +z, and engine/citylights.js hangs a lamp's pool of light off +z. One
-// number here beats a correction rotation at every use site.
+// rotY: degrees about Y, applied BEFORE the fit, so a model ends up facing the
+// way this game's forward points: +Z. Player yaw is used as (sin, cos),
+// world/traffic.js builds cars nose-first along +z, and engine/citylights.js
+// hangs a lamp's pool of light off +z. One number here beats a correction
+// rotation at every use site.
+//
+// It is PER MODEL, not per pack. `city-kit-roads` and `blaster-kit` are authored
+// facing -Z (the Blender/glTF convention) and need the 180. `car-kit` is not:
+// its cars already point +Z, and applying the blanket 180 to them is what made
+// every car in the city drive tail-first. Rendering one settles it —
+// `node tools/test/modelshot.mjs sedan car_sedan side` puts +Z on the left of
+// the frame, so the windscreen and headlight belong there.
 //
 // offX/offZ: post-scale metres, applied last, to move the part of the model the
 // CITY places by — a signal's pole rather than the centre of its mast arm — onto
@@ -63,11 +70,12 @@ const JOBS = [
   // ~0.5 as tall as they are long (a real one is ~0.32), so a 4.4m Kenney sedan
   // stands 2.24m — taller than the man beside it. 3.35m puts the roof just under
   // his eyeline, which is the proportion the eye actually checks.
-  ['car_sedan', 'car-kit', 'sedan.glb', { axis: 'z', size: 3.35, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
-  ['car_taxi', 'car-kit', 'taxi.glb', { axis: 'z', size: 3.35, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
-  ['car_van', 'car-kit', 'van.glb', { axis: 'z', size: 3.75, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
-  ['car_police', 'car-kit', 'police.glb', { axis: 'z', size: 3.45, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
-  ['car_wreck', 'car-kit', 'sedan-sports.glb', { axis: 'z', size: 3.35, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  // no rotY: this pack is already nose-first along +z. See the note above.
+  ['car_sedan', 'car-kit', 'sedan.glb', { axis: 'z', size: 3.35, ground: 1, centerXZ: 1, tex: 256 }],
+  ['car_taxi', 'car-kit', 'taxi.glb', { axis: 'z', size: 3.35, ground: 1, centerXZ: 1, tex: 256 }],
+  ['car_van', 'car-kit', 'van.glb', { axis: 'z', size: 3.75, ground: 1, centerXZ: 1, tex: 256 }],
+  ['car_police', 'car-kit', 'police.glb', { axis: 'z', size: 3.45, ground: 1, centerXZ: 1, tex: 256 }],
+  ['car_wreck', 'car-kit', 'sedan-sports.glb', { axis: 'z', size: 3.35, ground: 1, centerXZ: 1, tex: 256 }],
   // --- weapons. Origin stays where Kenney put it (inside the grip) so the hand
   // bone has something meaningful to hold; player/weapons.js measures the muzzle
   // off the mesh rather than assuming one.
