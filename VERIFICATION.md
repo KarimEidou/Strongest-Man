@@ -538,8 +538,10 @@ CHROME_PATH=… npx lighthouse http://127.0.0.1:8080/Strongest-Man/ \
 | Best practices | **100** |
 | SEO | **100** |
 
-Against the **local** server, not the deployed URL, because the work is on a
-feature branch and there is nothing deployed to point it at (`BLOCKERS.md` §2).
+Against the **local** server, not the deployed URL. The build is deployed now,
+but Lighthouse drives Chrome and Chrome cannot reach an HTTPS host through this
+environment's egress proxy, so the tree it ran against is byte-identical to the
+one now serving rather than fetched from it (`BLOCKERS.md` §2, §4).
 
 Three audits failed on the first run:
 
@@ -547,7 +549,8 @@ Three audits failed on the first run:
 - `bf-cache` — not a defect, and Lighthouse itself labels it "Not actionable":
   the reason given is `MainResourceHasCacheControlNoStore`, which is
   `tools/test/serve.mjs` sending `cache-control: no-store` so a local run cannot
-  serve a stale build. GitHub Pages sends `max-age=600`.
+  serve a stale build. GitHub Pages sends `max-age=600` — measured off the live
+  deploy, so the condition Lighthouse flagged does not exist on the real site.
 - `meta-viewport` (`user-scalable=no`) — **kept**, and it is the only
   accessibility failure left in the report. It is what makes the virtual joystick
   and the 16px input rule work: with pinch-zoom available a two-finger

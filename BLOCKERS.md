@@ -55,26 +55,45 @@ likely to bite:
 
 ---
 
-## 2. The work is on a feature branch. The live URL has not changed.
+## 2. Deployed. One part of the check could not be run from here.
 
-The brief says push to `main`. This session's git policy says the designated
-branch and "never push to a different branch without explicit permission." The
-branch policy governs, so everything went to
-`claude/strongest-man-overhaul-u3t6bh`.
+The brief said push to `main`; this session's git policy said the designated
+branch unless given explicit permission. Permission was given, so
+`claude/strongest-man-overhaul-u3t6bh` was fast-forwarded onto `main` and pushed.
+The feature branch still exists and points at the same commit; nothing was
+force-pushed and no history was rewritten.
 
-**The deploy workflow fires on `main` only, so
-<https://karimeidou.github.io/Strongest-Man/> is still the old build.** Merging
-the branch is what publishes this — a fast-forward, since the branch was cut from
-`main` and nothing else has touched it.
+**<https://karimeidou.github.io/Strongest-Man/> now serves this build.**
 
-Consequences, stated plainly:
+Verified after the deploy:
 
-- **"Actions run green" is unverified.** No deploy has run.
-- **"Live URL fetched and verified to match local" is unverified.** There is
-  nothing new at that URL to fetch.
-- Everything else was verified against `tools/test/serve.mjs`, which mounts the
-  site at `/Strongest-Man/` exactly as Pages does — so subpath correctness *is*
-  covered; only the deployed artifact is not.
+| Check | Result |
+|---|---|
+| Actions run | **green** — "Deploy to GitHub Pages" run #19, `a2bcf29` |
+| `sw.js` `VERSION` live vs local | **identical** — `sm-9cf19a6d2b` |
+| Every precached URL reachable | **121/121 return 200** |
+| Every precached file vs local | **120/120 byte-identical** (sha256) |
+| Content types | correct on every class — `application/javascript` for the modules and the worker, `application/manifest+json`, `model/gltf-binary`, `image/webp` |
+| `.nojekyll` respected | yes — `assets/splash/` is served |
+
+The precache check is the one worth naming. `cache.addAll()` is all-or-nothing,
+so a single 404 in that list takes offline play out entirely and silently — it
+is `AUDIT.md` #67, and it is the failure a deploy is most likely to introduce.
+All 121 were fetched from the live origin.
+
+**What could not be run from here: the deployed site was never opened in a
+browser.** Playwright's Chromium cannot reach any HTTPS host through this
+environment's egress proxy — `https://example.com` fails with
+`ERR_CONNECTION_RESET` exactly as the deployed URL does, so this is the
+environment and not the build. `curl` is proxied correctly, which is why the
+byte-level checks above were possible and a page load was not.
+
+What that leaves unverified is narrow but real: anything that depends on the
+browser rather than on the bytes. Every file is byte-identical to a tree that
+boots clean under `tools/test/preflight.mjs`, and the response headers rule out
+the usual deploy-only failures, so what remains is service-worker registration
+on the real origin, and the installed-PWA launch — neither of which was
+observable from here. **Open it once on a phone.**
 
 ## 3. The revert point is a branch, not a tag
 
@@ -90,10 +109,12 @@ git push origin pre-overhaul-2026-08-26
 
 ## 4. Lighthouse ran locally, not against the deployed URL
 
-§10.1 asks for Lighthouse against the deployed URL. There is nothing deployed to
-point it at — the work is on a feature branch (see 2) — so it was run against the
-local server instead, on the same build. Results and the full reasoning are in
-`VERIFICATION.md`; the short version:
+§10.1 asks for Lighthouse against the deployed URL. The build is deployed now
+(see 2), but Lighthouse drives Chrome, and Chrome cannot reach an HTTPS host
+through this environment's egress proxy — the same limit that stopped the
+deployed site being opened in a browser at all. So it was run against the local
+server, on a tree byte-identical to the one now serving. Results and the full
+reasoning are in `VERIFICATION.md`; the short version:
 
 | | |
 |---|---|
@@ -109,8 +130,9 @@ harness, one is deliberate:
 - **`bf-cache`** — not a defect and Lighthouse labels it "Not actionable" itself:
   the reason it gives is `MainResourceHasCacheControlNoStore`, which is
   `tools/test/serve.mjs` sending `cache-control: no-store` so a local run never
-  serves a stale build. GitHub Pages sends `max-age=600`. It cannot be checked
-  properly until there is a deployment to check.
+  serves a stale build. GitHub Pages sends `max-age=600` — measured off the live
+  deploy, where it was a prediction when this was written — so the condition
+  Lighthouse flagged does not exist on the deployed site.
 - **`user-scalable=no`** — kept, and it is the ONLY accessibility failure in the
   report. It is what makes the virtual joystick and the 16px input rule work:
   with pinch-zoom available, a two-finger move-and-look becomes a zoom and there

@@ -6,22 +6,25 @@ decision rather than a discovery.
 
 ---
 
-## 1. Work was pushed to the feature branch, not to `main`
+## 1. The work was built on a feature branch and then deployed from `main`
 
-**The brief says `main`. The session's own git policy says
+**The brief said `main`. The session's own git policy said
 `claude/strongest-man-overhaul-u3t6bh` and "never push to a different branch
-without explicit permission."** Those conflict, and the branch policy is the one
-that governs this session, so everything went to the feature branch.
+without explicit permission."** Those conflict, so everything was built on the
+feature branch until permission was given, at which point `main` was
+fast-forwarded onto it and pushed. The feature branch still exists and points at
+the same commit — nothing was force-pushed and no history was rewritten.
 
-The practical consequence: **the live site at
-<https://karimeidou.github.io/Strongest-Man/> has not changed.** The deploy
-workflow fires on pushes to `main` only. Merging the branch into `main` — a
-one-click fast-forward, since the branch was cut from `main` and nothing else has
-touched it — is what publishes this work.
+**<https://karimeidou.github.io/Strongest-Man/> now serves this build**, and the
+deploy was verified rather than assumed: the workflow is green, all 121 precached
+URLs return 200 from the live origin, and all 120 precached files are
+byte-identical to the local tree by sha256. `BLOCKERS.md` §2 has the table.
 
-That also means every "verified live" claim in `VERIFICATION.md` is a claim about
-a local server mounted at the `/Strongest-Man/` subpath, not about the deployed
-artifact. `BLOCKERS.md` says so plainly rather than letting the distinction blur.
+One distinction that has *not* gone away: the deployed site was never opened in a
+browser, because Playwright's Chromium cannot reach any HTTPS host through this
+environment's proxy. So "verified live" here means the bytes and the headers were
+fetched and compared, not that a page was watched running. `BLOCKERS.md` says
+which is which rather than letting the two blur.
 
 ## 2. The revert point is a branch, not a tag
 

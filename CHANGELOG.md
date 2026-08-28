@@ -270,6 +270,19 @@ transitions plus five `setTimeout`s in the HUD, scenes sharing a save inside a
 browser context, and a shutter that could outrun the compositor.
 `VERIFICATION.md` has the numbers and the tolerance.
 
+### Deploy
+
+Fast-forwarded onto `main` and published. The workflow's `sw.js` freshness gate
+passed, run #19 is green, and the live origin was checked rather than assumed:
+121/121 precached URLs return 200, 120/120 precached files are byte-identical to
+the local tree by sha256, `sw.js` reports the same `VERSION`, and every content
+type is right — `application/javascript` for the modules and the worker,
+`application/manifest+json`, `model/gltf-binary`, `image/webp`.
+
+The deployed site was **not** opened in a browser: Playwright's Chromium cannot
+reach any HTTPS host through this environment's proxy. `BLOCKERS.md` §2 says what
+that does and does not leave unverified.
+
 ### Known gaps
 
 See `BLOCKERS.md`. The short version: nothing here has been run on a physical
