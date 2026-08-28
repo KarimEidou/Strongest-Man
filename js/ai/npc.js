@@ -13,7 +13,7 @@ import { groundOffset, locoClipsFor, findBone, footBoneY, soleDropOf } from '../
 import { capsuleVsWorld, blockedAt } from '../physics/collide.js';
 import { pickGoal, routeTo } from './schedule.js';
 import { rebuildHash, neighbors } from './crowd.js';
-import { groundHeight } from '../physics/heightfield.js';
+import { groundHeight, onRoad, roadAxisAt } from '../physics/heightfield.js';
 import { createBody, releaseBody } from '../physics/pworld.js';
 import { addBlob } from '../engine/blobshadows.js';
 import { addBloodDecal } from '../world/debris.js';
@@ -33,6 +33,22 @@ const CARRY_CLEAR = 0.10;   // and how far a dangling victim's lowest bone must 
 const DRAG_ON = 4.6, DRAG_OFF = 3.2;   // carrier speed hysteresis: hang <-> drag
 const WHISKER = 1.8;        // how far ahead they look for something to walk round
 const WHISKER_ANG = 0.61;   // ±35°
+// How far ahead of the capsule they sample for asphalt. `damp(speed, 0, 6, dt)`
+// means asking for zero does not stop anyone: the coast is about v/6, which is
+// 0.25 m at walk speed. 1.6 minus that coast minus the 0.3 m capsule radius
+// leaves a metre of pavement in front of them, so they stop at the kerb rather
+// than in the gutter.
+const KERB_LOOK = 1.6;
+// A crossing nobody ever clears would park someone at a kerb forever. The light
+// cycle is 9s green + 2s amber each way, so 22s; 14 is longer than any single
+// red and shorter than a wait anyone would notice as broken.
+const KERB_GIVE_UP = 14;
+// The closest two people may END a step. Two 0.3 m capsules plus a couple of
+// centimetres. The velocity term in move() is a PREFERENCE and it is not enough
+// on its own: in a crowd pressed at a kerb the pushes from opposite sides cancel
+// and the interior settles at whatever spacing the cap allows — measured 0.34 m,
+// which is a quarter of a metre of one person inside another. This is the floor.
+const MIN_SEP = 0.62;
 
 // Sole offset per base rig, measured once at unit scale off the locomotion
 // clips these bodies actually play. Every bone position scales linearly with the
@@ -87,7 +103,8 @@ export function createNPCs(scene, city, player) {
       walkSpeed: randRange(1.15, 1.75),
       archetype: pick(ARCHETYPES),
       district: 0,
-      state: 'commute',        // commute | at_poi | chat | alert | panic | hide | dead
+      state: 'commute',        // commute | wait_kerb | at_poi | chat | talking |
+                               // alert | panic | hide | carried | tumbled | dead
       stateT: rand() * 6,
       path: [], pathI: 0,
       goal: null,
@@ -147,8 +164,11 @@ export function createNPCs(scene, city, player) {
       const d2 = dx * dx + dz * dz;
       n.tier = n.state === 'talking' ? 0 : d2 < 484 ? 0 : d2 < 3600 ? 1 : 2;
 
-      // staggered AI cadence per tier
-      const interval = n.tier === 0 ? 1 : n.tier === 1 ? 3 : 12;
+      // staggered AI cadence per tier. Someone waiting at a kerb is the one
+      // exception: at tier 2 a 12-step interval is 200 ms, and a car covers 1.6 m
+      // in that, so the decision to step off would be made against a road that
+      // was clear two metres of car ago.
+      const interval = n.state === 'wait_kerb' ? 3 : n.tier === 0 ? 1 : n.tier === 1 ? 3 : 12;
       if ((tickI + n.id) % interval === 0) think(n, t, dt * interval);
       move(n, dt);
     }
@@ -189,6 +209,21 @@ export function createNPCs(scene, city, player) {
         }
         break;
       }
+      case 'wait_kerb': {
+        n.targetSpeed = 0;
+        // Face the way they mean to go, so the wait reads as waiting for a gap
+        // rather than as standing about.
+        if (n.pathI < n.path.length) {
+          const nd = n.path[n.pathI];
+          n.yaw = Math.atan2(nd.x - n.x, nd.z - n.z);
+        }
+        const ax = n.x + Math.sin(n.yaw) * KERB_LOOK, az = n.z + Math.cos(n.yaw) * KERB_LOOK;
+        if (crossingClear(ax, az) || n.stateT < -KERB_GIVE_UP) {
+          n.state = 'commute';
+          n.targetSpeed = n.walkSpeed;
+        }
+        break;
+      }
       case 'talking': {
         // mid-conversation: they stand still and keep their eyes on you
         n.targetSpeed = 0;
@@ -224,32 +259,86 @@ export function createNPCs(scene, city, player) {
       if (d < 1.2) n.pathI++;
       else n.yaw = Math.atan2(dx, dz);
     }
+    // The kerb. Stop at the edge of the asphalt rather than walking into it.
+    //
+    // The `!onRoad(n.x, n.z)` guard is what stops this parking someone in a
+    // lane: it only ever fires on a pedestrian who is still on the pavement and
+    // about to step off. Once they are committed they finish the crossing.
+    if (n.state === 'commute' && n.targetSpeed > 0) {
+      const ax = n.x + Math.sin(n.yaw) * KERB_LOOK, az = n.z + Math.cos(n.yaw) * KERB_LOOK;
+      if (onRoad(ax, az) && !onRoad(n.x, n.z) && !crossingClear(ax, az)) {
+        n.state = 'wait_kerb'; n.stateT = 0; n.targetSpeed = 0;
+      }
+    }
     n.speed = damp(n.speed, n.targetSpeed, 6, dt);
 
-    if (n.speed > 0.02) {
-      // Whiskers: look ahead and turn, so they route AROUND a bench or a corner
-      // instead of grinding along it until the pushout shoves them clear.
+    const moving = n.speed > 0.02;
+    if (moving && (tickI + n.id) % (n.tier === 2 ? 4 : 1) === 0) {
+      // Whiskers: look ahead and turn, so they route AROUND a bench, a corner or
+      // a car instead of grinding along it until the pushout shoves them clear.
       // Staggered by LOD tier — distant crowds do not need this every step.
-      if ((tickI + n.id) % (n.tier === 2 ? 4 : 1) === 0) steerAround(n);
+      steerAround(n);
+    }
 
-      let vx = Math.sin(n.yaw) * n.speed, vz = Math.cos(n.yaw) * n.speed;
-      // separation
-      neighbors(n.x, n.z, 1.3, scratch);
-      for (const o of scratch) {
-        if (o === n) continue;
-        const sx = n.x - o.x, sz = n.z - o.z;
-        const sd = Math.hypot(sx, sz) || 0.01;
-        const push = (1.3 - sd) * 2.2;
-        vx += (sx / sd) * push; vz += (sz / sd) * push;
+    let vx = 0, vz = 0;
+    if (moving) { vx = Math.sin(n.yaw) * n.speed; vz = Math.cos(n.yaw) * n.speed; }
+
+    // Separation, for EVERYONE — this used to sit inside the moving branch, so a
+    // standing NPC neither pushed nor was pushed and a walker could simply
+    // occupy them. Nothing anywhere does a hard person-vs-person pushout;
+    // capsuleVsWorld knows about buildings, props, static boxes and cars, and
+    // not about people. This is the only thing keeping them apart.
+    //
+    // Halved, because both parties now push: at full strength a reciprocal
+    // response double-counts and two people who brush shoulders spring apart.
+    // Capped, because the term goes to infinity as the distance goes to zero and
+    // a spawn that lands two people on the same square metre used to fire them
+    // across the street.
+    neighbors(n.x, n.z, 1.3, scratch);
+    for (const o of scratch) {
+      if (o === n || o.state === 'carried') continue;
+      let sx = n.x - o.x, sz = n.z - o.z;
+      let sd = Math.hypot(sx, sz);
+      if (sd < 0.02) {
+        // Exactly coincident: the direction is undefined and the push would be
+        // zero. Break the tie by id so the two of them choose opposite ways and
+        // agree about which is which.
+        sx = n.id < o.id ? 1 : -1; sz = 0; sd = 1;
       }
-      n.px = n.x; n.pz = n.z;
-      n.x += vx * dt; n.z += vz * dt;
+      const push = Math.min((1.3 - sd) * 1.1, 1.6);
+      vx += (sx / sd) * push; vz += (sz / sd) * push;
+    }
 
+    n.px = n.x; n.pz = n.z;
+    n.x += vx * dt; n.z += vz * dt;
+
+    // The hard floor. Half the overlap each: the other one resolves its own half
+    // on its own step, so neither has priority and a pair does not chase each
+    // other across the pavement. Nothing else in the game does person-vs-person
+    // separation — capsuleVsWorld knows about buildings, props, static boxes and
+    // cars, and not about people.
+    //
+    // Before the world resolve, deliberately: the world gets the last word, so
+    // this can never push somebody through a wall to get them off a neighbour.
+    neighbors(n.x, n.z, MIN_SEP, scratch);
+    for (const o of scratch) {
+      if (o === n || o.state === 'carried') continue;
+      const ox = n.x - o.x, oz = n.z - o.z;
+      const od = Math.hypot(ox, oz);
+      if (od >= MIN_SEP) continue;
+      const k = (MIN_SEP - od) * 0.5;
+      if (od < 1e-3) { n.x += n.id < o.id ? k : -k; continue; }
+      n.x += (ox / od) * k; n.z += (oz / od) * k;
+    }
+
+    if (n.x !== n.px || n.z !== n.pz) {
       // Unconditional now. This used to run only for panicking NPCs, which is
       // why everyone else strolled straight through the buildings.
       const [cx, cz] = capsuleVsWorld(n.x, n.z, n.y + 0.9, NPC_R);
       n.x = cx; n.z = cz;
+    }
 
+    if (moving) {
       // wedged against something the whiskers could not solve? ask for a new route
       const moved = Math.abs(n.x - n.px) + Math.abs(n.z - n.pz);
       if (n.targetSpeed > 0.1 && moved < 0.012) {
@@ -261,10 +350,45 @@ export function createNPCs(scene, city, player) {
         }
       } else n.stuckT = 0;
     } else {
-      n.px = n.x; n.pz = n.z;
       n.stuckT = 0;
     }
     n.y = groundHeight(n.x, n.z);
+  }
+
+  // Is it safe to step onto the asphalt at (px, pz)?
+  //
+  // Two tests, and the second is not redundant: a red light is permission, not a
+  // guarantee. A panicking driver runs lights (world/traffic.js does not brake
+  // for anyone while `panicT > 0`), and a car already inside the box when the
+  // phase changed is still coming.
+  //
+  // Allocation-free and no crowd query: this runs per commuting NPC per fixed
+  // step, and npc.js has ONE module-level `scratch` that the caller's separation
+  // loop is holding.
+  function crossingClear(px, pz) {
+    const t = sys.traffic;
+    if (!t) return true;                       // no traffic wired up: nothing to wait for
+    const axis = roadAxisAt(px, pz, 0.5);
+    if (axis) {
+      // `phase` names the direction that GOES. A road band on the X axis is a
+      // street running north-south, so it carries the NS phase.
+      const theirGreen = axis === 'x' ? t.lightState.phase === 'NS' : t.lightState.phase === 'EW';
+      if (theirGreen && !t.lightState.amber) return false;
+    }
+    for (const c of t.list) {
+      if (!c.alive || c.mode === 'held' || c.mode === 'flying') continue;
+      const dx = px - c.x, dz = pz - c.z;
+      const along = c.sin * dx + c.cos * dz;   // metres in front of that car
+      const side = c.cos * dx - c.sin * dz;    // metres to its side
+      if (along < -1.5) continue;              // already past
+      // Time to arrival, roughly: a stationary car still needs 6 m of clearance
+      // because it can pull away, and a fast one needs the distance it covers in
+      // about two seconds.
+      if (along > c.speed * 1.8 + 6) continue;
+      if (Math.abs(side) > 3.2) continue;      // a different lane, or another street
+      return false;
+    }
+    return true;
   }
 
   function steerAround(n) {
@@ -704,6 +828,36 @@ export function createNPCs(scene, city, player) {
     const states = {};
     for (const n of npcs) states[n.state] = (states[n.state] || 0) + 1;
     return { alive, states, tiers: npcs.reduce((a, n) => { a[n.tier] = (a[n.tier] || 0) + 1; return a; }, {}) };
+  };
+
+  // Item 3's probe: who is standing on asphalt, and how close is the nearest car
+  // to them. Nobody alive and in control of themselves should be in a lane with a
+  // car bearing down — a panicking or dead one may be anywhere, which is the
+  // point of panic, so they are excluded rather than counted as failures.
+  window.__test.roadRisk = () => {
+    const t = sys.traffic;
+    let onRoadCount = 0, worst = Infinity, worstId = -1;
+    for (const n of npcs) {
+      if (n.state === 'dead' || n.state === 'panic' || n.state === 'alert'
+        || n.state === 'hide' || n.state === 'carried' || n.state === 'tumbled') continue;
+      if (!onRoad(n.x, n.z)) continue;
+      onRoadCount++;
+      if (!t) continue;
+      for (const c of t.list) {
+        if (!c.alive || c.mode === 'held' || c.mode === 'flying') continue;
+        const dx = n.x - c.x, dz = n.z - c.z;
+        const along = c.sin * dx + c.cos * dz;
+        const side = c.cos * dx - c.sin * dz;
+        if (along < 0 || Math.abs(side) > c.hw + 0.9) continue;   // not in this car's path
+        if (along < worst) { worst = along; worstId = n.id; }
+      }
+    }
+    return {
+      onRoad: onRoadCount,
+      waiting: npcs.filter((n) => n.state === 'wait_kerb').length,
+      nearestCarAhead: worst === Infinity ? null : +worst.toFixed(2),
+      nearestId: worstId,
+    };
   };
 
   return { npcs, fixedUpdate, frameUpdate, kill, hooks, sys };

@@ -809,6 +809,89 @@ results.galleryTravel = await page.evaluate(async () => {
   return out;
 });
 
+// 30) Nobody stands in front of a moving car, and nobody stands inside anybody.
+//
+// Two separate defects, measured over the same thirty simulated seconds on this
+// suite's own seed:
+//
+//                              before   after
+//   average on asphalt           6.77    3.81
+//   closest car, in its lane     0.03 m  2.41 m
+//   frames with someone <3 m      279      18
+//   closest two people           0.63 m  0.61 m
+//
+// 0.03 m is not a near miss, it is driving through them. The last row is the one
+// that had to be held rather than improved: the kerb wait gathers people into
+// clusters that never used to form, and with only the velocity term they settled
+// at 0.34 m — a quarter of a metre of one person inside another — until move()
+// got a hard floor.
+//
+// The rest comes from the kerb wait, the car's swept corridor, the steering
+// whiskers being able to see cars at all, and a nav lattice that no longer puts
+// eight waypoints in a traffic lane.
+//
+// The thresholds are set off those numbers with room, not off the measurement
+// exactly, because the crowd is stochastic. Panicking, dead and carried people
+// are excluded: being in the road is what panic IS.
+//
+// On ITS OWN PAGE, which is the only assertion here that gets one. This measures
+// ordinary traffic over half a simulated minute, and by the end of the suite the
+// city has been levelled in two places and the crowd is fleeing — measured
+// against that it reads 6.11 and 292 close calls with the fix fully in, which
+// says nothing about ordinary traffic. Running it early instead perturbs every
+// fixture after it (it moves the world thirty seconds on, and grabCar picks a
+// car by position). A second boot costs about forty seconds under the software
+// rasteriser and buys a measurement that means what it says.
+const roadPage = await browser.newPage({ viewport: { width: 640, height: 360 } });
+roadPage.on('pageerror', (e) => errors.push(`roadRisk: ${e}`));
+// Generous timeouts: the first page is still open and still holding a WebGL
+// context, so this boot shares the software rasteriser with it and takes several
+// times what a cold one does.
+await roadPage.goto('http://127.0.0.1:8080/Strongest-Man/?autoplay=1&seed=7&capture=1&nogroq=1',
+  { waitUntil: 'load', timeout: 180000 });
+await roadPage.waitForFunction('window.__ready === true', null, { timeout: 240000 });
+results.roadRisk = await roadPage.evaluate(() => {
+  let worstNear = Infinity, sumOnRoad = 0, samples = 0, closeCalls = 0;
+  let peakWaiting = 0, minPairDist = Infinity;
+  const alive = () => window.__npcs.npcs.filter((n) => n.state !== 'dead' && n.state !== 'carried');
+  for (let i = 0; i < 300; i++) {
+    window.__test.step(0.1);
+    const r = window.__test.roadRisk();
+    samples++;
+    sumOnRoad += r.onRoad;
+    if (r.waiting > peakWaiting) peakWaiting = r.waiting;
+    if (r.nearestCarAhead != null) {
+      if (r.nearestCarAhead < worstNear) worstNear = r.nearestCarAhead;
+      if (r.nearestCarAhead < 3) closeCalls++;
+    }
+    // and the crowd's own worst interpenetration this frame
+    if (i % 10 === 0) {
+      const ns = alive();
+      for (let a = 0; a < ns.length; a++) {
+        for (let b = a + 1; b < ns.length; b++) {
+          const d = Math.hypot(ns[a].x - ns[b].x, ns[a].z - ns[b].z);
+          if (d < minPairDist) minPairDist = d;
+        }
+      }
+    }
+  }
+  const out = {
+    avgOnRoad: +(sumOnRoad / samples).toFixed(2),
+    closestCarToAPedestrian: worstNear === Infinity ? null : +worstNear.toFixed(2),
+    closeCallFrames: closeCalls,
+    peakWaiting,
+    minPairDist: +minPairDist.toFixed(2),
+  };
+  // Set off those numbers with room, because the crowd is stochastic — each one
+  // sits between the two columns, nearer the new value.
+  out.ok = out.avgOnRoad < 5.0
+    && (out.closestCarToAPedestrian === null || out.closestCarToAPedestrian > 1.5)
+    && out.closeCallFrames < 80
+    && out.minPairDist > 0.5;
+  return out;
+});
+await roadPage.close();
+
 // 12) perf snapshot. NOTE: `simMs` is meaningless after the stepped assertions
 // above — `__test.step()` runs hundreds of fixed steps inside a single frame and
 // core/debug.js accumulates all of them into that frame's window. `maxSimMs` is

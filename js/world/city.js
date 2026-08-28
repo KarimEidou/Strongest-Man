@@ -122,11 +122,50 @@ export function buildCitySpec() {
 
   applyLandmarks(buildings);
 
-  // nav lattice: nodes along sidewalk centerlines + crosswalk links
-  const SIDE = [-56.75, -6.75, 6.75, 56.75];    // sidewalk centerlines
+  // nav lattice: nodes along sidewalk centrelines, and crossings over the roads.
+  //
+  // Three things were wrong with this, and all three were invisible because
+  // nothing consumed the output closely enough to notice. Measured on the
+  // shipped seed, before: 124 nodes, 4 of the 8 intended crossings, THREE
+  // disconnected components (92/16/16), 8 nodes standing on open asphalt, and 16
+  // edges running over a carriageway with no crossing tag.
+  //
+  //  1. The lattice relied on two different lines rounding to the same map key
+  //     to share a node. `key` used Math.round(v * 2), and JS rounds half toward
+  //     +infinity: Math.round(-13.5) is -13 but Math.round(13.5) is 14. So the
+  //     x = -6.75 kerb merged with the SPAN value at -6.7 and the x = +6.75 one
+  //     did not, and half the crosswalks had no second endpoint to link to.
+  //  2. SPAN's loop stops at 50.5 (-56.75 + 15 x 7.15), so the x = 56.75 and
+  //     z = 56.75 sidewalk lines never reached their shared corner and each was
+  //     its own island — the two 16-node components.
+  //  3. SPAN contained 0.45, which is the dead centre of the +/-5 m carriageway
+  //     at x = 0. Eight waypoints stood in a traffic lane.
+  //
+  // So the lattice is built explicitly instead: every SIDE value is forced into
+  // SPAN, nothing inside a carriageway survives, and a hop that straddles a road
+  // is tagged as a crossing where it is created rather than patched up
+  // afterwards by looking the endpoints back up.
+  const SIDE = [-56.75, -6.75, 6.75, 56.75];    // sidewalk centrelines
+  const onAsphalt = (v) => ROAD.centers.some((c) => Math.abs(v - c) <= ROAD.half);
+  const SPAN = (() => {
+    // SIDE first, so a regular step landing within a metre of a sidewalk line is
+    // dropped in its favour rather than sitting beside it as a near-duplicate.
+    const out = [...SIDE];
+    for (let v = -56.75; v <= 56.76; v += 7.15) {
+      const q = +v.toFixed(2);
+      if (onAsphalt(q)) continue;
+      if (out.some((u) => Math.abs(u - q) < 1)) continue;
+      out.push(q);
+    }
+    return out.sort((a, b) => a - b);
+  })();
+
   const nodes = [];
-  const edges = [];                              // [a, b, {cross: intersectionId|null}]
-  const key = (x, z) => `${Math.round(x * 2)},${Math.round(z * 2)}`;
+  const edges = [];                              // [a, b, {cross: crossingId|null}]
+  // Exact, not rounded: every value in SIDE and SPAN is a literal from the two
+  // tables above, so two lines meeting at an intersection produce the identical
+  // string. Nothing depends on a near-miss rounding to the same key any more.
+  const key = (x, z) => `${x},${z}`;
   const nodeAt = new Map();
   const addNode = (x, z) => {
     const k = key(x, z);
@@ -140,14 +179,33 @@ export function buildCitySpec() {
     edges.push([a.id, b.id, cross]);
   };
 
-  const SPAN = [];
-  for (let v = -56.75; v <= 56.76; v += 7.15) SPAN.push(+v.toFixed(2));
+  // A hop whose segment straddles a carriageway IS a crossing, and it is the
+  // only way over — no waypoint stands on asphalt, so every route that reaches a
+  // road goes through one of these. ai/npc.js reads the tag to decide where to
+  // stop and wait.
+  const crossings = [];
+  const straddles = (a, b) => {
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    return ROAD.centers.some((c) => lo < c + ROAD.half && hi > c - ROAD.half);
+  };
+  // `axis` names the coordinate that VARIES along the hop, which is also the
+  // direction the pedestrian travels: 'x' is stepping across a north-south
+  // street, 'z' across an east-west one.
+  const run = (prev, n, axis) => {
+    if (prev.adj.some((a) => a.n === n.id)) return;
+    const over = axis === 'x' ? straddles(prev.x, n.x) : straddles(prev.z, n.z);
+    if (!over) { link(prev, n); return; }
+    const cid = crossings.length;
+    crossings.push({ id: cid, x: (prev.x + n.x) / 2, z: (prev.z + n.z) / 2, axis });
+    link(prev, n, cid);
+  };
+
   // lines parallel to x (z fixed) and parallel to z (x fixed)
   for (const z of SIDE) {
     let prev = null;
     for (const x of SPAN) {
       const n = addNode(x, z);
-      if (prev) link(prev, n);
+      if (prev && prev.id !== n.id) run(prev, n, 'x');
       prev = n;
     }
   }
@@ -155,23 +213,9 @@ export function buildCitySpec() {
     let prev = null;
     for (const z of SPAN) {
       const n = addNode(x, z);
-      if (prev && prev.id !== n.id) {
-        const already = prev.adj.some((a) => a.n === n.id);
-        if (!already) link(prev, n);
-      }
+      if (prev && prev.id !== n.id) run(prev, n, 'z');
       prev = n;
     }
-  }
-  // crosswalks over the centre roads (x≈0 and z≈0) and gaps in SPAN across them
-  const crossings = [];
-  let crossId = 0;
-  for (const z of SIDE) {
-    const a = nodeAt.get(key(-6.75, z)), b = nodeAt.get(key(6.75, z));
-    if (a && b) { const cid = crossId++; link(a, b, cid); crossings.push({ id: cid, x: 0, z, axis: 'x' }); }
-  }
-  for (const x of SIDE) {
-    const a = nodeAt.get(key(x, -6.75)), b = nodeAt.get(key(x, 6.75));
-    if (a && b) { const cid = crossId++; link(a, b, cid); crossings.push({ id: cid, x, z: 0, axis: 'z' }); }
   }
 
   // POIs: door per building (front centre), plus plaza benches added by props

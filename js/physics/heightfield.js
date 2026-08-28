@@ -24,16 +24,40 @@ const RHALF = ROAD.half;
 const BOX = new Float32Array(BLOCKS.length * 4);
 BLOCKS.forEach((b, i) => { BOX[i * 4] = b.x0; BOX[i * 4 + 1] = b.z0; BOX[i * 4 + 2] = b.x1; BOX[i * 4 + 3] = b.z1; });
 
-function inRoad(v) {
+function inRoad(v, m) {
+  const h = RHALF + m;
   for (let i = 0; i < RC.length; i++) {
     const d = v - RC[i];
-    if (d <= RHALF && d >= -RHALF) return true;
+    if (d <= h && d >= -h) return true;
   }
   return false;
 }
 
+// Is this point on a carriageway?
+//
+// Promoted from the private helper above rather than reimplemented, for two
+// reasons. The AND/OR is easy to get backwards — a point is on asphalt if
+// EITHER axis is inside a road band, because the roads are a grid — and
+// world/props.js carries a comment about the day that was got wrong. And
+// `baseHeight(x, z) === 0` looks like it would do the same job and does not:
+// craters (addDent) lower the sidewalk to zero as well.
+//
+// Allocation-free, like baseHeight, and for the same reason: this is called per
+// NPC per fixed step.
+export function onRoad(x, z, margin = 0) { return inRoad(x, margin) || inRoad(z, margin); }
+
+// Which way the carriageway under this point runs, or null off it. 'x' means the
+// road band is on the X axis — a street running north-south, so it carries the
+// NS phase of the lights (world/traffic.js: a car is on the EW phase if it is
+// travelling mostly along x).
+export function roadAxisAt(x, z, margin = 0) {
+  if (inRoad(x, margin)) return 'x';
+  if (inRoad(z, margin)) return 'z';
+  return null;
+}
+
 export function baseHeight(x, z) {
-  if (inRoad(x) || inRoad(z)) return 0 - dent[idx(x, z)];
+  if (inRoad(x, 0) || inRoad(z, 0)) return 0 - dent[idx(x, z)];
   for (let i = 0; i < BOX.length; i += 4) {
     if (x >= BOX[i] && x <= BOX[i + 2] && z >= BOX[i + 1] && z <= BOX[i + 3]) return 0.02 - dent[idx(x, z)];
   }

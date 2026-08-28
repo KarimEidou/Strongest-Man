@@ -269,6 +269,23 @@ export function blockedAt(x, z, y, r) {
       if (dx * dx + dz * dz < min * min) return true;
     }
   }
+  // Cars. This test had no car branch at all, while capsuleVsWorld did — so the
+  // one thing that uses blockedAt, ai/npc.js's steering whiskers, was blind to
+  // the only moving obstacle in the city. A pedestrian would route neatly around
+  // a bench and walk into the side of a taxi.
+  //
+  // Containment, not pushout: a whisker asks "would I be inside something
+  // there?", and the answer for a car is the same oriented box capsuleVsWorld
+  // resolves against. Twelve cars, linear, no allocation.
+  if (CARS) {
+    for (const c of CARS.list) {
+      if (!c.alive || c.mode === 'held' || c.mode === 'flying') continue;
+      const dx = x - c.x, dz = z - c.z;
+      const cos = Math.cos(-c.yaw), sin = Math.sin(-c.yaw);
+      const lx = dx * cos - dz * sin, lz = dx * sin + dz * cos;
+      if (Math.abs(lx) < c.hw + r && Math.abs(lz) < c.hl + r) return true;
+    }
+  }
   return false;
 }
 

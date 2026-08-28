@@ -168,6 +168,12 @@ const { setCars } = await import('./physics/collide.js');
 const npcs = createNPCs(scene, city, player);
 const traffic = createTraffic(scene, propsReg, npcs.hooks, player, cam);
 setCars({ list: traffic.list });
+// Traffic, handed to the townspeople after the fact. createNPCs runs before
+// createTraffic — traffic takes npcs.hooks as an argument — so there is no way
+// to pass it in, and this is the same post-construction injection ai/panic.js
+// already uses for sys.panicThink. ai/npc.js reads it with optional chaining, so
+// a harness that builds NPCs alone still works.
+npcs.sys.traffic = { list: traffic.list, lightState: traffic.hooks.lightState };
 combat.st.hooks.npcs = npcs.hooks;
 combat.st.hooks.cars = traffic.hooks;
 

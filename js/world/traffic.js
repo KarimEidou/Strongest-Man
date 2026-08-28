@@ -271,12 +271,43 @@ export function createTraffic(scene, propsReg, npcHooks, player, cam) {
           const stopAt = lightStop(car);
           // hard stop once we are on the line, so cars sit still at red
           if (stopAt >= 0) target = Math.min(target, stopAt < 1.2 ? 0 : stopAt * 1.6);
-          // pedestrians / player ahead
-          const aheadX = car.x + car.sin * 4, aheadZ = car.z + car.cos * 4;
-          neighbors(aheadX, aheadZ, 2.6, scratch);
-          if (scratch.some((n) => n.state !== 'dead')) target = 0;
-          const pd = Math.hypot(player.p.x - aheadX, player.p.z - aheadZ);
-          if (pd < 3) target = 0;
+          // Pedestrians and the player ahead.
+          //
+          // This was one 2.6 m disc at a fixed 4 m, and binary: stop or go. Two
+          // things were wrong with that. It could not see someone stepping in
+          // from the side until they were already at the four-metre mark — which
+          // at 8 m/s is half a second before the bumper — and when it did see
+          // them it slammed to a standstill, which is why the street read as
+          // stop-start rather than as traffic.
+          //
+          // A swept corridor instead: sampled along the car's own heading out to
+          // a horizon that grows with speed, kept to the width of the car plus a
+          // shoulder, and braking in proportion to how close the nearest person
+          // actually is. The disc samples overlap so nobody falls between them.
+          let nearest = Infinity;
+          const horizon = Math.max(5, car.speed * 1.7 + 4);
+          const halfW = car.hw + 0.9;
+          for (let d = 1.8; d <= horizon; d += 2.2) {
+            neighbors(car.x + car.sin * d, car.z + car.cos * d, halfW + 1.4, scratch);
+            for (const n of scratch) {
+              if (n.state === 'dead') continue;
+              const dx = n.x - car.x, dz = n.z - car.z;
+              const along = car.sin * dx + car.cos * dz;
+              const side = car.cos * dx - car.sin * dz;
+              if (along < 0 || along > horizon || Math.abs(side) > halfW) continue;
+              if (along < nearest) nearest = along;
+            }
+          }
+          const pdx = player.p.x - car.x, pdz = player.p.z - car.z;
+          const pAlong = car.sin * pdx + car.cos * pdz;
+          const pSide = car.cos * pdx - car.sin * pdz;
+          if (pAlong > 0 && pAlong < horizon && Math.abs(pSide) < halfW) nearest = Math.min(nearest, pAlong);
+          if (nearest < Infinity) {
+            // 2.4 m of standoff, then the same proportional easing gapAhead uses
+            // for the car in front. Below the standoff this is zero, which is a
+            // full stop — it just is not the only outcome any more.
+            target = Math.min(target, Math.max(0, (nearest - 2.4) * 1.2));
+          }
         }
 
         // braking is prompt, pulling away is not — plus a short reaction delay
