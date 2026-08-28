@@ -27,7 +27,7 @@ re-shot. The numbers that WERE re-measured on this tree:
 | Textures | 77 | **79** | +2 |
 | JS heap | 26 MB | **38 MB** | +12 MB — the per-shell buffers, doubled by the interior liner |
 | Leak check | flat | **flat** — geometries −3, heap −0.1 MB over 20 cycles | |
-| Precache | 5.01 MB, 121 URLs | **4.18 MB**, 111 URLs | the removals took more than the buildings added |
+| Precache | 5.01 MB, 121 URLs | **4.93 MB**, 111 URLs | the removals took 0.84 MB out and the eight building models put 0.75 MB back |
 
 Draw calls barely moved because the two effects cancel: seventeen per-building
 shell meshes came in, and the tracer, health-pip and reticle passes went out.

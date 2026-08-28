@@ -62,7 +62,8 @@ models, the HUD is rebuilt, and everything that made this a score attack is gone
 - **Monsters, health, guns, the shop, points, karma and reputation** — ten
   modules, two monster models, six gun models, and the wiring through main.js,
   the event bus, combat, the pose tables, the save file and the HUD. Precache
-  drops from 5.02 MB to 4.18 MB. Talking to people stays: the dialogue system
+  drops from 5.02 MB to 4.18 MB (the eight building models put 0.75 MB back, for
+  4.93 MB total). Talking to people stays: the dialogue system
   resolves on one fixed neutral band now, so the canned corpus still works with
   no API key.
 
