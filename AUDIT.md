@@ -77,9 +77,9 @@ The commit named is where the behaviour actually changed.
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
 | Major | 57 | a feature does not work, leaks, or is unusable on the target device |
-| Minor | 52 | wrong, but survivable |
+| Minor | 53 | wrong, but survivable |
 | Polish | 4 | correct, and not good enough |
-| **Total** | **117** | from 120 raw findings; 3 were the same defect seen by two sweeps |
+| **Total** | **118** | from 121 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
@@ -91,9 +91,9 @@ The commit named is where the behaviour actually changed.
 | Perf | 10 |
 | PWA | 7 |
 | SW | 6 |
+| Tooling | 3 |
 | Deploy | 2 |
 | Layout | 2 |
-| Tooling | 2 |
 | Audio | 1 |
 
 ## Resolving commits
@@ -126,6 +126,7 @@ The commit named is where the behaviour actually changed.
 | `1bf0dfd` | fix(layout): measure DOM overlays at their settled state, not mid-fade |
 | `8d6916e` | feat(hud): a GALLERY button that puts you outside the gallery door |
 | `44175a2` | fix(capture): ask at the shutter whether the frame is a mosaic |
+| `4f51f37` | fix(preflight): wait for the loop to make progress, don't sample a window |
 
 ## Index
 
@@ -244,6 +245,7 @@ The commit named is where the behaviour actually changed.
 | 116 | Minor | Layout | `css/main.css:814` | Inspect mode's gesture hint is drawn under the artwork at 667x375, and the last word is cut off | `ff8a4d2` |
 | 117 | Minor | UI | `css/main.css:723` | The Roman numerals are set in the UI sans stack in the prompt and the inspect caption, so "I" r… | `ff8a4d2` |
 | 119 | Minor | Layout | `css/main.css:124` | #rep-hint is positioned inside the top-right button row's own vertical band, and is drawn under… | `8d6916e` |
+| 121 | Minor | Tooling | `tools/test/preflight.mjs:78` | preflight's liveness check samples a fixed window, so it fails a healthy build on a slow host | `4f51f37` |
 | 12 | Polish | Render | `js/main.js:331` | Billboards and the sky dome are posed from the previous frame's camera | `9ab347f` |
 | 65 | Polish | HUD | `css/main.css:212` | #down-banner clears the action-button cluster by 0.5px at 667x375 | `5aa9e2e` |
 | 66 | Polish | UI | `css/main.css:441` | Spacing is off the stated 4/8/16/24/32 scale throughout, including a negative-margin hack that … | `f7ff336` |
@@ -1616,6 +1618,18 @@ The commit named is where the behaviour actually changed.
 **Actual.** The button row runs y 8..52 (top 8, 44pt minimum height). #rep-hint was at top:42, so its band was 42..60 - ten pixels INSIDE the row. That was invisible for as long as the middle of the row was empty: #btn-shop and #btn-pause are both pinned to the right edge and the longest reputation string, 344.5px centred, ends at x=505.8 while the shop starts at 537.8. Adding a third button to the cluster filled exactly the gap the text was running through, and the two overlapped by 56x10px with the last word drawn under the control. Narrowing the text is not available as a fix: to clear the cluster a centred element would need a max-width of 232px, which ellipsises most of the strings. layout.mjs did not catch it because the pair was never listed - the assertion list had #rep-hint against #karma-wrap only.
 
 **Remedy.** Move the centre stack below the row rather than through it: #rep-hint 42 -> 56px, and #toast 72 -> 86px so it keeps the same 12px gap under it; the body.has-update offsets move with them. Then assert it - #rep-hint against #btn-gallery and #btn-shop, #toast against #btn-gallery, and #rep-hint against #toast, on every device in both orientations, so the next control added to that row fails the suite instead of quietly covering a word.
+
+### 121. preflight's liveness check samples a fixed window, so it fails a healthy build on a slow host
+
+**Minor · Tooling · `tools/test/preflight.mjs:78` · fixed in `4f51f37`**
+
+**Repro.** Run `node tools/test/preflight.mjs` on a container slower than the one the check was tuned on. Observed directly: the same commit passed 6/6, the container was replaced, and the identical tree then failed with `the simulation is advancing - 0.00s -> 0.00s` on two consecutive runs at a load average of 0.29.
+
+**Expected.** A gate that blocks a deploy fails when the game is broken and at no other time.
+
+**Actual.** The check read the simulation clock, waited four seconds, and read it again. How much simulation happens in four seconds is a fact about the host, not about the game: SwiftShader rasterizes the whole city on the CPU, and where one container managed 0.17s of simulation in that window, its replacement managed a single requestAnimationFrame callback in three seconds - at which rate the window contains no completed fixed step at all and the clock is still reading 0.00. The loop was healthy throughout; instrumenting it showed simTime at 0.083 after eight seconds and 0.600 after sixteen. This is the second time the same mistake was made in the same check: the first version counted rAF callbacks over one second, and was replaced with the clock sample for exactly this reason.
+
+**Remedy.** Wait for progress rather than sampling a window. Poll the simulation clock every 500 ms until it moves, with a 90 s liveness bound. That is strictly stronger than the window it replaces - a dead loop still fails, by timing out, and a slow machine no longer can - and it stops the gate encoding an assumption about how fast the host happens to be. The report prints the wall clock it took, so a genuinely slow run is visible without being a failure.
 
 ### 12. Billboards and the sky dome are posed from the previous frame's camera
 

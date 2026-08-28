@@ -363,7 +363,7 @@ which is expected and is why the townsfolk get blob shadows rather than real one
 ### What reviewing them found
 
 The pictures were then opened and looked at, which is §5.7 of the brief and is
-not a formality. Eleven defects came out of that pass and only that pass:
+not a formality. Twelve defects came out of that pass and only that pass:
 
 | # | What the screenshot showed |
 |---|---|
@@ -378,6 +378,7 @@ not a formality. Eleven defects came out of that pass and only that pass:
 | 117 | The Roman numerals set in the UI sans face, where an `I` is a bare vertical bar |
 | 119 | The longest reputation string drawn under a HUD control at 667×375 |
 | 120 | A capture returned as a mosaic of itself, passing every blank test |
+| 121 | The pre-push gate failing a healthy build because the host got slower |
 
 \#116 and #117 are the second round: the works were renumbered `I`–`IV` after the
 first pass, the matrix was re-shot, and reading it again found two more. That is
