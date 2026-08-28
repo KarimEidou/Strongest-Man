@@ -1,9 +1,34 @@
-// Clip bank. Every Meshy rig in this project shares an IDENTICAL 24-bone
-// skeleton (verified at generation time by tools/check-rig.mjs), so clips
-// apply to any character directly — tracks resolve by bone name. We only:
-//  - strip the Hips.position X/Z channels (the controller owns translation),
-//  - strip every .scale track (see normalizeClip),
-//  - scale the Hips Y bob when a clip plays on a different-height skeleton.
+// Clip bank.
+//
+// Every Meshy rig in this project has the same 24 bones in the same order, so a
+// track resolves by name on any of them — but they do NOT share a bind pose, and
+// the comment here used to claim they did. Run
+//   node tools/check-rig.mjs assets/models/player.glb assets/models/npc_a.glb \
+//        assets/models/npc_b.glb
+// and it prints the table: against the player's rig, npc_a's Hips bind sits
+// 120.4 degrees away, its hands 46 and 38, its forearms 22; npc_b is 104.4 at
+// the Hips and 59 / 57 at the hands. That tool compared bone names and order
+// only, which is why it used to report a clean match.
+//
+// That difference is real and it is measurable in play — `__test.skinTwist()`
+// reports the player's waist sitting 122 degrees from its own bind through the
+// whole 0.3..3.4 m/s band, where the walk and quick clips (npc_a's and npc_b's)
+// carry the weight, and under 14 degrees at a standstill and at a sprint, where
+// the clips are the player's own.
+//
+// It is NOT corrected here, and that is a decision rather than an omission. A
+// full bind-space retarget was built and measured: it collapses that 122 degrees
+// to 9 across the whole band, and it makes the player visibly hunch. Both are
+// true at once because the 125 degrees is very largely bone ROLL — a rotation
+// about each bone's own axis, which the clip's own downstream rotations already
+// compensate for, so the composed pose was already right and re-basing it
+// applies the correction twice. See ASSUMPTIONS.md.
+//
+// So this file does three things:
+//  - centres the Hips.position X/Z channels rather than deleting them (the
+//    controller owns travel; the pelvis still owns its sway — see normalizeClip),
+//  - strips every .scale track (see normalizeClip),
+//  - scales the Hips bob and sway when a clip plays on a different-height rig.
 import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { MODELS } from '../engine/assets.js';
@@ -40,7 +65,7 @@ export function buildClipBank() {
     const anims = MODELS[model]?.animations || [];
     if (!anims.length) return;
     const clip = anims[0].clone();
-    normalizeClip(clip);
+    normalizeClip(clip, name);
     CLIPS[name] = clip;
     CLIP_HIPS[name] = hipsOf(rig) || refHipsY;
   };
@@ -73,13 +98,34 @@ function hipsOf(model) {
 // (and stood with his feet ~17cm through the pavement). Dropping the scale
 // channels outright gives one constant, correctly-grounded size in every state;
 // overall build is PLAYER_SCALE in player/player.js if it ever wants tuning.
-function normalizeClip(clip) {
+//
+// The Hips.position X/Z channels used to be set to zero outright, on the
+// reasoning that the controller owns translation. Zero is the wrong constant.
+// Measured over the looping clips, none of them has any root-motion drift to
+// strip — first key to last is 0.00 on both axes — so what that assignment
+// actually deleted was the PELVIC SWAY, and then shoved the body off its own
+// centre line by however far the sway was offset. npc_a's walk swings the hips
+// 7.8 cm peak to peak about a mean 3.8 cm off centre; the player's idle 3.5 cm.
+// A body that glides down a rail with no weight shift is half of the catwalk.
+//
+// So: subtract the MEAN rather than the value. Real travel would survive that,
+// which is why `die` — the one clip with genuine X/Z travel, 5.5 and -81.8 units
+// of it — keeps being zeroed outright.
+const TRAVELS = new Set(['die']);
+function normalizeClip(clip, name) {
   clip.tracks = clip.tracks.filter((t) => !t.name.endsWith('.scale'));
   for (const track of clip.tracks) {
-    if (track.name.endsWith('Hips.position')) {
-      const v = track.values;
+    if (!track.name.endsWith('Hips.position')) continue;
+    const v = track.values;
+    if (TRAVELS.has(name)) {
       for (let i = 0; i < v.length; i += 3) { v[i] = 0; v[i + 2] = 0; }
+      continue;
     }
+    let mx = 0, mz = 0;
+    const n = v.length / 3;
+    for (let i = 0; i < v.length; i += 3) { mx += v[i]; mz += v[i + 2]; }
+    mx /= n; mz /= n;
+    for (let i = 0; i < v.length; i += 3) { v[i] -= mx; v[i + 2] -= mz; }
   }
   return clip;
 }
@@ -102,8 +148,12 @@ export function clipFor(name, hipsY) {
   const c = src.clone();
   for (const track of c.tracks) {
     if (track.name.endsWith('Hips.position')) {
+      // All three axes: the sway normalizeClip preserved is in the SOURCE rig's
+      // units, the same as the bob, so it scales by the same ratio. Scaling only
+      // Y would leave a 7.8 cm sway authored on npc_a reading as 7.8 cm on a
+      // rig a third taller.
       const v = track.values;
-      for (let i = 1; i < v.length; i += 3) v[i] *= k;
+      for (let i = 0; i < v.length; i += 3) { v[i] *= k; v[i + 1] *= k; v[i + 2] *= k; }
     }
   }
   retargetCache.set(key, c);

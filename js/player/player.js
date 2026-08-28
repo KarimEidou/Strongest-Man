@@ -13,6 +13,20 @@ import { damp, dampAngle, clamp } from '../core/mathx.js';
 
 const R = 0.38;              // capsule radius
 const WALK = 2.3, JOG = 4.3, SPRINT = 7.0;
+// The slowest the stick will ask for.
+//
+// It used to map any deflection over the 0.02 dead zone linearly onto 0..WALK,
+// so a small push produced a crawl of a few tenths of a metre a second. Nothing
+// in the clip bank covers that: anim/locomotion.js's walk clip is authored at
+// 1.4 m/s and its timeScale is floored, so below about 1 m/s the feet plant and
+// slide backwards — there is no root motion and no foot IK. Worse, that band is
+// where the graph sits mostly on `idle`: at a tenth of a deflection the blend is
+// two thirds idle, so the stride amplitude drops to a third while the cadence
+// stays up. Small mincing steps with full hip sway is the catwalk.
+//
+// Any INTENTIONAL input now lands at or above the walk clip's usable speed. The
+// dead zone is untouched, so standing still still means standing still.
+const WALK_MIN = 1.2;
 const JUMP_V = 9.0;
 // One number for overall build. Clip scale tracks are stripped in
 // anim/retarget.js so nothing else can change his size at runtime.
@@ -29,6 +43,12 @@ export function createPlayer(scene, cam) {
   // Building the graph does not move a bone — nothing calls mixer.update until
   // the first frame — so the rig is still at rest for the measurement and for
   // the pose layer built below it.
+  // Before createLocomotion, which is before any mixer update: this is the only
+  // moment the rig is at its bind pose. __test.skinTwist measures against it.
+  const bindQ = new Map();
+  root.updateWorldMatrix(true, true);
+  root.traverse((o) => { if (o.isBone) bindQ.set(o.name, o.getWorldQuaternion(new THREE.Quaternion())); });
+
   const loco = createLocomotion(root);
   const footY = groundOffset(root, loco.clips);
 
@@ -68,14 +88,23 @@ export function createPlayer(scene, cam) {
     const mag = Math.min(1, Math.hypot(mx, mz));
     let target = 0;
     if (mag > 0.02) {
-      target = mag < 0.45 ? WALK * (mag / 0.45) : mag < 0.92 ? WALK + (JOG - WALK) * ((mag - 0.45) / 0.47) : SPRINT;
+      target = mag < 0.45 ? WALK_MIN + (WALK - WALK_MIN) * (mag / 0.45) : mag < 0.92 ? WALK + (JOG - WALK) * ((mag - 0.45) / 0.47) : SPRINT;
       const camYaw = cam.yaw;
       const dirX = Math.sin(camYaw) * mz + Math.cos(camYaw) * mx;
       const dirZ = Math.cos(camYaw) * mz - Math.sin(camYaw) * mx;
       const len = Math.hypot(dirX, dirZ) || 1;
+      // A charged advance is a deliberate walk, not a slowed sprint. The flat
+      // 0.45 used to be applied to velocity and to nothing else, so a full-stick
+      // sprint became 3.15 m/s — which the locomotion graph reads as 89% of the
+      // quick clip blended with 11% of run, two clips on different foot
+      // schedules. Clamping the charged speed into the walk band instead means
+      // the graph resolves to one clip doing one thing.
       const chargeSlow = (p.charge > 0.05 ? 0.45 : 1) * p.carrySlow;
-      p.vx = (dirX / len) * target * chargeSlow;
-      p.vz = (dirZ / len) * target * chargeSlow;
+      const want = p.charge > 0.05
+        ? Math.min(target * chargeSlow, WALK)
+        : target * chargeSlow;
+      p.vx = (dirX / len) * want;
+      p.vz = (dirZ / len) * want;
       p.yaw = Math.atan2(dirX, dirZ);
     } else {
       p.vx = damp(p.vx, 0, 18, dt);
@@ -191,6 +220,48 @@ export function createPlayer(scene, cam) {
       if (d > worst) { worst = d; name = o.name; }
     });
     return { worst: +worst.toFixed(5), bone: name };
+  };
+
+  // How far each bone's SKINNED geometry is rotated away from where the bind
+  // pose put it, in degrees, for whatever is playing right now.
+  //
+  // This is the probe for the waist knot. A clip authored on another rig used to
+  // rotate the pelvis 125 degrees at every frame, and nothing measured it: the
+  // pose-error probe in anim/poselayer.js only checks bones the POSE table
+  // drives, and the locomotion clip drives all 24. Reported as the angle between
+  // adjacent bones' deformations, because that is what creases a mesh — a whole
+  // body rotated together is a body facing a different way, but a pelvis rotated
+  // against the chest above it is a knot.
+  const _bq = new THREE.Quaternion(), _pq = new THREE.Quaternion();
+  window.__test.skinTwist = () => {
+    root.updateWorldMatrix(true, true);
+    const deform = new Map();
+    root.traverse((o) => {
+      if (!o.isBone || !bindQ.has(o.name)) return;
+      deform.set(o.name, o.getWorldQuaternion(_bq.clone()).multiply(bindQ.get(o.name).clone().invert()));
+    });
+    let worst = 0, at = '';
+    const pairs = [['Hips', 'Spine02'], ['Spine02', 'Spine01'], ['Spine01', 'Spine'], ['Spine', 'neck'],
+      ['Hips', 'LeftUpLeg'], ['Hips', 'RightUpLeg']];
+    const out = {};
+    for (const [a, b] of pairs) {
+      const da = deform.get(a), db = deform.get(b);
+      if (!da || !db) continue;
+      _pq.copy(da).invert().multiply(db);
+      const deg = +(2 * Math.acos(Math.min(1, Math.abs(_pq.w))) * 180 / Math.PI).toFixed(1);
+      out[`${a}-${b}`] = deg;
+      if (deg > worst) { worst = deg; at = `${a}-${b}`; }
+    }
+    // The ABSOLUTE deformation matters too, and independently: a body whose
+    // bones are all rotated together by the same wrong amount has small
+    // pair angles and is still facing the wrong way. Reported for the spine
+    // chain, where a walk should barely move anything.
+    const abs = {};
+    for (const n of ['Hips', 'Spine02', 'Spine01', 'Spine']) {
+      const d = deform.get(n);
+      if (d) abs[n] = +(2 * Math.acos(Math.min(1, Math.abs(d.w))) * 180 / Math.PI).toFixed(1);
+    }
+    return { worst, at, pairs: out, abs };
   };
 
   return { ...pAccessors(p), p, fixedUpdate, frameUpdate };

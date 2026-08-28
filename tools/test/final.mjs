@@ -376,6 +376,45 @@ results.playerSize = await page.evaluate(() => {
   return { seen, spanH: +span('h').toFixed(4), ok: span('h') < 0.002 && seen.every((s) => s.drift < 0.001) };
 });
 
+// 29) The waist. anim/retarget.js's header records that these rigs do not share
+// a bind pose and that the difference is NOT corrected at load time; this is the
+// number that says so, and the guard that stops it getting worse.
+//
+// __test.skinTwist() reports how far a bone's local rotation sits from its own
+// bind — for the pelvis-to-waist pair, how far the waist is bent from rest. A
+// walk should barely move it. Measured across the stick's whole range:
+//   standstill  7 deg     idle, the player's own clip
+//   1.4-3.4 m/s 91-120     walk and quick, authored on npc_a and npc_b
+//   sprint      14-20      run, the player's own clip
+// The two clean ends are the assertion: they are the bands where the clip and
+// the rig agree, and nothing may make them dirty. The middle is recorded rather
+// than asserted, so a future fix shows up here as a number that fell.
+//
+// 30 degrees, not 20: the run clip does genuinely bend the waist, and where in
+// its cycle the sample lands moves the reading between 14 and 20. 30 clears that
+// with room and is still far below the 91 the mismatched clips produce, so the
+// threshold separates the two causes rather than the two phases.
+results.waistTwist = await page.evaluate(() => {
+  const band = [];
+  for (const mag of [0, 0.1, 0.3, 0.7, 1]) {
+    window.__test.drive(0, mag);
+    window.__test.step(1.6);
+    band.push({
+      mag,
+      v: +window.__test.playerStats().speed.toFixed(2),
+      waist: window.__test.skinTwist().pairs['Hips-Spine02'],
+    });
+  }
+  window.__test.drive(null);
+  window.__test.step(0.5);
+  const ownClip = [band[0].waist, band[4].waist];
+  return {
+    band,
+    ownClipWorst: Math.max(...ownClip),
+    ok: Math.max(...ownClip) < 30,
+  };
+});
+
 // 15) the person in your fist hangs off it, and never through the pavement —
 // standing still or at a dead sprint
 results.carryPerson = await page.evaluate(() => {
@@ -386,13 +425,13 @@ results.carryPerson = await page.evaluate(() => {
   // to be unreachable all twenty attempts target the same person, and the test
   // fails saying grabbing is broken while grabbing works perfectly. Which person
   // is not the point.
-  let got = false;
+  let got = null;
   for (const n of npcs.filter((o) => o.state !== 'dead' && o.state !== 'carried')) {
     if (got) break;
     window.__test.teleport(n.x - Math.sin(n.yaw) * 0.8, n.z - Math.cos(n.yaw) * 0.8);
     window.__test.faceTo(n.x, n.z);
     window.__test.step(0.06); window.__test.press('grab'); window.__test.step(0.25);
-    if (window.__test.carry().kind === 'entity') got = true;
+    if (window.__test.carry().kind === 'entity') got = n;
   }
   if (!got) return { ok: false, why: 'never grabbed' };
   window.__test.step(1.2);
@@ -400,7 +439,15 @@ results.carryPerson = await page.evaluate(() => {
   // a null here used to take the whole suite down with a TypeError, which says
   // nothing about what went wrong.
   const low0 = window.__test.carryLowest();
-  if (!low0) return { ok: false, why: 'let go during the settle' };
+  if (!low0) {
+    return {
+      ok: false,
+      why: 'let go during the settle',
+      victim: { id: got.id, state: got.state, dead: got.dead },
+      carry: window.__test.carry(),
+      player: window.__test.playerStats(),
+    };
+  }
   const standing = { clear: low0.clear, pose: low0.pose, throat: window.__test.carryContact().throatDist };
   window.__test.drive(0, 1);
   let worstClear = 9, worstThroat = 0;

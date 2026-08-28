@@ -65,7 +65,17 @@ export function createLocomotion(root, opts = {}) {
       if (a === hi) target = Math.max(target, t);
       if (oneshot) target *= oneshotHeld ? 0 : 0.15; // locomotion ducks under a one-shot
       a.action.setEffectiveWeight(damp(a.action.getEffectiveWeight(), target, 14, dt));
-      if (a.native) a.action.setEffectiveTimeScale(clamp(speed / a.native, 0.75, 1.5));
+      // Cadence tracks ground speed. The floor used to be 0.75, which meant the
+      // walk clip could never cover less than 1.05 m/s however slowly the body
+      // was actually moving — below that the feet planted and slid, because
+      // there is no root motion (anim/retarget.js) and no foot IK anywhere.
+      // 0.45 reaches down to 0.63 m/s, which is under anything the stick can now
+      // ask for (see WALK_MIN in player/player.js), so the slide is gone at both
+      // ends rather than moved.
+      // `idle` is excluded because it has no `native`: it is a standing clip with
+      // no ground speed to track, and scaling it against one made its cycle
+      // free-run against the walk it was being blended with.
+      if (a.native) a.action.setEffectiveTimeScale(clamp(speed / a.native, 0.45, 1.5));
     }
     mixer.update(dt);
     // belt-and-braces: the 'finished' listener above is the real retirement path
