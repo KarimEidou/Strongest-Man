@@ -1421,5 +1421,16 @@
   "expected": "A capture is a picture of the scene, or the run says it is not.",
   "actual": "The screenshot is taken from a surface the compositor has tiled, and what lands on disk is one block of the frame repeated two to four times each way with everything the scene existed to show missing. It is a valid PNG of the right size and it goes into report.json like any other row. scan.mjs's two blank tests both pass it comfortably - a mosaic is made of real picture, so it has high detail and high edge energy; the loading frame scored a standard deviation of 9.8 against a floor of 6. Nothing in the run says a word, and the frame is then cited in a document as evidence of what the build looks like.",
   "fix": "Ask at the shutter, not only afterwards. tools/capture/tiling.mjs measures self-similarity under a w/k shift NORMALISED against a shift that cannot be a tile period - a repeating frame has a small numerator and a large denominator, a nearly-empty one has both small, which is what separates a mosaic from the portrait rotate overlay. capture.mjs re-renders and shoots again once when it fires, marks the row `reshot` and prints R instead of a dot; a frame still tiled after the retry is a run failure, because quietly re-shooting until it looks acceptable is how a harness starts lying. scan.mjs uses the same module so the sweep and the shutter cannot drift. Pinned by tools/capture/scan.test.mjs, 9 checks against synthesised fixtures."
+ },
+ {
+  "title": "preflight's liveness check samples a fixed window, so it fails a healthy build on a slow host",
+  "severity": "Minor",
+  "category": "Tooling",
+  "file": "tools/test/preflight.mjs",
+  "line": 78,
+  "repro": "Run `node tools/test/preflight.mjs` on a container slower than the one the check was tuned on. Observed directly: the same commit passed 6/6, the container was replaced, and the identical tree then failed with `the simulation is advancing - 0.00s -> 0.00s` on two consecutive runs at a load average of 0.29.",
+  "expected": "A gate that blocks a deploy fails when the game is broken and at no other time.",
+  "actual": "The check read the simulation clock, waited four seconds, and read it again. How much simulation happens in four seconds is a fact about the host, not about the game: SwiftShader rasterizes the whole city on the CPU, and where one container managed 0.17s of simulation in that window, its replacement managed a single requestAnimationFrame callback in three seconds - at which rate the window contains no completed fixed step at all and the clock is still reading 0.00. The loop was healthy throughout; instrumenting it showed simTime at 0.083 after eight seconds and 0.600 after sixteen. This is the second time the same mistake was made in the same check: the first version counted rAF callbacks over one second, and was replaced with the clock sample for exactly this reason.",
+  "fix": "Wait for progress rather than sampling a window. Poll the simulation clock every 500 ms until it moves, with a 90 s liveness bound. That is strictly stronger than the window it replaces - a dead loop still fails, by timing out, and a slow machine no longer can - and it stops the gate encoding an assumption about how fast the host happens to be. The report prints the wall clock it took, so a genuinely slow run is visible without being a failure."
  }
 ]

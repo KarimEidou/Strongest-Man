@@ -82,16 +82,29 @@ check('the loading overlay is down', ui.loadingHidden);
 
 // The loop is advancing, not stalled on a thrown error.
 //
-// Counting rAF callbacks over a second is the obvious way to check this and it
-// is the wrong one here: SwiftShader rasterizes the whole city in software at
-// about 1.5 fps, so a one-second window legitimately catches zero frames on a
-// perfectly healthy build. Sample the game's own simulation clock instead —
-// it advances only while the loop is running and the game is playing, and it
-// says nothing about how fast the host machine happens to be.
+// WAIT for progress; do not sample a window. Both earlier versions of this
+// check sampled one — first by counting rAF callbacks over a second, then by
+// reading the simulation clock across four — and both failed on a healthy
+// build, because how much happens in a fixed span here is a fact about the
+// host, not about the game. SwiftShader rasterizes the whole city in software;
+// one container managed 0.17s of simulation in four seconds and the next
+// managed a single rAF in three, at which rate a four-second window contains
+// no completed fixed step at all.
+//
+// Polling until the clock moves asserts the thing that actually matters — the
+// loop makes progress — and is strictly stronger than a window: a dead loop
+// still fails, by timing out, and a slow machine no longer can. The timeout is
+// generous on purpose; it is a liveness bound, not a performance one.
+const SIM_TIMEOUT_MS = 90000;
 const simA = await page.evaluate('window.__test.simTime()');
-await page.waitForTimeout(4000);
-const simB = await page.evaluate('window.__test.simTime()');
-check('the simulation is advancing', simB > simA, `${simA.toFixed(2)}s -> ${simB.toFixed(2)}s`);
+const t0 = Date.now();
+let simB = simA;
+while (simB <= simA && Date.now() - t0 < SIM_TIMEOUT_MS) {
+  await page.waitForTimeout(500);
+  simB = await page.evaluate('window.__test.simTime()');
+}
+check('the simulation advances', simB > simA,
+  `${simA.toFixed(2)}s -> ${simB.toFixed(2)}s in ${((Date.now() - t0) / 1000).toFixed(1)}s of wall clock`);
 
 const sw = await page.evaluate(
   `navigator.serviceWorker.getRegistration().then((r) => (r ? (r.active ? 'active' : 'registered') : 'none')).catch((e) => 'error: ' + e)`,
