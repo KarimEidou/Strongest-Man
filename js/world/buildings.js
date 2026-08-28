@@ -151,11 +151,14 @@ export function buildBuildings(scene, specs) {
           const plain = s.material === 'brick' ? 'wallBrick' : 'wall';
           let kind = plain;
           if (shell) {
-            const isDoor = floor === 0 && col === doorCol[side];
-            if (!isDoor && !shell.ranges.has(key)) continue;   // open air outside the crust
-            kind = isDoor ? 'door' : crustKind;
-            if (isDoor) shell.hideKey(key);                    // cut the doorway out of the pastry
-            else shell.chunkKeys.push(key);
+            // No door. The frame is an instance placed on the flat lot-rectangle
+            // face plane by positionCell(), which a cone only touches at a
+            // tangent — so it floated in mid-air beside the pastry, and the
+            // hideKey() that punched a doorway for it left a hole in a crust
+            // nobody can walk into anyway.
+            if (!shell.ranges.has(key)) continue;   // open air outside the crust
+            kind = crustKind;
+            shell.chunkKeys.push(key);
           } else if (s.landmark === 'museum') {
             // Solid stone, top to bottom, with one door and no glazing at all.
             // A clerestory was tried and cost more than it bought: the shell's
@@ -191,9 +194,26 @@ export function buildBuildings(scene, specs) {
       }
     }
 
-    // slabs: one per floor 1..F-1 plus roof at F. Landmark slabs follow the shell's
-    // cross-section instead of the lot rectangle, or the filling pokes out of the crust.
-    for (let f = 1; f <= s.floors; f++) {
+    // Carry the crust's own per-floor cross-section onto the building record, in
+    // the same key names the lot rectangle uses, so physics/collide.js can
+    // collide against the shape you can see instead of the lot it is inscribed
+    // in. Sparse on purpose: above the tip there is no band, which is open air.
+    if (shell) {
+      b.floorSpan = shell.floorSpan.map((fs) => fs && {
+        x0: fs.minX, x1: fs.maxX, z0: fs.minZ, z1: fs.maxZ,
+      });
+    }
+
+    // A samosa gets no slabs. The cross-section is a lens and a slab is a
+    // rectangle, sized from an axis-aligned box over triangles that are metres
+    // tall after the 33x vertical stretch — so however hard it was pulled in,
+    // its corners speared out through the pastry, and the result was ten gold
+    // discs stacked up each landmark from y = 2.86 to 29.86. Nobody stands
+    // inside a fried pastry, so there is nothing for a floor to hold up.
+    // `b.slabIds` simply stays empty; destruction.js iterates it and copes.
+    //
+    // slabs: one per floor 1..F-1 plus roof at F.
+    for (let f = 1; s.landmark !== 'samosa' && f <= s.floors; f++) {
       // The gallery is one 6 m room, not two 3 m ones: skip every slab but the
       // roof. world/museum.js lays its own stone floor over the ground plane.
       if (s.landmark === 'museum' && f < s.floors) continue;
@@ -223,7 +243,11 @@ export function buildBuildings(scene, specs) {
         roof: f === s.floors,
       });
     }
-    if (shell) continue;   // no spine walls or office furniture inside a samosa
+    // No spine walls or office furniture inside a samosa — it is solid pastry.
+    // Keyed on the landmark, not on `shell`: an ordinary lot wearing a model
+    // shell is still a building with rooms in it, and the spine walls and desks
+    // are what make a punched hole read as a room.
+    if (s.landmark === 'samosa') continue;
     // The museum furnishes itself (world/museum.js): a randomly-placed office
     // desk in the middle of a gallery, or a spine wall cutting a painting in
     // half, is exactly what the bespoke layout exists to avoid.

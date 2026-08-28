@@ -71,12 +71,46 @@ export function gridStats() {
   return { buildings: buildGrid?.stats(), props: propGrid?.stats() };
 }
 
-// returns true if the wall cell at this world position is solid
-function wallSolid(b, side, along, y, forWalking) {
+// The four wall bands a building collides on, at this height.
+//
+// For an ordinary lot they ARE the lot rectangle, and this is one property read
+// and a return — which matters, because the three functions below are the
+// most-called static-world queries in the game: every NPC every fixed step, the
+// camera probe every 0.15 m of its march, and every hitscan sample.
+//
+// A landmark shell is a cone INSCRIBED in its lot, so the lot rectangle is not
+// its shape. `world/samosa.js` bins every crust triangle by floor and records
+// the band's own world-space cross-section while it does it; `world/buildings.js`
+// copies that onto the building record. Colliding against that instead is the
+// difference between touching the pastry and walking into a ~24x14 m invisible
+// fence around a cone that has visibly curved away.
+//
+// Returns null above the tip, where there is no crust and no collision.
+function bandOf(b, y) {
+  if (!b.floorSpan) return b.spec;
+  const f = Math.max(0, Math.min(b.spec.floors - 1, Math.floor(y / FLOOR_H)));
+  return b.floorSpan[f] || null;
+}
+
+// returns true if the wall cell at this world position is solid.
+// `along` is measured from the BAND's own origin, not the lot's.
+function wallSolid(b, band, side, along, y, forWalking) {
   const s = b.spec;
   const floor = Math.max(0, Math.min(s.floors - 1, Math.floor(y / FLOOR_H)));
   const n = b.sideCols[side];
-  const col = Math.max(0, Math.min(n - 1, Math.floor(along / 2)));
+  // The lot rectangle is exactly n cells of CELL_W across, so `along / 2` is the
+  // column. A shell band is not — it shrinks with height — so its columns are
+  // mapped PROPORTIONALLY over its own span. For a uniform taper that is
+  // identical to cellKeyAt()'s radial projection in world/samosa.js, which is
+  // what decided which cells exist in the first place, so the collider and the
+  // crust agree by construction rather than by a fudge factor.
+  let col;
+  if (band === s) {
+    col = Math.max(0, Math.min(n - 1, Math.floor(along / 2)));
+  } else {
+    const span = side === 'north' || side === 'south' ? band.x1 - band.x0 : band.z1 - band.z0;
+    col = span > 1e-6 ? Math.max(0, Math.min(n - 1, Math.floor((along / span) * n))) : 0;
+  }
   const cell = b.idx.get(`${side}:${col}:${floor}`);
   if (!cell || !cell.alive) return false;
   if (forWalking && cell.kind === 'door' && floor === 0) {
@@ -102,22 +136,24 @@ export function capsuleVsWorld(x, z, y, r, opts) {
       if (b.collapsed) continue;
       const s = b.spec;
       if (x < s.x0 - r - T || x > s.x1 + r + T || z < s.z0 - r - T || z > s.z1 + r + T) continue;
-      // four wall bands; push out along the band normal toward current side
-      // north band: z ≈ s.z0
-      if (x > s.x0 - r && x < s.x1 + r) {
-        if (Math.abs(z - s.z0) < r + T / 2 && wallSolid(b, 'north', x - s.x0, y, true)) {
-          z = z < s.z0 ? s.z0 - (r + T / 2) : s.z0 + (r + T / 2);
+      // four wall bands; push out along the band normal toward current side.
+      // The lot rectangle is the broad-phase reject; the BAND is what collides.
+      const w = bandOf(b, y);
+      if (!w) continue;                        // above a landmark's tip: open air
+      if (x > w.x0 - r && x < w.x1 + r) {
+        if (Math.abs(z - w.z0) < r + T / 2 && wallSolid(b, w, 'north', x - w.x0, y, true)) {
+          z = z < w.z0 ? w.z0 - (r + T / 2) : w.z0 + (r + T / 2);
         }
-        if (Math.abs(z - s.z1) < r + T / 2 && wallSolid(b, 'south', x - s.x0, y, true)) {
-          z = z < s.z1 ? s.z1 - (r + T / 2) : s.z1 + (r + T / 2);
+        if (Math.abs(z - w.z1) < r + T / 2 && wallSolid(b, w, 'south', x - w.x0, y, true)) {
+          z = z < w.z1 ? w.z1 - (r + T / 2) : w.z1 + (r + T / 2);
         }
       }
-      if (z > s.z0 - r && z < s.z1 + r) {
-        if (Math.abs(x - s.x0) < r + T / 2 && wallSolid(b, 'west', z - s.z0, y, true)) {
-          x = x < s.x0 ? s.x0 - (r + T / 2) : s.x0 + (r + T / 2);
+      if (z > w.z0 - r && z < w.z1 + r) {
+        if (Math.abs(x - w.x0) < r + T / 2 && wallSolid(b, w, 'west', z - w.z0, y, true)) {
+          x = x < w.x0 ? w.x0 - (r + T / 2) : w.x0 + (r + T / 2);
         }
-        if (Math.abs(x - s.x1) < r + T / 2 && wallSolid(b, 'east', z - s.z0, y, true)) {
-          x = x < s.x1 ? s.x1 - (r + T / 2) : s.x1 + (r + T / 2);
+        if (Math.abs(x - w.x1) < r + T / 2 && wallSolid(b, w, 'east', z - w.z0, y, true)) {
+          x = x < w.x1 ? w.x1 - (r + T / 2) : w.x1 + (r + T / 2);
         }
       }
     }
@@ -200,16 +236,21 @@ export function blockedAt(x, z, y, r) {
       if (b.collapsed) continue;
       const s = b.spec;
       if (x < s.x0 - r - T || x > s.x1 + r + T || z < s.z0 - r - T || z > s.z1 + r + T) continue;
-      if (x > s.x0 - r && x < s.x1 + r) {
-        if (Math.abs(z - s.z0) < r + T / 2 && wallSolid(b, 'north', x - s.x0, y, true)) return true;
-        if (Math.abs(z - s.z1) < r + T / 2 && wallSolid(b, 'south', x - s.x0, y, true)) return true;
+      const w = bandOf(b, y);
+      if (!w) continue;                        // above a landmark's tip: open air
+      if (x > w.x0 - r && x < w.x1 + r) {
+        if (Math.abs(z - w.z0) < r + T / 2 && wallSolid(b, w, 'north', x - w.x0, y, true)) return true;
+        if (Math.abs(z - w.z1) < r + T / 2 && wallSolid(b, w, 'south', x - w.x0, y, true)) return true;
       }
-      if (z > s.z0 - r && z < s.z1 + r) {
-        if (Math.abs(x - s.x0) < r + T / 2 && wallSolid(b, 'west', z - s.z0, y, true)) return true;
-        if (Math.abs(x - s.x1) < r + T / 2 && wallSolid(b, 'east', z - s.z0, y, true)) return true;
+      if (z > w.z0 - r && z < w.z1 + r) {
+        if (Math.abs(x - w.x0) < r + T / 2 && wallSolid(b, w, 'west', z - w.z0, y, true)) return true;
+        if (Math.abs(x - w.x1) < r + T / 2 && wallSolid(b, w, 'east', z - w.z0, y, true)) return true;
       }
-      // inside the footprint entirely (walked in through a hole)
-      if (x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) return true;
+      // Inside the footprint entirely (walked in through a hole). Lot rectangles
+      // only: a landmark shell has no interior to be inside, and its lot is
+      // mostly open pavement the cone has curved away from — blanket-rejecting
+      // it is the invisible wall this test exists to avoid, not to create.
+      if (w === s && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) return true;
     }
   }
   if (solidGrid) {
@@ -271,13 +312,15 @@ function pointInWall(x, y, z, walkable = false) {
     const s = b.spec;
     if (x < s.x0 - T || x > s.x1 + T || z < s.z0 - T || z > s.z1 + T) continue;
     if (y > s.floors * FLOOR_H) continue;
-    if (x > s.x0 && x < s.x1) {
-      if (Math.abs(z - s.z0) <= T / 2 && wallSolid(b, 'north', x - s.x0, y, walkable)) return true;
-      if (Math.abs(z - s.z1) <= T / 2 && wallSolid(b, 'south', x - s.x0, y, walkable)) return true;
+    const w = bandOf(b, y);
+    if (!w) continue;                          // above a landmark's tip: open air
+    if (x > w.x0 && x < w.x1) {
+      if (Math.abs(z - w.z0) <= T / 2 && wallSolid(b, w, 'north', x - w.x0, y, walkable)) return true;
+      if (Math.abs(z - w.z1) <= T / 2 && wallSolid(b, w, 'south', x - w.x0, y, walkable)) return true;
     }
-    if (z > s.z0 && z < s.z1) {
-      if (Math.abs(x - s.x0) <= T / 2 && wallSolid(b, 'west', z - s.z0, y, walkable)) return true;
-      if (Math.abs(x - s.x1) <= T / 2 && wallSolid(b, 'east', z - s.z0, y, walkable)) return true;
+    if (z > w.z0 && z < w.z1) {
+      if (Math.abs(x - w.x0) <= T / 2 && wallSolid(b, w, 'west', z - w.z0, y, walkable)) return true;
+      if (Math.abs(x - w.x1) <= T / 2 && wallSolid(b, w, 'east', z - w.z0, y, walkable)) return true;
     }
   }
   return false;

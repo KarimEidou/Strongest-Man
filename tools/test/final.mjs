@@ -98,6 +98,65 @@ results.gossip = await page.evaluate(() => new Promise((res) => {
   }, 1000);
 }));
 
+// 28) The samosas. Three defects lived on these two lots: a stack of rectangular
+// floor slabs whose corners speared out through a lens-shaped crust, a door frame
+// placed on the flat lot-rectangle face plane that a cone only touches at a
+// tangent (so it floated), and a collider built from the LOT rather than the
+// shell — an invisible fence several metres out from a shape that had visibly
+// curved away from it.
+//
+// Placed HERE, before section 4 collapses anything: a collapsed building does not
+// collide at all, and the collapse in section 18 picks the first standing
+// building in the registry, which is a samosa.
+//
+// Sampled rather than marched. A march in from outside the lot hits whatever
+// building is on the next lot first — measured, the neighbour's wall stops the
+// capsule 1.7 m before the crust — which says nothing about the samosa. Three
+// points on the crust's own south face do say it, and cannot be confounded:
+// inside the pastry, just outside it, and the strip of lot the cone has curved
+// away from that used to be fenced off.
+results.samosa = await page.evaluate(async () => {
+  const C = await import('/Strongest-Man/js/physics/collide.js');
+  const reg = window.__buildingsReg;
+  const lots = window.__cityBuildings.filter((s) => s.landmark === 'samosa');
+  const ids = new Set(lots.map((s) => s.id));
+  const slabs = (reg.slabs || []).filter((sl) => ids.has(sl.bId)).length
+    + (reg.roofs || []).filter((sl) => ids.has(sl.bId)).length;
+  const doors = reg.cells.filter((c) => ids.has(c.bId) && c.kind === 'door').length;
+
+  const R = 0.36, T = 0.3, Y = 0.9;
+  const pushed = (x, z) => {
+    const [ox, oz] = C.capsuleVsWorld(x, z, Y, R, { props: false, cars: false });
+    return Math.hypot(ox - x, oz - z) > 1e-6;
+  };
+
+  const per = lots.map((s) => {
+    const b = reg.buildings.find((k) => k.spec.id === s.id);
+    const cx = (s.x0 + s.x1) / 2;
+    const band = b.floorSpan[0];
+    const lotHalf = (s.z1 - s.z0) / 2, bandHalf = (band.z1 - band.z0) / 2;
+    return {
+      id: s.id,
+      lotHalf: +lotHalf.toFixed(2), bandHalf: +bandHalf.toFixed(2),
+      // the crust is solid: standing in the pastry pushes you out
+      solidCrust: pushed(cx, band.z1 - 0.3),
+      // and it stops exactly there, not a metre early
+      clearOfCrust: !pushed(cx, band.z1 + R + T / 2 + 0.15),
+      // THE BUG: this is inside the lot rectangle and outside the cone, and it
+      // used to be a wall you could not walk through and could not see
+      openGround: !pushed(cx, band.z1 + 0.9) && !C.blockedAt(cx, band.z1 + 0.9, Y, R),
+      // only meaningful while the cone really is inset from its lot
+      inset: lotHalf - bandHalf > 1.2,
+    };
+  });
+
+  return {
+    lots: lots.length, slabs, doors, per,
+    ok: lots.length === 2 && slabs === 0 && doors === 0
+      && per.every((k) => k.inset && k.solidCrust && k.clearOfCrust && k.openGround),
+  };
+});
+
 // 4) debris no-jitter: collapse, wait for settle, then positions must freeze
 await page.evaluate(() => window.__test.collapseBuilding(3));
 // The 14 seconds here are for the debris to come to rest, and under software
