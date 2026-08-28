@@ -44,6 +44,13 @@ numbers are that build's, not the current tree's.
   sans face in two of the three places the game prints them, where an `I` is a
   bare vertical stroke. Both are the same lesson as #107–#113 — the pass is
   worth running every time the pictures change, not once.
+- **And #120 came from the detector added for #116–#117 firing again.** The
+  full re-shoot after the quick-travel button produced a `loading` capture
+  that was the background gradient repeated six times, with the title and the
+  progress bar absent. A mosaic is made of real picture, so it has high detail
+  and high edge energy and every is-this-blank test passes it — that one
+  scored a standard deviation of 9.8 against a floor of 6. The check now runs
+  at the shutter as well as over the finished set.
 - **And #119 came from adding something.** A quick-travel button in the
   top-right cluster landed on top of a reputation string that had been
   running through that row all along — `#rep-hint` sat ten pixels inside the
@@ -69,10 +76,10 @@ The commit named is where the behaviour actually changed.
 | Severity | Count | Meaning |
 |---|---:|---|
 | Blocker | 4 | the game or the deploy is broken for someone |
-| Major | 56 | a feature does not work, leaks, or is unusable on the target device |
+| Major | 57 | a feature does not work, leaks, or is unusable on the target device |
 | Minor | 52 | wrong, but survivable |
 | Polish | 4 | correct, and not good enough |
-| **Total** | **116** | from 119 raw findings; 3 were the same defect seen by two sweeps |
+| **Total** | **117** | from 120 raw findings; 3 were the same defect seen by two sweeps |
 
 | Category | Count |
 |---|---:|
@@ -86,8 +93,8 @@ The commit named is where the behaviour actually changed.
 | SW | 6 |
 | Deploy | 2 |
 | Layout | 2 |
+| Tooling | 2 |
 | Audio | 1 |
-| Tooling | 1 |
 
 ## Resolving commits
 
@@ -118,6 +125,7 @@ The commit named is where the behaviour actually changed.
 | `ff8a4d2` | fix(ui): set the numerals in a serif, and stop the artwork covering the hint |
 | `1bf0dfd` | fix(layout): measure DOM overlays at their settled state, not mid-fade |
 | `8d6916e` | feat(hud): a GALLERY button that puts you outside the gallery door |
+| `44175a2` | fix(capture): ask at the shutter whether the frame is a mosaic |
 
 ## Index
 
@@ -183,6 +191,7 @@ The commit named is where the behaviour actually changed.
 | 114 | Major | PWA | `js/main.js:669` | A player who reloads while a new service worker is installing is never offered the update | `da7578b` |
 | 115 | Major | UI | `js/main.js:32` | The boot watchdog measures elapsed time, so a slow but healthy first install is reported to the… | `da7578b` |
 | 118 | Major | Tooling | `tools/capture/layout.mjs:174` | layout.mjs measures DOM overlays on the wall clock, so the #art-prompt overlap assertions silen… | `1bf0dfd` |
+| 120 | Major | Tooling | `tools/capture/capture.mjs:271` | A capture can come back as the frame tiled across itself, and every blank-frame measurement pas… | `44175a2` |
 | 7 | Minor | Perf | `js/engine/warmup.js:43` | warmUp disposes three's module-level shared Sprite geometry | `5418f1e` |
 | 8 | Minor | Render | `js/engine/blobshadows.js:25` | Blob-shadow CanvasTexture carries colour but is left at NoColorSpace, so shadows render as ligh… | `5418f1e` |
 | 9 | Minor | Render | `js/engine/godrays.js:40` | God-ray composite adds linear-light values onto an already tone-mapped, sRGB-encoded framebuffer | `9456ab7` |
@@ -969,6 +978,18 @@ The commit named is where the behaviour actually changed.
 **Actual.** boxes() drops any element at computed opacity 0, and #art-prompt fades in over 0.18s of WALL clock while the museum state's setup advances the SIMULATION by a fixed 0.5s. Two different clocks. Whether the prompt was measured therefore depended on which side of that fade the two settling rAFs landed on, and it varied run to run on the same build. On the runs where it landed at exactly 0, the report said `none visible` and the noOverlap pairs for that state - #art-prompt against #btns, #weapons and #ammo, which are the regression guard for #110 - were skipped without a word. The suite still printed `0 layout failure(s)`, which is the problem: a check that sometimes does not happen reads exactly like a check that passes. capture.mjs already kills CSS transitions in its own addInitScript, for this exact reason and with a comment saying so; layout.mjs never got the same treatment.
 
 **Remedy.** Add `*,*::before,*::after{transition:none!important;animation:none!important;}` to layout.mjs's addInitScript alongside the safe-area variables, so every DOM overlay is measured at its settled state. The prompt is now measured on all ten device/orientation pairs, never `none visible`, and layout-report.json is byte-identical across consecutive runs.
+
+### 120. A capture can come back as the frame tiled across itself, and every blank-frame measurement passes it
+
+**Major · Tooling · `tools/capture/capture.mjs:271` · fixed in `44175a2`**
+
+**Repro.** Intermittent, twice observed under a lane pool on a software rasterizer. First seen as plaque-riverbank_ip16pro_landscape-left (3x4 mosaic of the HUD and artwork), then as loading_se3_landscape-right on the full 622-capture run (2x3 mosaic of the background gradient with the title, progress bar and status line absent). Both times the sibling orientation of the same scene was correct.
+
+**Expected.** A capture is a picture of the scene, or the run says it is not.
+
+**Actual.** The screenshot is taken from a surface the compositor has tiled, and what lands on disk is one block of the frame repeated two to four times each way with everything the scene existed to show missing. It is a valid PNG of the right size and it goes into report.json like any other row. scan.mjs's two blank tests both pass it comfortably - a mosaic is made of real picture, so it has high detail and high edge energy; the loading frame scored a standard deviation of 9.8 against a floor of 6. Nothing in the run says a word, and the frame is then cited in a document as evidence of what the build looks like.
+
+**Remedy.** Ask at the shutter, not only afterwards. tools/capture/tiling.mjs measures self-similarity under a w/k shift NORMALISED against a shift that cannot be a tile period - a repeating frame has a small numerator and a large denominator, a nearly-empty one has both small, which is what separates a mosaic from the portrait rotate overlay. capture.mjs re-renders and shoots again once when it fires, marks the row `reshot` and prints R instead of a dot; a frame still tiled after the retry is a run failure, because quietly re-shooting until it looks acceptable is how a harness starts lying. scan.mjs uses the same module so the sweep and the shutter cannot drift. Pinned by tools/capture/scan.test.mjs, …
 
 ### 7. warmUp disposes three's module-level shared Sprite geometry
 

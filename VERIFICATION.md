@@ -109,9 +109,21 @@ city in software inside its rAF, and the compositor can commit the surface from
 after the draw; verified over 30 consecutive captures of the scene that was
 failing, zero blank.
 
-**Tiled.** A `plaque-riverbank` capture came back as a 3 × 4 mosaic of the frame
-repeated — high detail, high edge energy, and therefore invisible to both of the
-first two measurements. The repeat test was added for it. It is *normalised*, and
+**Tiled, twice.** A `plaque-riverbank` capture came back as a 3 × 4 mosaic of the
+frame repeated — high detail, high edge energy, and therefore invisible to both
+of the first two measurements. The repeat test was added for it, and on the very
+next full re-shoot it fired again: `loading_se3_landscape-right` was the
+background gradient repeated two across and three down, with the title, the
+progress bar and the status line absent, while its landscape-left sibling was
+correct. That one scored a standard deviation of **9.8** against a blank floor of
+6 — comfortably "not blank", and nothing on it.
+
+Because it has now happened twice, `capture.mjs` asks the same question at the
+shutter and shoots again once when the answer is yes, marking the row `reshot`
+and printing `R` instead of a dot. One retry, never a loop: a frame still tiled
+after it fails the run, because re-shooting until the picture looks acceptable is
+how a harness starts lying. The measurement lives in `tiling.mjs` so the sweep
+and the shutter cannot drift (`AUDIT.md` #120). It is *normalised*, and
 that matters: the first version of it simply asked whether the shifted difference
 was small, which flagged the two portrait `rotate` captures — a navy field with
 one centred glyph, where every shift is near zero because there is almost nothing
@@ -351,7 +363,7 @@ which is expected and is why the townsfolk get blob shadows rather than real one
 ### What reviewing them found
 
 The pictures were then opened and looked at, which is §5.7 of the brief and is
-not a formality. Ten defects came out of that pass and only that pass:
+not a formality. Eleven defects came out of that pass and only that pass:
 
 | # | What the screenshot showed |
 |---|---|
@@ -365,6 +377,7 @@ not a formality. Ten defects came out of that pass and only that pass:
 | 116 | At 667×375, the artwork drawn across the last word of the gesture hint |
 | 117 | The Roman numerals set in the UI sans face, where an `I` is a bare vertical bar |
 | 119 | The longest reputation string drawn under a HUD control at 667×375 |
+| 120 | A capture returned as a mosaic of itself, passing every blank test |
 
 \#116 and #117 are the second round: the works were renumbered `I`–`IV` after the
 first pass, the matrix was re-shot, and reading it again found two more. That is
