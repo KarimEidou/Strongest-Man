@@ -35,8 +35,8 @@ const shot = (name) => page.screenshot({ path: join(here, 'shots', `final_${name
 // simulation clock rather than a stopwatch.
 const simElapsed = () => page.evaluate('window.__test.simTime()');
 // Every caller ignored the return value, so an assertion whose setup depended on
-// sim time advancing would run anyway when this gave up — and "0 shops closed"
-// reads exactly like a regression instead of like a starved game loop. Under CPU
+// sim time advancing would run anyway when this gave up, and the result read
+// exactly like a regression instead of like a starved game loop. Under CPU
 // contention (another headless browser on the same four cores) that is precisely
 // what happened. Now a timeout is loud.
 const simTimeouts = [];
@@ -56,7 +56,7 @@ async function waitSim(seconds, capMs = 180000) {
 
 // 1) HUD inside safe bounds (torture-free: everything must sit within viewport margins)
 results.hud = await page.evaluate(() => {
-  const ids = ['karma-wrap', 'btns', 'btn-pause'];
+  const ids = ['btns', 'btn-pause', 'btn-gallery'];
   const vw = innerWidth, vh = innerHeight;
   return ids.every((id) => {
     const r = document.getElementById(id).getBoundingClientRect();
@@ -78,24 +78,6 @@ results.redLight = await page.evaluate(() => new Promise((res) => {
     }
     if (sawStop || window.__test.simTime() - t0 > 40) { clearInterval(iv); res(sawStop); }
   }, 400);
-}));
-
-// 3) gossip: give one NPC knowledge, park another beside them, wait, measure
-results.gossip = await page.evaluate(() => new Promise((res) => {
-  const npcs = window.__npcs.npcs.filter((n) => n.state !== 'dead');
-  const a = npcs[0], b = npcs[1];
-  a.knowledge = 60; a.knowSource = 'seen';
-  b.knowledge = 0; b.knowSource = null;
-  a.state = 'at_poi'; a.stateT = 99; a.targetSpeed = 0;
-  b.state = 'at_poi'; b.stateT = 99; b.targetSpeed = 0;
-  b.x = a.x + 1.5; b.z = a.z; b.px = b.x; b.pz = b.z;
-  const t0 = window.__test.simTime();
-  const iv = setInterval(() => {
-    if (b.knowledge > 10 || window.__test.simTime() - t0 > 30) {
-      clearInterval(iv);
-      res({ transferred: +b.knowledge.toFixed(1), ok: b.knowledge > 10 });
-    }
-  }, 1000);
 }));
 
 // 28) The samosas. Three defects lived on these two lots: a stack of rectangular
@@ -206,36 +188,6 @@ results.grabCar = await page.evaluate((held) => ({
 results.grabCar.carriedAs = carryMid.style;
 results.grabCar.contact = carContact;
 results.grabCar.contactOk = !!carContact && Math.abs(carContact.gap) < 0.08;
-
-// 6) monster realization end-to-end (spawn near player, let it swing)
-results.realize = await page.evaluate(() => new Promise((res) => {
-  window.__test.teleport(2, 20);
-  window.__test.spawnMonster(0, 2, 26);
-  const t0 = window.__test.simTime();
-  const iv = setInterval(() => {
-    const ms = window.__test.monsterStats();
-    const m = ms[ms.length - 1];
-    if (!m) return;
-    if ((m.state === 'flee' || m.state === 'rage' || m.state === 'realize') || window.__test.simTime() - t0 > 40) {
-      clearInterval(iv);
-      res({ state: m.state, know: m.know, ok: m.know >= 50 });
-    }
-  }, 800);
-}));
-await shot('realize');
-
-// 7) shops close when feared + known
-await page.evaluate(() => { window.__test.setKarma(-80); window.__test.setKnowledgeAll(60); });
-// ai/reputation.js runs its district aggregate every 10 sim seconds, and the
-// display loop under software rendering delivers about 6.7 seconds in three
-// wall-clock minutes — so this asked for 12, got 6.7, and reported that no shop
-// had shuttered. Which reads exactly like a broken reputation system and is
-// nothing of the kind: stepped directly, all twelve close.
-await page.evaluate(() => window.__test.step(12));
-results.shops = await page.evaluate(() => {
-  const closed = window.__cityBuildings?.filter((b) => b.closed).length ?? -1;
-  return { closed, ok: closed > 0 || closed === -1 };
-});
 
 // 8) a grabbed prop is the prop, not a stand-in box: same record, same instance,
 //    real mesh, and it rejoins the world as a collidable prop when it lands
@@ -620,42 +572,25 @@ results.nightShot = await (async () => {
 await page.evaluate(() => { window.__test.setTimeOfDay(0.7); window.__test.resetSky(); });
 
 // 21) Grounding. The #13 probe used to measure the same REST box the sole
-// offset was computed from, so it read a perfect 0.000 through a bug that had
-// monster_a's toes 0.84m in the air. It walks the foot bones now, so this is a
+// offset was computed from, so it read a perfect 0.000 through a bug that had a
+// character's toes 0.84 m in the air. It walks the foot bones now, so this is a
 // real assertion: over a full stride nothing may hover more than a boot's
 // thickness, and nothing may sink through the pavement at all.
 results.grounding = await page.evaluate(() => {
   window.__test.teleport(2.5, 20);
-  window.__test.spawnMonster(0, 8, 26);
-  window.__test.spawnMonster(1, -6, 24);
   window.__test.step(1.2);
   // What "floating" means has to be said carefully. The instantaneous peak gap
-  // is NOT it: a monster stepping off a kerb, or off a 1m rubble cell, is
-  // legitimately in the air for the moment before it lands, and how big that gap
-  // gets is set by whatever it stepped off — so an instantaneous ceiling tests
-  // where the monsters happened to wander, which is why this read 0.129 twice
-  // and 0.399 once on identical code. The invariant is that a gap must CLOSE:
-  // nothing may stay off the ground, and nothing may sink into it.
-  let worstHigh = 0, worstLow = 0, worstRun = 0;
-  const run = new Map();
-  // Same treatment for the townsfolk, and for the same reason the comment above
-  // gives. `people.highest` was a single instantaneous reading at the end of the
-  // loop, and two rampaging monsters send people through the air constantly — so
-  // it caught whoever happened to be mid-flight on the last frame and read 0.418
-  // on one run and 1.662 on the next from identical code. A person in the air
-  // after being hit by a monster is correct; a person who never comes down is
-  // not, so this tracks per-id run lengths too.
+  // is NOT it: someone stepping off a kerb, or off a 1 m rubble cell, is
+  // legitimately in the air for the moment before they land, and how big that
+  // gap gets is set by whatever they stepped off — so an instantaneous ceiling
+  // tests where the townsfolk happened to wander, and read 0.418 on one run and
+  // 1.662 on the next from identical code. The invariant is that a gap must
+  // CLOSE: nothing may stay off the ground, and nothing may sink into it. So
+  // this tracks per-id run lengths.
   const pRun = new Map();
   let worstPeopleRun = 0;
   for (let i = 0; i < 600; i++) {
     window.__test.step(1 / 60);
-    for (const f of window.__test.monsterFeet()) {
-      if (f.gap > worstHigh) worstHigh = f.gap;
-      if (f.gap < worstLow) worstLow = f.gap;
-      const r = f.gap > 0.12 ? (run.get(f.id) || 0) + 1 : 0;
-      run.set(f.id, r);
-      if (r > worstRun) worstRun = r;
-    }
     const air = new Set(window.__test.npcAirborne(0.6));
     for (const id of air) {
       const r = (pRun.get(id) || 0) + 1;
@@ -666,202 +601,18 @@ results.grounding = await page.evaluate(() => {
   }
   const people = window.__test.npcFeet();
   return {
-    monsterHighest: +worstHigh.toFixed(3),
-    monsterDeepest: +worstLow.toFixed(3),
-    longestHoverSeconds: +(worstRun / 60).toFixed(3),
     longestPersonAirborneSeconds: +(worstPeopleRun / 60).toFixed(3),
     people,
-    // 0.3s is comfortably longer than the 0.16s a 0.28m drop takes and far
-    // shorter than the 10s a real float lasts. 1.2m is taller than any single
-    // step in the city, so exceeding it means something is genuinely airborne.
-    // 1.5s for a person: a monster's swing throws someone a good way, and the
-    // arc has to be allowed to finish.
-    ok: worstRun / 60 < 0.3 && worstHigh < 1.2 && worstLow > -0.06
-      && worstPeopleRun / 60 < 1.5 && people.deepest > -0.2,
+    // 1.5s for a person: a thrown one travels a good way and the arc has to be
+    // allowed to finish. deepest is how far the lowest foot sank.
+    ok: worstPeopleRun / 60 < 1.5 && people.deepest > -0.2,
   };
 });
 
-// 22) Guns. Equip, aim, fire: rounds leave the magazine, land on ONE named
-// monster, take it down, and the city pays for it. Tracking by id matters —
-// monsterStats() keeps a corpse in the list for eighteen seconds, and the
-// director is spawning its own the whole time.
-results.gunfire = await page.evaluate(() => {
-  window.__test.grantPoints(20000);
-  window.__test.shop.buy('rifle');
-  window.__test.shop.close();
-  window.__test.equip('rifle');
-  window.__test.teleport(2.5, 20);
-  const id = window.__test.spawnMonster(0, 7, 32);
-  window.__test.step(0.5);
-  const before = window.__test.points().points;
-  const magFull = window.__test.weapon().ammo;
-  const find = () => window.__test.monsterStats().find((x) => x.id === id);
-  const startHp = find().hp;
-  for (let i = 0; i < 12; i++) {
-    const m = find();
-    if (!m || m.dead) break;
-    window.__test.aimAt(m.x, 1.7, m.z);
-    window.__test.fireOnce();
-    window.__test.step(0.14);
-  }
-  const w = window.__test.weapon();
-  const after = find();
-  const gained = window.__test.points().points - before;
-  return {
-    magFull, ammoLeft: w.ammo, fired: w.fired, hit: w.hit,
-    startHp, endHp: after ? after.hp : null, dead: after ? after.dead : true, gained,
-    ok: w.fired >= 4 && w.hit >= 3 && w.ammo < magFull
-      && (!after || after.dead) && gained >= 300,
-  };
-});
-
-// 23) The magazine runs out and refills itself.
-results.reload = await page.evaluate(() => {
-  window.__test.equip('pistol');
-  const mag = window.__test.weapon().mag;
-  for (let i = 0; i < mag + 1; i++) { window.__test.fireOnce(); window.__test.step(0.02); }
-  const dry = window.__test.weapon();
-  window.__test.step(1.6);
-  const full = window.__test.weapon();
-  return { dry: dry.ammo, reloading: dry.reloading, after: full.ammo, ok: dry.reloading === true && full.ammo === mag };
-});
-
-// 24) Health: it drops, it bottoms out, he gets up, it comes back.
-results.health = await page.evaluate(() => {
-  const start = window.__test.health();
-  window.__test.hurtPlayer(150);
-  const hurt = window.__test.health();
-  window.__test.hurtPlayer(80);
-  const down = window.__test.health();
-  window.__test.step(3.0);
-  const up = window.__test.health();
-  window.__test.step(9.0);
-  const healed = window.__test.health();
-  return {
-    start: start.hp, hurt: hurt.hp, down: down.hp, up: up.hp, healed: healed.hp,
-    ok: hurt.hp === start.hp - 150 && down.down === true && up.down === false
-      && up.hp > 0 && healed.hp > up.hp,
-  };
-});
-
-// 25) A monster that gets close takes something off him. This is the whole
-// reason the bar exists — before guns, its hit did nothing at all. Measured as
-// the MINIMUM over the window, because regeneration puts it back: fourteen a
-// second against a nine-point swing is a fight the monster loses on its own.
-results.monsterHurts = await page.evaluate(() => {
-  window.__test.equip('none');
-  window.__test.teleport(30, 30);
-  window.__test.step(0.4);
-  window.__test.spawnMonster(0, 31.5, 31.5);
-  const before = window.__test.health().hp;
-  let low = before;
-  for (let i = 0; i < 480; i++) {
-    window.__test.step(1 / 60);
-    low = Math.min(low, window.__test.health().hp);
-  }
-  return { before, lowest: +low.toFixed(1), ok: low < before };
-});
-
-// 26) The shop takes points, and only points it has.
-results.shop = await page.evaluate(() => {
-  window.__test.setPoints(14999);            // one short of the cannon
-  window.__test.shop.buy('cannon');
-  const poor = window.__test.weapon().owned.includes('cannon');
-  window.__test.setPoints(15000);
-  window.__test.shop.buy('cannon');
-  const w = window.__test.weapon();
-  const left = window.__test.points().points;
-  window.__test.shop.close();
-  return {
-    boughtWhilePoor: poor, pointsLeft: left, owned: w.owned, equipped: w.equipped,
-    ok: poor === false && left === 0 && w.owned.includes('cannon') && w.equipped === 'cannon',
-  };
-});
-
-// 27) One button, two jobs: with a weapon out, PUNCH is the trigger and must not
-// also wind up a charge or throw a jab.
-results.triggerNotFist = await page.evaluate(() => {
-  window.__test.equip('pistol');
-  window.__test.press('punchDown');
-  window.__test.step(0.9);
-  const armedCharge = window.__test.playerStats().charge;
-  window.__test.press('punchUp');
-  window.__test.step(0.2);
-  window.__test.equip('none');
-  window.__test.press('punchDown');
-  window.__test.step(0.9);
-  const bareCharge = window.__test.playerStats().charge;
-  window.__test.press('punchUp');
-  window.__test.step(0.6);
-  return { armedCharge, bareCharge, ok: armedCharge === 0 && bareCharge > 0.5 };
-});
-
-// 11b) The crosshair is a div pinned at 50%/50% and the shot comes off
-// cam.st.curPitch, so the camera's forward vector and the bullet direction have
-// to be the same vector at every elevation. They are derived from opposite ends
-// and nothing but a measurement keeps them honest: the camera used to lift its
-// eye off the pavement without moving the look point, which left the reticle
-// pointing 16 degrees below where the rounds went at full up-aim.
-results.aimTruth = await page.evaluate(() => {
-  window.__test.equip('pistol');
-  const seen = [];
-  for (const pitch of [0, -0.15, -0.3, -0.4, -0.5, 0.4, 0.9]) {
-    const m = window.__test.muzzle();
-    window.__test.aimAt(m[0], m[1] - Math.tan(pitch) * 20, m[2] + 20);
-    window.__test.step(0.6);
-    const c = window.__test.aimCheck();
-    seen.push({ aimDeg: c.aimDeg, viewDeg: c.viewDeg, div: c.divergenceDeg, eyeY: c.eyeY, dist: c.dist });
-  }
-  const worst = Math.max(...seen.map((s) => s.div));
-  const lowestEye = Math.min(...seen.map((s) => s.eyeY));
-  // and the eye still clears the pavement while doing it
-  return { seen, worstDivergenceDeg: worst, lowestEye, ok: worst < 0.2 && lowestEye >= 0.34 };
-});
-
-// 11c) One prop, one payout. hitProp() is the single emitter of PROP_DESTROYED;
-// it used to be announced by each of its five callers as well, so the three tall
-// types that emit for themselves paid AWARDS.prop twice and cost double karma.
-// And a building pays 450 exactly once, to the player who levelled it — the
-// generic EV.FEAT handler carries no `byPlayer`, so a monster bulldozing a
-// facade was paying the player for the privilege.
-results.paidOnce = await page.evaluate(async () => {
-  const D = await import('/Strongest-Man/js/world/destruction.js');
-  const reg = window.__propsReg;
-  const pay = (prop) => {
-    const before = window.__test.points().points;
-    window.__test.teleport(prop.x - 1.2, prop.z);
-    window.__test.faceTo(prop.x, prop.z);
-    window.__test.punchAt(prop.x, prop.z, 0);
-    window.__test.step(0.4);
-    return window.__test.points().points - before;
-  };
-  const lamp = pay(reg.all.find((p) => p.type === 'prop_streetlamp' && p.alive));
-  const level = (byPlayer, far) => {
-    const b = window.__buildingsReg.buildings.find((x) => !x.collapsed && !x.falling);
-    const s = b.spec, cx = (s.x0 + s.x1) / 2, cz = (s.z0 + s.z1) / 2;
-    window.__test.teleport(cx + (far ? 60 : 2), cz + (far ? 60 : 2));
-    window.__test.step(0.4);
-    for (let i = 0; i < 400 && window.__test.health().hp < 200; i++) window.__test.step(0.05);
-    const p0 = window.__test.points().points, h0 = window.__test.health().hp;
-    D.collapseBuilding(b, byPlayer);
-    let lowest = h0;
-    for (let i = 0; i < 300; i++) { window.__test.step(1 / 60); lowest = Math.min(lowest, window.__test.health().hp); }
-    return { paid: window.__test.points().points - p0, hpLost: +(h0 - lowest).toFixed(1) };
-  };
-  const mine = level(true, false);
-  const theirs = level(false, true);
-  // AWARDS.prop is 12; the punch can also clip a wall cell or two at 2 apiece.
-  return {
-    lamp, mine, theirs,
-    ok: lamp >= 12 && lamp <= 16 && mine.paid === 450 && theirs.paid === 0 && mine.hpLost > 10,
-  };
-});
-
-// 11d) A holstered gun takes over the JAB, not the load. Gating the whole punch
-// release on `armed` while player/weapons.js separately bails out on carrying()
-// left PUNCH doing nothing at all with a car over his head: no shot, no swing.
-// And going down has to cost him what he is holding — nothing else clears it.
-results.armedCarry = await page.evaluate(() => {
+// 11d) PUNCH with someone in his hands is a SWING of that person, not a bare
+// jab thrown past them. The release branch used to be gated on whether a gun was
+// out, which left the button doing nothing at all with a load over his head.
+results.carriedSwing = await page.evaluate(() => {
   const T = window.__test;
   const npcs = window.__npcs.npcs;
   for (const c of window.__trafficList) { c.mode = 'held'; c.x = 500; c.z = 500; }
@@ -870,8 +621,7 @@ results.armedCarry = await page.evaluate(() => {
   // be unreachable (hiding inside a building, standing where the teleport lands
   // the player in a wall) all twenty-five attempts targeted the same person and
   // the assertion failed with "never grabbed" while grabbing worked perfectly.
-  // What this test is about is PUNCH with a gun holstered and someone in his
-  // hands; which someone is not the point.
+  // Which someone is not the point.
   const tried = [];
   let got = false;
   const candidates = npcs.filter((o) => o.state !== 'dead' && o.state !== 'carried');
@@ -884,21 +634,12 @@ results.armedCarry = await page.evaluate(() => {
   }
   if (!got) return { ok: false, why: 'never grabbed', tried: tried.slice(0, 10), candidates: candidates.length };
   T.step(1.0);
-  T.equip('pistol'); T.step(0.4);
-  const ammoBefore = T.weapon().ammo;
+  const holdingBefore = T.carry().kind;
   T.press('punchDown'); T.step(0.2); T.press('punchUp');
   let sawSwing = false;
   for (let i = 0; i < 40; i++) { T.step(1 / 60); if (T.swing().phase === 'swinging') sawSwing = true; }
-  const ammoAfter = T.weapon().ammo;
-  // now put him on the floor: the victim must not stay welded to his hands
-  const holdingBefore = T.carry().kind;
-  T.hurtPlayer(999); T.step(0.1);
-  const dropped = T.carry().kind === null && T.carry().phase === 'idle';
   T.step(4);
-  return {
-    sawSwing, ammoBefore, ammoAfter, holdingBefore, dropped,
-    ok: sawSwing && ammoAfter === ammoBefore && holdingBefore === 'entity' && dropped,
-  };
+  return { sawSwing, holdingBefore, ok: sawSwing && holdingBefore === 'entity' };
 });
 
 // 11e) Hitscan and movement have to model the same wall. rayWorld resolved door
@@ -950,41 +691,6 @@ results.wallAgreement = await page.evaluate(async () => {
     wantIDist: +wantIDist.toFixed(2),
     ok: !!iw && iHit?.kind === 'wall' && Math.abs(iHit.dist - wantIDist) < 0.05
       && !through && above?.kind === 'wall',
-  };
-});
-
-// 11f) The floating joystick is claimed anywhere in the left 44% of the screen
-// and core/input.js listens only on #gl — so any pointer-events element of the
-// HUD sitting in that half is a permanent hole in the stick. The weapon rail is
-// the first one wide enough to matter, and it gets wider every time a gun is
-// added, which is exactly the kind of thing that regresses silently.
-results.railClearsStick = await page.evaluate(() => {
-  window.__test.grantPoints(60000);
-  for (const g of ['smg', 'rifle', 'shotgun', 'sniper', 'cannon']) window.__test.shop.buy(g);
-  window.__test.shop.close();
-  window.__test.step(0.4);
-  const chips = [...document.querySelectorAll('#weapons .wchip')].map((c) => c.getBoundingClientRect());
-  const r = (sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
-  const rail = r('#weapons'), ammo = r('#ammo'), btns = r('#btns');
-  const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
-  const stick = innerWidth * 0.44;
-  const leftmost = Math.min(...chips.map((c) => c.left));
-  // and no touch may land on the bare container between two chips on one row
-  let gapSwallows = false;
-  const byRow = [...chips].sort((a, b) => a.top - b.top || a.left - b.left);
-  for (let i = 0; i + 1 < byRow.length; i++) {
-    if (Math.round(byRow[i].top) !== Math.round(byRow[i + 1].top)) continue;
-    const el = document.elementFromPoint((byRow[i].right + byRow[i + 1].left) / 2, byRow[i].top + 10);
-    if (el && el.id === 'weapons') gapSwallows = true;
-  }
-  return {
-    chips: chips.length, stickEdge: Math.round(stick), leftmostChip: Math.round(leftmost),
-    rows: new Set(chips.map((c) => Math.round(c.top))).size,
-    gapSwallows, hitsAmmo: hit(rail, ammo), hitsBtns: hit(rail, btns),
-    onScreen: rail[0] >= 0 && rail[3] <= innerHeight && rail[1] >= 0,
-    ok: chips.length === 7 && leftmost >= stick && !gapSwallows
-      && !hit(rail, ammo) && !hit(rail, btns)
-      && rail[0] >= 0 && rail[1] >= 0 && rail[3] <= innerHeight,
   };
 });
 

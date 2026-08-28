@@ -11,16 +11,13 @@ export const settings = {
   qualityResolved: '',    // what 'auto' measured on this device
   groqKey: '',            // stays on-device; never sent anywhere but api.groq.com
   seenIntro: false,
-  seenArmoury: false,     // the one-time "points buy guns" hint
 };
 
-export const save = {
-  karma: 0,
-  points: 0,              // spendable
-  earned: 0,              // lifetime, never spent down — the only real score
-  owned: ['pistol'],      // gun ids unlocked in the shop; the sidearm is free
-  equipped: '',           // '' = bare hands
-};
+// Nothing is scored and nothing is bought any more, so there is nothing left to
+// save but settings. The key stays `sm_save_v1` and loadState() still strips the
+// fields an older save carries (see the migration below), so a returning player
+// keeps their settings rather than getting a fresh install.
+export const save = {};
 
 export const game = {
   state: 'title',         // title | playing | paused | settings
@@ -64,17 +61,17 @@ export function loadState() {
       localStorage.removeItem(KEY);
     } catch { /* nothing more to do */ }
   }
-  // An old save has no gun fields at all, and a corrupted one can have the wrong
-  // types; either way nothing downstream may start from undefined. Settings are
-  // validated too — one bad value used to crash openSettings half way through
+  // Migration. A save written before points, karma, guns and the shop came out
+  // carries karma/points/earned/owned/equipped, and settings.seenArmoury. They
+  // are dropped rather than kept: nothing reads them, and leaving them in means
+  // persist() writes them back forever. Delete rather than ignore, so the blob
+  // shrinks once and stays that way.
+  for (const k of ['karma', 'points', 'earned', 'owned', 'equipped']) delete save[k];
+  delete settings.seenArmoury;
+
+  // A corrupted save can have the wrong types, and nothing downstream may start
+  // from undefined. One bad value used to crash openSettings half way through
   // filling the panel, and DONE then wrote the half-read state back.
-  if (!Array.isArray(save.owned) || !save.owned.length) save.owned = ['pistol'];
-  save.owned = save.owned.filter((id) => typeof id === 'string');
-  if (!save.owned.length) save.owned = ['pistol'];
-  if (typeof save.points !== 'number' || !isFinite(save.points)) save.points = 0;
-  if (typeof save.earned !== 'number' || !isFinite(save.earned)) save.earned = 0;
-  if (typeof save.karma !== 'number' || !isFinite(save.karma)) save.karma = 0;
-  if (typeof save.equipped !== 'string') save.equipped = '';
   const sens = Number(settings.lookSensitivity);
   settings.lookSensitivity = isFinite(sens) ? Math.min(2, Math.max(0.4, sens)) : 1.0;
   settings.invertY = !!settings.invertY;
@@ -82,7 +79,6 @@ export function loadState() {
   if (!['high', 'medium', 'low', 'auto'].includes(settings.quality)) settings.quality = 'high';
   if (!['high', 'medium', 'low', ''].includes(settings.qualityResolved)) settings.qualityResolved = '';
   settings.seenIntro = !!settings.seenIntro;
-  settings.seenArmoury = !!settings.seenArmoury;
 }
 
 export function persist() {

@@ -160,33 +160,7 @@ export function initAudio() {
     lastDeathThud = t;
     thud(220, 0.1, 0.15);
   });
-  on(EV.MONSTER_SPAWNED, () => { thud(38, 1.4, 0.6); });
-  on(EV.MONSTER_REALIZED, () => { thud(180, 0.5, 0.4); thud(90, 0.7, 0.5); });
-  on(EV.MONSTER_DIED, () => { thud(50, 0.9, 0.8); noise(1, 0.4, 700); });
   on(EV.PLAYER_THREW, () => noise(0.25, 0.3, 2000));
-  on(EV.PLAYER_HURT, ({ amount }) => { thud(140, 0.16, Math.min(0.15 + amount * 0.012, 0.5)); });
-  on(EV.PLAYER_DOWN, () => { thud(40, 1.3, 0.9); noise(1.1, 0.4, 500, 0.4); });
-  on(EV.WEAPON_RELOAD, () => reloadSound());
-  on(EV.WEAPON_BOUGHT, () => { thud(320, 0.1, 0.2); setTimeout(() => thud(480, 0.14, 0.22), 90); });
-}
-
-// One report per shot, shaped by the weapon rather than by a sample: a crack
-// (short filtered noise) over a body thump, with the pistol bright and short and
-// the cannon long and low. The rate limit matters — an 800rpm SMG would
-// otherwise build thirteen oscillator graphs a second and audibly clip.
-let lastShot = 0;
-export function gunSound(gun) {
-  const t = performance.now();
-  if (t - lastShot < 34) return;
-  lastShot = t;
-  const heavy = gun.dmg >= 60 || gun.pellets;
-  thud(heavy ? 62 : 130, heavy ? 0.26 : 0.09, heavy ? 0.55 : 0.28);
-  noise(heavy ? 0.34 : 0.13, heavy ? 0.42 : 0.26, heavy ? 1500 : 3400, 0.8);
-}
-
-export function reloadSound() {
-  noise(0.09, 0.16, 2600, 1.6);
-  setTimeout(() => noise(0.07, 0.14, 1800, 1.4), 140);
 }
 
 export function punchSound(charge) {

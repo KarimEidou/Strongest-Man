@@ -1,80 +1,44 @@
-// Canned dialogue corpus. Structure: LINES[situation][band] where band is a
-// karma band or 'any'. The game is fully voiced by these with no API key;
-// Groq responses only add variety on top.
+// Canned dialogue corpus. Structure: LINES[situation][band]. The game is fully
+// voiced by these with no API key; Groq responses only add variety on top.
+//
+// The bands used to be karma bands — the city's running opinion of you — and
+// there is no such thing any more. Every lookup now comes in on 'neutral', so
+// that is the only band left with its own pool, and everything else answers on
+// 'any'. The shape is kept rather than flattened because cannedLine() falls back
+// through it, and because it is where a future distinction would go.
 export const LINES = {
   greet: {
-    saint: [
-      "It's him! It's really him!",
-      'Morning, champ! City feels safe with you around.',
-      'My kid wants to be you when she grows up.',
-      'Hey! You want a coffee? On the house. Forever.',
-      'Bless you, big man.',
-    ],
-    good: [
-      'Morning! Nice weather for once.',
-      "Hey, you're that guy, right? The helpful one?",
-      'Good to see a friendly face.',
-      'How are those hands doing, friend?',
-    ],
     neutral: [
       'Morning.',
       'Nice jacket.',
       'You new around here?',
-      'Lovely dusk tonight, huh?',
+      'Lovely light today, huh?',
       'Excuse me, coming through.',
-    ],
-    feared: [
-      "Oh. It's you. I was just leaving.",
-      "I don't want any trouble, okay?",
-      'Please. I have a family.',
-      "We're closed. Everything's closed.",
-    ],
-    monster: [
-      'Stay away from me!',
-      'SOMEBODY DO SOMETHING ABOUT HIM!',
-      "Don't look at him. Don't look at him.",
-      'You. You did all of this.',
-    ],
-  },
-  thank: {
-    any: [
-      'You saved us! You actually saved us!',
-      'THANK YOU! Oh my god, thank you!',
-      "I owe you my life. Anything you need. Ever.",
-      "Did you see that?! He took it down with his HANDS!",
+      'Morning! Nice weather for once.',
+      'Good to see a friendly face.',
+      'How are those hands doing, friend?',
     ],
   },
   whisper_awe: {
     any: [
       "That's him. The one from the plaza. Don't stare.",
-      'I heard he stopped a monster with one punch.',
+      'I heard he stopped a runaway truck with one punch.',
       'My cousin saw him throw a taxi. A TAXI.',
       "Shh — that's the guy. THE guy.",
     ],
   },
   witness_feat: {
-    good: [
-      'WHAT. Did anyone else just see that?!',
-      'HOW?! He just— WHAT?!',
-      "He's one of the good ones. Thank god. THANK GOD.",
-    ],
     any: [
       'Did that just happen?!',
-      "THE WALL. HE WENT THROUGH THE WALL.",
+      'THE WALL. HE WENT THROUGH THE WALL.',
+      'WHAT. Did anyone else just see that?!',
+      'HOW?! He just— WHAT?!',
       'RUN! No— wait— WHAT IS HE?!',
       "Nobody's going to believe me. NOBODY.",
     ],
   },
   panic_scream: {
-    any: ['AAAAAH!', 'RUN!', 'MOVE MOVE MOVE!', 'HELP! SOMEBODY HELP!', 'GET INSIDE!', 'IT’S COMING THIS WAY!'],
-  },
-  monster_spot: {
-    any: [
-      'MONSTER! THERE’S A MONSTER!',
-      'CALL SOMEONE! CALL ANYONE!',
-      'Not again. NOT AGAIN!',
-      'It came from the fog! RUN!',
-    ],
+    any: ['AAAAAH!', 'RUN!', 'MOVE MOVE MOVE!', 'HELP! SOMEBODY HELP!', 'GET INSIDE!', 'IT’S ALL COMING DOWN!'],
   },
   hide_talk: {
     any: [
@@ -82,13 +46,6 @@ export const LINES = {
       'Stay down. Stay quiet.',
       'I should have moved to the coast.',
       'This wall won’t hold. This wall will NOT hold.',
-    ],
-  },
-  shop_closed: {
-    any: [
-      "We're closed. Permanently. While you're here.",
-      'No no no, closing time.',
-      "Take whatever you want. Please just don't swing.",
     ],
   },
   idle_chatter: {
@@ -109,21 +66,6 @@ export const LINES = {
       'Something about him. The sleeves don’t sit right.',
     ],
   },
-  insult: {
-    any: [
-      'You walking disaster. You ruin everything.',
-      'They should build a wall around YOU.',
-      'My insurance guy knows you by NAME.',
-      'Monster in a jacket, that’s what you are.',
-    ],
-  },
-  beg_mercy: {
-    any: [
-      'Please— please, I saw what you did to the bank.',
-      'Take the register! Take the whole shop!',
-      "I have three kids! Two! One at least, I'm pretty sure!",
-    ],
-  },
   talk_neutral: {
     any: [
       'Oh, hi. Need directions? The diner’s two blocks east.',
@@ -131,23 +73,6 @@ export const LINES = {
       'Quiet evening, huh? I like the quiet.',
       'If you hear screaming later, it wasn’t me.',
     ],
-  },
-  talk_awe: {
-    any: [
-      'It’s YOU. Can I— is it okay if I stand here?',
-      'How do the sleeves survive?! Asking seriously.',
-      'You could charge for photos. I’d pay.',
-    ],
-  },
-  talk_terror: {
-    any: [
-      'Whatever you want. WHATEVER you want.',
-      'I already called nobody. I promise.',
-      'Please pick a different street. Please.',
-    ],
-  },
-  monster_realize: {
-    any: ['?!', 'RRAAAGH?!', '...'],
   },
 };
 

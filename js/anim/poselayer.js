@@ -115,15 +115,6 @@ export function createPoseLayer(root, table = POSES, weights = BONE_WEIGHT) {
   let cur = null, curList = EMPTY, prevList = EMPTY;
   let target = 0, weight = 0, blend = 1, lambda = 12;
 
-  // An extra rotation folded into the character frame every posed direction is
-  // resolved against. Aiming needs it: an authored pose is a fixed set of
-  // directions in character space, and a gun has to point wherever the camera
-  // does — which is a continuous angle, not one of three tables. Biasing the
-  // frame instead pitches the arms, the gun, the chest and the head together,
-  // for one quaternion multiply, and leaves the legs walking.
-  const _bias = new THREE.Quaternion();
-  let biased = false;
-
   return {
     // name === null fades the layer out
     set(name, w = 1, lam = 12) {
@@ -136,18 +127,12 @@ export function createPoseLayer(root, table = POSES, weights = BONE_WEIGHT) {
       target = name ? w : 0;
       lambda = lam;
     },
-    // q === null clears it. Applied in the ROOT's own frame, so its X axis is
-    // the character's left and a rotation about it is pitch.
-    setBias(q) {
-      if (q) { _bias.copy(q); biased = true; } else biased = false;
-    },
     update(dt) {
       weight = damp(weight, target, lambda, dt);
       if (weight < 0.002) { prevList = EMPTY; return; }
       blend = damp(blend, 1, 16, dt);
       chain.clear(); posed.clear();
       root.getWorldQuaternion(_rootQ);
-      if (biased) _rootQ.multiply(_bias);
       if (prevList.length && blend < 0.99) applyList(prevList, weight * (1 - blend));
       applyList(curList, weight * blend);
     },
@@ -164,7 +149,6 @@ export function createPoseLayer(root, table = POSES, weights = BONE_WEIGHT) {
     poseError() {
       if (!curList.length || !curList[0].dir) return null;
       root.getWorldQuaternion(_rootQ);
-      if (biased) _rootQ.multiply(_bias);   // measure against what was ASKED for
       _inv.copy(_rootQ).invert();
       let worst = 0, at = '';
       const out = curList.map((e) => {

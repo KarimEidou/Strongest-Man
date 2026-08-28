@@ -58,36 +58,6 @@ export const POSES = {
     Spine01: { dir: [-0.11, 0.98, -0.15], w: 0.85 },
     neck: { dir: [0.10, 0.96, 0.24], w: 0.7 },      // eyes stay on the target
   },
-  // AIMING. Authored as directions for the same reason the swing is: the arms
-  // travel far enough from rest that Euler offsets against an unknown bind pose
-  // are guesswork, and the whole stance has to hold up while the locomotion
-  // underneath runs from idle to a full sprint. Pitch is NOT baked in here —
-  // player/weapons.js biases the character frame the pose resolves against
-  // (anim/poselayer.js setBias), so one table covers every angle.
-  //
-  // Character space: +Z is the way he faces (and, while armed, the way he is
-  // shooting), +Y up, +X his LEFT.
-  aim_pistol: {
-    RightArm: { dir: [-0.20, -0.06, 0.978] },      // punched straight out
-    RightForeArm: { dir: [0.02, 0.03, 0.999] },
-    RightHand: { dir: [0, 0, 1] },                 // the barrel runs down this bone
-    LeftArm: { dir: [0.26, -0.88, -0.40] },        // off hand down and back
-    LeftForeArm: { dir: [0.14, -0.82, 0.55] },
-    Spine02: { dir: [-0.08, 0.99, 0.11], w: 0.7 },
-    Spine01: { dir: [-0.05, 0.996, 0.07], w: 0.5 },
-    neck: { dir: [0.0, 0.97, 0.25], w: 0.6 },      // sighting down it
-  },
-  aim_rifle: {
-    RightArm: { dir: [-0.38, -0.44, 0.81] },       // trigger elbow tucked down
-    RightForeArm: { dir: [0.15, 0.05, 0.987] },
-    RightHand: { dir: [0.03, 0.02, 0.999] },
-    LeftArm: { dir: [0.14, -0.56, 0.82] },         // support elbow under the gun
-    LeftForeArm: { dir: [-0.33, 0.20, 0.92] },     // reaching across to the handguard
-    LeftHand: { dir: [-0.16, 0.10, 0.98] },
-    Spine02: { dir: [-0.10, 0.985, 0.14], w: 0.8 },
-    Spine01: { dir: [-0.06, 0.994, 0.09], w: 0.55 },
-    neck: { dir: [0.0, 0.965, 0.26], w: 0.7 },
-  },
   swing_follow: {
     RightArm: { dir: [0.54, -0.24, 0.81] },         // whipped through, low and across
     RightForeArm: { dir: [0.62, -0.34, 0.71] },

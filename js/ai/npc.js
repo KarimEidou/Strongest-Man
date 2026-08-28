@@ -1,7 +1,7 @@
 // NPCs: cloned skinned bodies with per-instance tint/scale variety, utility-AI
 // daily schedules over the sidewalk lattice, LOD-tiered animation, and death
-// (in-place fall or physics-root launch). Panic/monster reactions extend this
-// in ai/panic.js; karma/reputation hooks live in their own systems.
+// (in-place fall or physics-root launch). Panic reactions extend this in
+// ai/panic.js.
 import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { MODELS } from '../engine/assets.js';
@@ -95,8 +95,8 @@ export function createNPCs(scene, city, player) {
       loco: createLocomotion(root),
       tier: 2,
       mixerAcc: 0,
-      // reputation/panic fields (used by later systems)
-      knowledge: 0, knowSource: null, panicLevel: 0,
+      // panic fields (ai/panic.js)
+      panicLevel: 0,
       threatX: 0, threatZ: 0, alertT: 0,
       chatPartner: null,
       body: null,               // physics body while launched
@@ -156,7 +156,6 @@ export function createNPCs(scene, city, player) {
 
   function think(n, t, dt) {
     n.stateT -= dt;
-    if (n.state === 'commute' || n.state === 'at_poi' || n.state === 'chat') sys.playerReact?.(n);
     switch (n.state) {
       case 'commute': {
         if (!n.goal || n.pathI >= n.path.length) {
@@ -420,7 +419,7 @@ export function createNPCs(scene, city, player) {
     }
   }
 
-  // ---- damage API (combat + monsters + cars) -------------------------------
+  // ---- damage API (combat + cars) ------------------------------------------
 
   function kill(n, cause, impulse = 0, dirX = 0, dirZ = 0) {
     if (n.dead) return;           // `state` may be 'carried' on a body in your hands
@@ -488,17 +487,7 @@ export function createNPCs(scene, city, player) {
   sys.speak = (n, seconds) => { n.speakT = seconds; n.speakPhase = 0; };
 
   const hooks = {
-    // Live set for the weapon raycast (player/weapons.js). Read once per shot.
     list: () => npcs,
-    // A round found a person. There is no wounded state for a townsperson and
-    // there should not be one: a bullet from the strongest man in the universe
-    // is not survivable, and the whole cost of the shot is what the city thinks
-    // of you afterwards (ai/karma.js, ai/reputation.js).
-    shoot(n, dmg, dirX, dirZ) {
-      if (!n || n.state === 'dead') return;
-      const d = Math.hypot(dirX, dirZ) || 1;
-      kill(n, 'player', 8 + dmg * 0.25, dirX / d, dirZ / d);
-    },
     onPunch(f, radius, impulse, charge) {
       const r = Math.max(radius, 1.6);
       neighbors(f.x, f.z, r, scratch);
@@ -581,10 +570,9 @@ export function createNPCs(scene, city, player) {
           if (n.state !== 'carried') return;
           n.carryQuat = null;
           // The neck correction is the PLAYER's carry, and tryGrab sets these
-          // fresh every time. Leaving them set meant a later carry by anything
-          // else — a monster's 'eat', which drives the same 'carried' state —
-          // would land the throat on a fist position captured in a grab that
-          // ended minutes ago.
+          // fresh every time. Leaving them set meant a later carry would land
+          // the throat on a fist position captured in a grab that ended minutes
+          // ago.
           n.neckBone = null;
           if (wasDead || n.dead) {
             // a body goes back to being a body, wherever you dropped it

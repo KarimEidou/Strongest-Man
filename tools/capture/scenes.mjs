@@ -49,13 +49,6 @@ export const SCENES = [
     steps: 0,
   },
   {
-    id: 'shop',
-    query: DUSK,
-    note: 'Armoury with a full balance, so every row shows its live state.',
-    setup: () => { window.__test.setPoints(9000); document.getElementById('btn-shop').click(); },
-    steps: 0,
-  },
-  {
     id: 'pause',
     query: DUSK,
     note: 'Pause overlay over live gameplay.',
@@ -67,7 +60,7 @@ export const SCENES = [
   {
     id: 'hud-idle',
     query: DUSK,
-    note: 'HUD at rest: full health, zero points, fists.',
+    note: 'HUD at rest: the joystick idle and every control in its base state.',
     setup: null,
     steps: 30,
   },
@@ -89,17 +82,10 @@ export const SCENES = [
   {
     id: 'hud-stress',
     query: DUSK,
-    note: 'Worst case: 1 hp, maximum points, longest weapon rail, ammo empty, '
-      + 'longest reputation string, longest toast. Everything that can overflow, does.',
+    note: 'Worst case for the controls: GRAB reading THROW, the charge ring '
+      + 'full, the impact vignette up and the longest toast on screen at once.',
     setup: () => window.__test.hudStress(),
     steps: 30,
-  },
-  {
-    id: 'hud-down',
-    query: DUSK,
-    note: 'DOWN banner and the points forfeit.',
-    setup: () => window.__test.hurtPlayer(999),
-    steps: 90,
   },
 
   // ---- world -------------------------------------------------------------

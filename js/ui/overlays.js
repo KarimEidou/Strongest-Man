@@ -47,16 +47,13 @@ export function initOverlays() {
     rotate.hidden = !portrait;
     // #rotate-overlay is opaque, covers the canvas AND the whole button cluster,
     // and takes pointer events — so it is a hard input block. It was also the
-    // only full-screen overlay in this file that left game.state alone, which was
-    // harmless for exactly as long as nothing in town could hurt him. Now a
-    // monster carries on swinging at a man who cannot move, fire, or reach PAUSE:
-    // measured, one took him 40hp to 0 in 4.6 seconds behind it, and charged him
-    // a tenth of his points for going down somewhere he never chose to stand.
+    // only full-screen overlay in this file that left game.state alone, so the
+    // city carried on around a player who could not move or reach PAUSE.
     //
     // 'paused' is the right state and not a bespoke one: main.js keeps
     // frameSystems and the camera running for it, so the world stays rendered
     // behind the overlay, and stops fixedSystems, which is the whole mechanism.
-    // The flag is so rotating back never clobbers a real pause, shop or title.
+    // The flag is so rotating back never clobbers a real pause or the title.
     if (portrait) {
       if (game.state === 'playing') { pausedByRotate = true; setGameState('paused'); }
     } else if (pausedByRotate) {
@@ -161,8 +158,8 @@ export function showUpdate(accept) {
   const x = el('update-dismiss');
   b.hidden = false;
   x.hidden = false;
-  // has-update steps the top-centre stack down, so the karma meter is not
-  // covered for as long as the banner is up.
+  // has-update steps the top-centre stack down, so the toast is not covered for
+  // as long as the banner is up.
   document.body.classList.add('has-update');
   const close = () => {
     b.hidden = true;

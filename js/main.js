@@ -114,16 +114,6 @@ buildClipBank();
 const player = createPlayer(scene, cam);
 cam.st.occlusionQuery = (look, eye, wanted) => cameraAllowed(look, eye, wanted);
 
-const { createHealth } = await import('./player/health.js');
-const { initPoints } = await import('./core/points.js');
-const health = createHealth(player, cam);
-const points = initPoints();
-// One damage entry point, handed to whatever can hurt him rather than exported
-// as a system — nothing outside player/health.js should be able to read his hit
-// points, and everything that can take them needs exactly this signature.
-player.hurt = (n, cause, severity) => health.damage(n, cause, severity);
-fixedSystems.push(profile('health', (dt) => { health.fixedUpdate(dt); points.fixedUpdate(dt); }));
-
 loadingProgress(0.92, 'destruction…');
 const { initDebris, debrisFrame } = await import('./world/debris.js');
 const { initParticles, particlesFrame } = await import('./engine/particles.js');
@@ -131,28 +121,16 @@ const { initDestruction, destructionFixed } = await import('./world/destruction.
 const { initBlobShadows, addBlob, blobFrame } = await import('./engine/blobshadows.js');
 const { createCombat } = await import('./player/combat.js');
 
-const { initTracers, tracersFrame } = await import('./engine/tracers.js');
-const { initHealthPips, healthPipsFrame } = await import('./engine/healthpips.js');
-const { createWeapons } = await import('./player/weapons.js');
-
 initDebris(scene);
 initParticles(scene);
 initDestruction(scene, buildingsReg, propsReg, cam);
 initBlobShadows(scene);
-initTracers(scene, cam.camera);
-initHealthPips(scene, cam.camera);
 const combat = createCombat(player, cam, scene);
-const weapons = createWeapons(player, cam, combat);
-// PUNCH is one button doing two jobs. combat asks the weapon system whether
-// there is something in his hands before it throws a jab, so the two can never
-// both fire off the same tap.
-combat.st.armed = () => weapons.armed;
 addBlob(player.p, 0.75);
 window.__buildingsReg = buildingsReg;
 window.__propsReg = propsReg;
 
 fixedSystems.push(profile('player', (dt) => player.fixedUpdate(dt)));
-fixedSystems.push(profile('weapons', (dt) => weapons.fixedUpdate(dt)));
 fixedSystems.push(profile('combat', (dt) => combat.fixedUpdate(dt)));
 // Gallery proximity. Ahead of dialogue in the list on purpose: both want the
 // same interact press, and standing in front of a painting should offer the
@@ -175,13 +153,10 @@ fixedSystems.push(profile('destruction', (dt) => destructionFixed(dt)));
 fixedSystems.push(profile('physics', (dt) => physicsStep(dt)));
 frameSystems.push(profile('player.frame', (dt, alpha) => player.frameUpdate(dt, alpha)));
 frameSystems.push(profile('combat.frame', (dt) => combat.frameUpdate(dt)));
-// After combat, and it has to be: combat owns pose.update(), and the aim twists
-// are applied ON TOP of the pose it writes rather than under it.
-frameSystems.push(profile('weapons.frame', (dt) => weapons.frameUpdate(dt)));
 // dt is already zero while paused — frame() gates the whole list. blobFrame()
 // takes none, because it only follows positions and would pop if it stopped.
 frameSystems.push(profile('fx.frame', (dt) => {
-  debrisFrame(dt); particlesFrame(dt); tracersFrame(dt); blobFrame();
+  debrisFrame(dt); particlesFrame(dt); blobFrame();
 }));
 window.__bodyStats = bodyStats;
 window.__pworld = pworld;   // test hook: the live active/sleeping body arrays
@@ -195,31 +170,13 @@ const traffic = createTraffic(scene, propsReg, npcs.hooks, player, cam);
 setCars({ list: traffic.list });
 combat.st.hooks.npcs = npcs.hooks;
 combat.st.hooks.cars = traffic.hooks;
-weapons.st.hooks.npcs = npcs.hooks;
-weapons.st.hooks.cars = traffic.hooks;
 
 const { installPanic } = await import('./ai/panic.js');
-const { createMonsters, MONSTER_MAX_HP } = await import('./ai/monster.js');
-const { createDirector } = await import('./ai/director.js');
 const panic = installPanic(npcs, buildingsReg, city);
-const monsters = createMonsters(scene, npcs, player, cam, player.hurt);
-const director = createDirector(monsters);
-combat.st.hooks.monsters = monsters.hooks;
-weapons.st.hooks.monsters = monsters.hooks;
-
-const { initKarma } = await import('./ai/karma.js');
-const { initReputation } = await import('./ai/reputation.js');
-const karma = initKarma();
-const reputation = initReputation(npcs, monsters, player, city);
-karma.fire();
 
 fixedSystems.push(profile('panic', (dt) => panic.fixedUpdate(dt)));
 fixedSystems.push(profile('npcs', (dt) => npcs.fixedUpdate(dt)));
 fixedSystems.push(profile('traffic', (dt) => traffic.fixedUpdate(dt)));
-fixedSystems.push(profile('monsters', (dt) => monsters.fixedUpdate(dt)));
-fixedSystems.push(profile('director', (dt) => director.fixedUpdate(dt)));
-fixedSystems.push(profile('karmaRep', (dt) => { karma.fixedUpdate(dt); reputation.fixedUpdate(dt); }));
-window.__reputation = reputation;
 
 loadingProgress(0.97, 'lighting…');
 const { initShadows, setCharacterCasting } = await import('./engine/shadows.js');
@@ -229,7 +186,7 @@ const godrays = initGodrays(renderer, cam.camera);
 const qualityCtx = {
   renderer, scene, camera: cam.camera, sky, shadows, godrays,
   resize: (dpr) => setDpr(dpr),
-  setCharacterShadows: (on) => { setCharacterCasting(player.p.root, on); monsters.sys.setCastShadows(on); },
+  setCharacterShadows: (on) => { setCharacterCasting(player.p.root, on); },
 };
 window.__quality = (name) => applyQuality(name, qualityCtx);
 
@@ -237,15 +194,10 @@ const { initCityLights } = await import('./engine/citylights.js');
 const cityLights = initCityLights(propsReg);
 lateFrameSystems.push(profile('citylights', () => cityLights.frameUpdate(cam.camera)));
 
-const { initShop } = await import('./ui/shop.js');
-const { bindWeapons } = await import('./ui/hud.js');
-initShop(points, weapons);
-bindWeapons(weapons);
-
 const { initBubbles } = await import('./dialogue/bubbles.js');
 const { initDialogue } = await import('./dialogue/talk.js');
 initBubbles(cam.camera);
-const dialogue = initDialogue(npcs, monsters, reputation, player, cam);
+const dialogue = initDialogue(npcs, player, cam);
 fixedSystems.push(profile('dialogue', (dt) => {
   dialogue.fixedUpdate(dt);
   if (inputRef.interactPressed) dialogue.onInteract();
@@ -261,10 +213,8 @@ const { initOutfit } = await import('./player/outfit.js');
 initAudio();
 initOutfit(player);
 frameSystems.push(profile('chars.frame', (dt, alpha) => {
-  npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha); monsters.frameUpdate(dt, alpha);
+  npcs.frameUpdate(dt, alpha); traffic.frameUpdate(dt, alpha);
 }));
-// camera-facing quads, so they belong after the camera solve
-lateFrameSystems.push(profile('pips.frame', (dt) => healthPipsFrame(dt, monsters.monsters, MONSTER_MAX_HP)));
 // `?time=` and `?fastday=` move the SIMULATION clock only — they change who is
 // walking to which door, not what the sky looks like. The city is always
 // daytime, so the sky samples `game.skyTime` (pinned to noon) instead.
@@ -317,8 +267,7 @@ if (flags.nodetail) (await import('./engine/materials.js')).worldUniforms.uWorld
 
 loadingProgress(0.98, 'shaders…');
 const { warmUp } = await import('./engine/warmup.js');
-const { bangMaterial } = await import('./ai/monster.js');
-await warmUp(renderer, scene, cam.camera, [bangMaterial()]);
+await warmUp(renderer, scene, cam.camera, []);
 
 // Put him somewhere else in one step, with nothing left over from where he was.
 //
@@ -363,7 +312,7 @@ if (flags.warp === 'museum') toGallery();
   // Driven by the three events that can change the answer, not sampled every
   // frame: writing `disabled` sixty times a second to say the same thing is
   // work the browser has to do and nothing gets from it.
-  const syncGallery = () => { btn.disabled = game.state !== 'playing' || health.down; };
+  const syncGallery = () => { btn.disabled = game.state !== 'playing'; };
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     if (btn.disabled) return;
@@ -371,8 +320,6 @@ if (flags.warp === 'museum') toGallery();
     toast('CITY GALLERY');
   });
   onEvent(EV.GAME_STATE, syncGallery);
-  onEvent(EV.PLAYER_DOWN, syncGallery);
-  onEvent(EV.PLAYER_REVIVED, syncGallery);
   syncGallery();
 }
 window.__test.museum = () => ({

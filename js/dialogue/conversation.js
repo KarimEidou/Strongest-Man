@@ -5,51 +5,27 @@
 // you press TALK, type, and get an answer from a model that knows who it is
 // talking to and what you have been doing to their city.
 //
-// Every session is grounded in game state — the speaker's archetype, whether
-// they have actually SEEN what you can do, public opinion of you, their district
-// and the time of day — so the same NPC answers you differently before and after
-// they watch you throw a taxi.
+// Every session is grounded in game state — the speaker's archetype, their
+// district and the time of day. Nobody keeps a score of you any more, so the
+// prompt no longer carries a reputation or a public-opinion line: you are a
+// stranger to everyone, every time.
 import { chatTurn, chatUnavailable, describeError } from './groq.js';
 import { cannedLine } from './lines.js';
-import { karmaBand } from '../ai/karma.js';
-import { save } from '../core/state.js';
 import { BLOCKS } from '../world/city.js';
 
 const MAX_TURNS = 8;
 const sessions = new Map();      // npc.id -> { history: [], t }
 
-const KARMA_LINE = {
-  saint: 'a beloved local hero',
-  good: 'well liked',
-  neutral: 'nobody in particular',
-  feared: 'feared and distrusted',
-  monster: 'a walking catastrophe people blame for everything',
-};
+// The one band the canned corpus is indexed on now. lines.js resolves
+// `LINES[situation][band] ?? LINES[situation].any`, and 'neutral' has an entry
+// for every situation that survived.
+const BAND = 'neutral';
 
 const ARCHETYPE_LINE = {
   worker: 'a commuter on your way home from a shift',
   vendor: 'a shopkeeper who works this street',
   kid: 'a teenager who is out later than you should be',
 };
-
-// reputation.attitude(n) already decides how this person treats him second to
-// second — it drives whether they flee, stare or keep their distance. It was
-// being computed in talk.js and then thrown away here, which is why a terrified
-// vendor and an adoring kid produced the same neutral voice.
-const ATTITUDE_LINE = {
-  oblivious: 'He is a stranger to you. You answer him the way you would answer anyone.',
-  curious: 'You are curious about him. You would like to know if the stories are true.',
-  wary: 'You do not trust him. You keep your answers short and your distance.',
-  whisper: 'You know what he is and you talk about him behind his back. To his face you are careful.',
-  awe: 'You look up to him. Being spoken to by him is the best thing to happen to you this month.',
-  terror: 'You are frightened of him. You want this conversation over.',
-};
-
-function knowledgeLine(n) {
-  if (n.knowledge >= 55) return 'You have SEEN him do something impossible with his bare hands. You know exactly what he is.';
-  if (n.knowledge >= 25) return 'You have heard rumours about this man. You are not sure you believe them.';
-  return 'As far as you know he is just some guy in a jacket.';
-}
 
 function districtName(x, z) {
   for (const b of BLOCKS) {
@@ -72,9 +48,8 @@ export function systemPrompt(n, ctx) {
   return [
     `You are ${ARCHETYPE_LINE[n.archetype] || 'a passer-by'} in a stylized low-poly city.`,
     `A man in a jacket has stopped you in ${districtName(n.x, n.z)}. It is ${clockLine(ctx.timeOfDay)}.`,
-    knowledgeLine(n),
-    ATTITUDE_LINE[ctx.attitude] || ATTITUDE_LINE.oblivious,
-    `Public opinion of him around here: ${KARMA_LINE[karmaBand()] || 'mixed'}.`,
+    'As far as you know he is just some guy in a jacket.',
+    'He is a stranger to you. You answer him the way you would answer anyone.',
     ctx.recent ? `Something people are still talking about: ${ctx.recent}.` : '',
     'Answer IN CHARACTER, out loud, as this person. One or two short sentences, under 35 words.',
     'No narration, no stage directions, no asterisks, no quotation marks, no emoji. PG-13.',
@@ -113,9 +88,7 @@ export async function ask(n, playerText, ctx) {
     reason = describeError(error);
   }
 
-  const att = ctx.attitude || 'oblivious';
-  const situation = att === 'terror' ? 'talk_terror' : att === 'awe' ? 'talk_awe' : 'talk_neutral';
-  const text = cannedLine(situation, karmaBand()) || cannedLine(situation, 'any') || '…';
+  const text = cannedLine('talk_neutral', BAND) || cannedLine('talk_neutral', 'any') || '…';
   s.history.push({ role: 'assistant', content: text });
   return { text, live: false, reason };
 }
@@ -125,4 +98,3 @@ export function speakDuration(text) {
   return Math.min(6.5, Math.max(1.6, (text.split(/\s+/).length / 2.6)));
 }
 
-export function karmaSummary() { return { band: karmaBand(), value: save.karma }; }

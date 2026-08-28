@@ -61,11 +61,10 @@ export function createCombat(playerSys, cam, scene) {
   const p = playerSys.p;
   const pose = p.poseLayer;
   const st = {
-    armed: null,        // () => true while a weapon is out; installed by main.js
     swing: null,        // pending strike {t, charge}
     slowmoT: 0,
     carried: null,      // active carry handle, or null
-    hooks: { npcs: null, monsters: null, cars: null }, // installed by later systems
+    hooks: { npcs: null, cars: null }, // installed by later systems
     carry: {
       phase: 'idle',    // idle | reaching | lifting | carrying | throwing | whiff
       t: 0, elapsed: 0, style: null, released: false, wantThrow: false,
@@ -94,39 +93,23 @@ export function createCombat(playerSys, cam, scene) {
     // p.charge pinned at 1 and the player at 45% speed for the rest of the
     // session: full-stick sprint became 3.15 m/s, which the locomotion blend
     // reads as a fast walk. That is the "run animation stopped working" report.
-    // A gun in his hands makes PUNCH the trigger (player/weapons.js reads the
-    // same input edge) — but only while his hands are FREE. The weapon system
-    // bails out on `carrying()` too, so gating the whole release branch on
-    // `armed` left the button doing nothing at all with a car over his head: no
-    // shot, and no swing either. What a holstered gun takes over is the JAB, not
-    // the load.
-    const trigger = !!st.armed?.() && !st.carried;
-    if (trigger) {
-      // core/input.js accrues chargeTime with no idea the button is currently a
-      // trigger. Left running, the moment he switched back to fists mid-hold the
-      // whole accrued hold cashed out as a near-full charge in one fixed step —
-      // a jab he never asked for, and 45% movement speed to go with it. Zeroing
-      // it here also keeps the HUD's charge ring empty while he is shooting.
-      input.chargeTime = 0;
-      p.charge = 0;
-    } else if (input.punchDown) {
+    if (input.punchDown) {
       p.charge = input.chargeTime > CHARGE_MIN
         ? clamp((input.chargeTime - CHARGE_MIN) / CHARGE_TIME, 0, 1)
         : 0;
-    } else if (input.punchReleased && !p.dead) {
+    } else if (input.punchReleased) {
       const charge = p.charge;
       p.charge = 0;
       // With something in your hands, PUNCH swings THAT. It used to throw a normal
       // jab whose damage landed at an abstract point in front of you while the
       // carry pose held the arms still — and, with a car, the punch hit the car in
       // your own hands and shot you across the city (see world/traffic.js onPunch).
-      // Armed and carrying: swing the load, never throw a bare jab as well.
-      if (!swingCarried(charge) && !st.armed?.()) swing(charge);
+      if (!swingCarried(charge)) swing(charge);
     } else {
       p.charge = 0;
     }
 
-    if (input.grabPressed && !p.dead) {
+    if (input.grabPressed) {
       const ph = st.carry.phase;
       if (ph === 'carrying') beginThrow();
       // pressed mid-lift: remember it and throw the moment the lift lands,
@@ -134,11 +117,6 @@ export function createCombat(playerSys, cam, scene) {
       else if (ph === 'reaching' || ph === 'lifting' || ph === 'swinging') st.carry.wantThrow = true;
       else if (ph === 'idle') tryGrab();
     }
-    // Going down (player/health.js goDown) has to cost him the load. Nothing
-    // else ever clears it: the carry runs off its own phase machine, and p.dead
-    // did not exist when that machine was written, so he used to lie on the
-    // pavement with a taxi still welded to his hands.
-    if (p.dead && st.carry.phase !== 'idle') dropCarried();
     advanceCarry(dt);
 
     // strike lands at the clip's contact moment
@@ -188,7 +166,6 @@ export function createCombat(playerSys, cam, scene) {
 
     // entities (installed by later phases)
     st.hooks.npcs?.onPunch(f, radius, impulse, charge);
-    st.hooks.monsters?.onPunch(f, radius, impulse, charge);
     st.hooks.cars?.onPunch(f, radius, impulse, charge);
 
     // wake + fling nearby debris
@@ -223,8 +200,8 @@ export function createCombat(playerSys, cam, scene) {
 
   function tryGrab() {
     const c = st.carry;
-    // priority: entity hooks (monster/NPC/car) -> sleeping debris -> props
-    for (const h of [st.hooks.monsters, st.hooks.npcs, st.hooks.cars]) {
+    // priority: entity hooks (NPC/car) -> sleeping debris -> props
+    for (const h of [st.hooks.npcs, st.hooks.cars]) {
       const got = h?.tryGrab?.(p);
       if (got) { beginCarry(got); return; }
     }
@@ -412,7 +389,6 @@ export function createCombat(playerSys, cam, scene) {
     }
     if (h.kind === 'debris') return { r: Math.max(h.size || 0.5, 0.4), heft: clamp((h.size || 0.5) * 1.6, 0.5, 1.8) };
     if (h.car) return { r: 1.9, heft: 2.4 };
-    if (h.monster) return { r: 1.4, heft: 2.0 };
     return { r: 0.55, heft: 0.9 };            // a person
   }
 
@@ -445,10 +421,9 @@ export function createCombat(playerSys, cam, scene) {
     punchSound(Math.min(1, charge + 0.25));
     const destroyed = removeSphere(f.x, f.y, f.z, radius, { impulse, fragMult: 1 + charge * 2.4, byPlayer: true });
     st.hooks.npcs?.damageRadius(f.x, f.z, radius, 'swung');
-    // never the thing being swung: a held monster is skipped here, a held car by
-    // world/traffic.js, a held person by ai/npc.js, and a held prop is detached so
-    // nearestProp already cannot see it
-    if (!h.monster) st.hooks.monsters?.onPunch(f, radius, impulse, charge);
+    // never the thing being swung: a held car is skipped by world/traffic.js, a
+    // held person by ai/npc.js, and a held prop is detached so nearestProp
+    // already cannot see it
     st.hooks.cars?.onPunch(f, radius, impulse, charge);
     const propHit = nearestProp(f.x, f.z, Math.max(radius, 1.6));
     if (propHit) {
@@ -637,7 +612,6 @@ export function createCombat(playerSys, cam, scene) {
           cam.shake(0.18);
         }
         st.hooks.npcs?.onProjectile?.(b);
-        st.hooks.monsters?.onProjectile?.(b);
       }
     };
   }

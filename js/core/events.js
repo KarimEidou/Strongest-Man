@@ -4,27 +4,14 @@
 export const EV = {
   FEAT: 'feat',                     // {type, x, z, magnitude}
   SCREAM: 'scream',                 // {x, z, radius}
-  NPC_DIED: 'npcDied',              // {npc, cause:'player'|'monster'|'debris'|'thrown', x, z}
-  MONSTER_SPAWNED: 'monsterSpawned',// {monster}
-  MONSTER_REALIZED: 'monsterRealized', // {monster}
-  MONSTER_DIED: 'monsterDied',      // {monster, byPlayer, x, z, nearNpcs}
-  KARMA_CHANGED: 'karmaChanged',    // {value, band, prevBand}
+  NPC_DIED: 'npcDied',              // {npc, cause:'player'|'debris'|'thrown', x, z}
   WITNESS: 'witness',               // {npc, featType, magnitude}
   CHUNK_DESTROYED: 'chunkDestroyed',// {building, count, x, y, z}
   BUILDING_COLLAPSED: 'buildingCollapsed', // {building, byPlayer, occupied}
   CAR_EXPLODED: 'carExploded',      // {x, z, byPlayer}
   HYDRANT_BURST: 'hydrantBurst',    // {x, z}
   PROP_DESTROYED: 'propDestroyed',  // {type}
-  PLAYER_THREW: 'playerThrew',      // {what:'car'|'npc'|'monster'|'prop'|'debris'}
-  POINTS: 'points',                 // {delta, total, label}
-  PLAYER_HURT: 'playerHurt',        // {amount, hp, max, cause}
-  PLAYER_HEALTH: 'playerHealth',    // {hp, max, healing}
-  PLAYER_DOWN: 'playerDown',        // {cause, lostPoints}
-  PLAYER_REVIVED: 'playerRevived',  // {hp, max}
-  WEAPON_CHANGED: 'weaponChanged',  // {id, gun, ammo}
-  WEAPON_FIRED: 'weaponFired',      // {id, ammo, mag, hit}
-  WEAPON_RELOAD: 'weaponReload',    // {id, time}
-  WEAPON_BOUGHT: 'weaponBought',    // {id, price}
+  PLAYER_THREW: 'playerThrew',      // {what:'car'|'npc'|'prop'|'debris'}
   GAME_STATE: 'gameState',          // {state:'title'|'playing'|'paused'|'settings'}
   SETTINGS_CHANGED: 'settingsChanged', // {settings}
 };

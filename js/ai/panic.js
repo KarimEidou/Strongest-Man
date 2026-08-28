@@ -99,7 +99,6 @@ export function installPanic(npcSys, buildingsReg, city) {
   on(EV.FEAT, ({ x, z, magnitude }) => alertAt(x, z, Math.min(20 + magnitude * 0.4, 40), magnitude > 40 ? 2 : 1));
   on(EV.CAR_EXPLODED, ({ x, z }) => alertAt(x, z, 30, 2));
   on(EV.NPC_DIED, ({ x, z }) => alertAt(x, z, 22, 2));
-  on(EV.MONSTER_SPAWNED, ({ monster }) => alertAt(monster.x, monster.z, 35, 1));
   on(EV.BUILDING_COLLAPSED, ({ x, z }) => alertAt(x, z, 45, 2));
   on(EV.HYDRANT_BURST, ({ x, z }) => alertAt(x, z, 12, 1));
 

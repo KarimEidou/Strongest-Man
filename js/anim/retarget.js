@@ -17,14 +17,11 @@ export const CLIPS = {}; // name -> AnimationClip
 // played back on the very rig it came off.
 //
 // It used to be scaled by (targetHips / PLAYER hips) for every clip, on the
-// assumption that the whole bank lived in the player's height space. Four of the
-// eight clips do not: walk is npc_a's own animation, quick is npc_b's,
-// monster_walk is monster_a's and orc_walk is monster_b's. Playing monster_a's
-// walk back on monster_a therefore multiplied its hips by 134.3/97.4 = 1.379,
-// lifting the hips 52 bone units — 0.63 m once the 1.2 body scale is applied —
-// and taking the legs, and the feet, straight up with them. That is the report
-// of monsters floating above the street: measured, monster_a's toes sat 0.84 m
-// off the ground and monster_b's 1.32 m.
+// assumption that the whole bank lived in the player's height space. Two of them
+// do not: `walk` is npc_a's own animation and `quick` is npc_b's. Playing a
+// character's own walk back on it therefore multiplied its hips by the ratio of
+// two different rigs, lifting the hips and taking the legs and the feet straight
+// up with them — the report of characters floating above the street.
 const CLIP_HIPS = {};
 let refHipsY = 1;
 
@@ -50,8 +47,6 @@ export function buildClipBank() {
   take('player', 'idle');
   take('npc_a', 'walk');
   take('npc_b', 'quick');
-  take('monster_a', 'monster_walk');
-  take('monster_b', 'orc_walk');
   take('clip_run', 'run', 'player');
   take('clip_punch', 'punch', 'player');
   take('clip_die', 'die', 'player');

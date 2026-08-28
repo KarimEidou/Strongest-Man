@@ -64,30 +64,16 @@ const STATES = [
   {
     id: 'hud',
     enter: () => window.__test.hudStress(),
-    controls: ['#btn-punch', '#btn-jump', '#btn-grab', '#btn-interact', '#btn-pause', '#btn-shop', '#btn-gallery', '.wchip'],
+    controls: ['#btn-punch', '#btn-jump', '#btn-grab', '#btn-interact', '#btn-pause', '#btn-gallery'],
     // pairs that must not overlap, and why each pair matters
     noOverlap: [
-      ['#vitals', '#karma-wrap'],
-      ['#ammo', '#weapons'],
-      ['#ammo', '#btns'],
-      ['#weapons', '#btns'],
-      ['#toast', '#weapons'],
       ['#toast', '#btns'],
-      ['#toast', '#karma-wrap'],
       ['#toast', '#btn-gallery'],
-      // #rep-hint used to sit inside the button row's own vertical band, which
-      // was invisible until a third button filled the middle of it
-      ['#rep-hint', '#btn-gallery'],
-      ['#rep-hint', '#btn-shop'],
-      ['#rep-hint', '#toast'],
-      ['#btn-pause', '#btn-shop'],
-      ['#btn-shop', '#btn-gallery'],
-      ['#karma-wrap', '#btn-shop'],
-      // the tight one: at 667x375 these clear each other by 16.1px and there is
-      // nowhere else in the top row for a third button to go
-      ['#karma-wrap', '#btn-gallery'],
-      ['#vitals', '#btn-gallery'],
-      ['#rep-hint', '#karma-wrap'],
+      ['#toast', '#btn-pause'],
+      // the tight one: the two survivors of the top-right cluster, 10px apart
+      ['#btn-pause', '#btn-gallery'],
+      ['#chat', '#btn-gallery'],
+      ['#chat', '#btns'],
     ],
   },
   {
@@ -98,7 +84,10 @@ const STATES = [
       window.__test.step(0.5);
     },
     controls: ['#art-prompt', '#btn-punch', '#btn-pause'],
-    noOverlap: [['#art-prompt', '#btns'], ['#art-prompt', '#weapons'], ['#art-prompt', '#ammo']],
+    // The prompt is centred and the cluster is pinned right; its max-width is
+    // derived to keep them apart at every viewport, and this is the assertion
+    // that keeps that derivation honest.
+    noOverlap: [['#art-prompt', '#btns'], ['#art-prompt', '#btn-gallery']],
   },
   {
     id: 'update',
@@ -113,13 +102,13 @@ const STATES = [
       document.body.classList.remove('has-update');
     },
     controls: ['#update-banner', '#update-dismiss'],
-    noOverlap: [['#update-banner', '#update-dismiss'], ['#update-banner', '#karma-wrap'], ['#update-banner', '#btn-shop']],
+    noOverlap: [['#update-banner', '#update-dismiss'], ['#update-banner', '#toast'], ['#update-banner', '#btn-gallery']],
   },
   {
     id: 'pause',
     enter: () => document.getElementById('btn-pause').click(),
-    controls: ['#btn-resume', '#btn-pause-shop', '#btn-pause-settings'],
-    mustBeOnScreen: ['#btn-resume', '#btn-pause-shop', '#btn-pause-settings', '#pause-panel'],
+    controls: ['#btn-resume', '#btn-pause-settings'],
+    mustBeOnScreen: ['#btn-resume', '#btn-pause-settings', '#pause-panel'],
     noOverlap: [],
   },
   {
@@ -132,21 +121,11 @@ const STATES = [
     noOverlap: [],
   },
   {
-    id: 'shop',
-    enter: () => { window.__test.setPoints(999999); document.getElementById('btn-shop').click(); },
-    leave: () => document.getElementById('btn-shop-done').click(),
-    controls: ['#btn-shop-done', '.gun-buy'],
-    // the ONLY way out of the shop; it was below the fold on three of five
-    // viewports before the panels were given border-box sizing
-    mustBeOnScreen: ['#btn-shop-done', '#shop-panel'],
-    noOverlap: [],
-  },
-  {
     id: 'chat',
     enter: async () => { window.__test.step(1); window.__test.talk(); await new Promise((r) => setTimeout(r, 400)); },
     leave: () => document.getElementById('chat-close').click(),
     controls: ['#chat-close', '#chat-send', '#chat-input'],
-    noOverlap: [['#chat', '#reticle'], ['#chat', '#vitals']],
+    noOverlap: [['#chat', '#btns'], ['#chat', '#btn-gallery']],
     optional: true,   // needs an NPC in range; skipped when there is not one
   },
 ];
@@ -190,7 +169,7 @@ for (const device of DEVICES) {
     // SIM by a fixed 0.5s — two different clocks. So whether the prompt was
     // measured depended on which side of the fade the two rAFs landed on, and
     // on the runs where it landed at exactly 0 the report said "none visible"
-    // and the #art-prompt/#ammo overlap assertions — the regression guard for
+    // and the #art-prompt overlap assertions — the regression guard for
     // AUDIT.md #110 — silently did not run. A check that sometimes does not
     // happen is worse than one that fails. Killing the transitions puts every
     // DOM overlay at its settled state, which is the state worth measuring.
