@@ -8,6 +8,53 @@ sentence as the number rather than in a footnote.
 
 ---
 
+## The 2026-08-28 cleanup
+
+**Everything below this section describes the 2026-08-26 overhaul and its 622
+captures, and those captures are now stale**: the sky is pinned to noon, the HUD
+is rebuilt, most lots wear downloaded buildings, and monsters, health, guns,
+the shop, points, karma and reputation are gone. The matrix has not been
+re-shot. The numbers that WERE re-measured on this tree:
+
+| | overhaul | cleanup | |
+|---|---:|---:|---|
+| End-to-end suite | 30/30 | **20/20**, 0 console errors | ten sections deleted with the systems they tested, four rewritten, four added |
+| Layout assertions | 74 checks, 0 failures | **0 failures**, five devices x two orientations | |
+| Preflight | 6/6 | **6/6** | |
+| Draw calls | 71 | **72** | +1 |
+| Triangles | 267,786 | **207,551** | −60,235 |
+| Geometries | 67 | **72** | +5 |
+| Textures | 77 | **79** | +2 |
+| JS heap | 26 MB | **38 MB** | +12 MB — the per-shell buffers, doubled by the interior liner |
+| Leak check | flat | **flat** — geometries −3, heap −0.1 MB over 20 cycles | |
+| Precache | 5.01 MB, 121 URLs | **4.18 MB**, 111 URLs | the removals took more than the buildings added |
+
+Draw calls barely moved because the two effects cancel: seventeen per-building
+shell meshes came in, and the tracer, health-pip and reticle passes went out.
+Triangles fell because a shelled facade is one mesh instead of a share of four
+`frustumCulled = false` InstancedMeshes that submit every cell in the city every
+frame.
+
+Three things were proven by comparison rather than asserted, because they are the
+ones that would quietly invalidate everything else:
+
+- **The seeded stream is untouched by the shells.** Every prop's type, position
+  and scale; every car's circuit and arc length; every townsperson's rig,
+  archetype and walk speed; every interior wall's position — hashed before and
+  after: all four identical, and `propPlacement()` unchanged.
+- **The paintings and their plaques are byte-identical.** `art-0`, `art-1` and
+  `plaque-0` come back at the same sha either side. So does the museum's own
+  geometry: 76 cells at the same positions and kinds, the same interior bounds,
+  the same artwork placement.
+- **`world/shell.js` was extracted as a proven no-op** before anything was built
+  on it — the `landmark` frame came back byte-identical.
+
+What has NOT been done: the 622-image capture matrix has not been re-shot, so the
+`screenshots/` tree describes the previous build. Everything above was measured
+on this one.
+
+---
+
 ## The short version
 
 | | |

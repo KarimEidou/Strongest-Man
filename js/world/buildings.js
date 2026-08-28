@@ -10,6 +10,8 @@ import { PAL } from '../core/palette.js';
 import { FLOOR_H } from './city.js';
 import { rand, randRange } from '../core/mathx.js';
 import { buildSamosaShell } from './samosa.js';
+import { pickShellModel, buildModelShell } from './shell.js';
+import { flags } from '../core/debug.js';
 
 // Panels are exactly cell-sized: adjacent chunks butt with coincident hidden
 // side faces (opposite normals → always backface-culled, never visible), so
@@ -137,6 +139,16 @@ export function buildBuildings(scene, specs) {
     let shell = null, crustKind = null;
     if (s.landmark === 'samosa') {
       shell = buildSamosaShell(s, s.floors);
+    } else if (!s.landmark && !flags.noshells) {
+      // An ordinary lot wears a downloaded building when one fits it without
+      // being distorted past what its windows survive; otherwise it keeps the
+      // procedural facade. A mixed city is identical to a fully converted one
+      // except on the lots that fell back, so this is a real answer rather than
+      // a compromise — see pickShellModel.
+      const pick = pickShellModel(s);
+      if (pick) shell = buildModelShell(s, s.floors, pick);
+    }
+    if (shell) {
       shell.chunkKeys = [];
       crustKind = `crust:${s.id}`;
       placements[crustKind] = [];
@@ -150,15 +162,59 @@ export function buildBuildings(scene, specs) {
           const key = `${side}:${col}:${floor}`;
           const plain = s.material === 'brick' ? 'wallBrick' : 'wall';
           let kind = plain;
+          // The window rolls, taken on exactly the lots that took them before and
+          // in exactly the same order.
+          //
+          // They are two conditional draws from the seeded stream that
+          // buildBuildings shares with props, traffic and the townspeople, and
+          // they run thousands of times, so the draw COUNT is load-bearing:
+          // change it and every prop, every car and every person moves, and all
+          // 622 screenshots become unreviewable. Measured — taking them on the
+          // samosa lots too, which never used to, shifted the props from 126 to
+          // 120 and moved everything else with them.
+          //
+          // So: an ordinary lot rolls whether or not it ends up wearing a model,
+          // and a landmark rolls not at all. What was a facade decision on a
+          // shelled lot becomes `cell.glass`, which is what world/destruction.js
+          // spawns shards from — dead computation turned into the flag.
+          let procKind = null;
+          if (!s.landmark) {
+            const storefront = floor === 0 && (s.type === 'shop' || s.type === 'diner') && side === s.front;
+            procKind = plain;
+            if (floor === 0 && col === doorCol[side]) procKind = 'door';
+            else if (storefront) procKind = 'window';
+            else if (floor > 0 && col > 0 && col < n - 1 && rand() < 0.62) procKind = 'window';
+            else if (floor > 0 && rand() < 0.25) procKind = 'window';
+          }
+
           if (shell) {
-            // No door. The frame is an instance placed on the flat lot-rectangle
-            // face plane by positionCell(), which a cone only touches at a
-            // tangent — so it floated in mid-air beside the pastry, and the
-            // hideKey() that punched a doorway for it left a hole in a crust
-            // nobody can walk into anyway.
-            if (!shell.ranges.has(key)) continue;   // open air outside the crust
-            kind = crustKind;
-            shell.chunkKeys.push(key);
+            // No door archetype on a shell. On the samosa the frame is an
+            // instance placed on the flat lot-rectangle face plane by
+            // positionCell(), which a cone only touches at a tangent — so it
+            // floated in mid-air beside the pastry, and the hideKey() that
+            // punched a doorway for it left a hole in a crust nobody can walk
+            // into anyway. On a fitted model the footprint IS the lot, so a
+            // frame would sit flush — but the model already has its own doors
+            // and shopfronts, and two doorways in one facade is worse than none.
+            if (!shell.ranges.has(key)) {
+              // The shell has no geometry for this column. On the samosa that
+              // means open air outside the cone and the cell simply does not
+              // exist. On a fitted model it means a recess, a setback or a
+              // parapet the radial binning sent to a neighbouring column — a
+              // HOLE in an otherwise closed facade, and what shows through it is
+              // the interior, which reads as a black panel on the wall. Measured
+              // across the seventeen shelled lots it is 0 to 20 percent of the
+              // cells.
+              //
+              // So a landmark keeps the hole and an ordinary lot gets an
+              // ordinary wall chunk. A patch of plain wall against a modelled
+              // facade is a compromise; a black rectangle is a bug.
+              if (s.landmark) continue;
+              kind = plain;
+            } else {
+              kind = crustKind;
+              shell.chunkKeys.push(key);
+            }
           } else if (s.landmark === 'museum') {
             // Solid stone, top to bottom, with one door and no glazing at all.
             // A clerestory was tried and cost more than it bought: the shell's
@@ -170,15 +226,14 @@ export function buildBuildings(scene, specs) {
             // looks like.
             if (floor === 0 && col === doorCol[side]) kind = 'door';
           } else {
-            const storefront = floor === 0 && (s.type === 'shop' || s.type === 'diner') && side === s.front;
-            if (floor === 0 && col === doorCol[side]) kind = 'door';
-            else if (storefront) kind = 'window';
-            else if (floor > 0 && col > 0 && col < n - 1 && rand() < 0.62) kind = 'window';
-            else if (floor > 0 && rand() < 0.25) kind = 'window';
+            kind = procKind;
           }
 
           const cell = {
             bId: s.id, side, col, floor, kind,
+            // What breaks when this cell does. It used to be inferred from
+            // `kind === 'window'`, which a shelled cell never is.
+            glass: procKind === 'window',
             alive: true,
             idx: placements[kind].length,
             x: 0, y: floor * CELL_H + CELL_H / 2, z: 0, yaw: 0,
@@ -198,7 +253,16 @@ export function buildBuildings(scene, specs) {
     // the same key names the lot rectangle uses, so physics/collide.js can
     // collide against the shape you can see instead of the lot it is inscribed
     // in. Sparse on purpose: above the tip there is no band, which is open air.
-    if (shell) {
+    //
+    // LANDMARKS ONLY. A landmark is INSCRIBED in its lot and genuinely is a
+    // different shape from it. An ordinary lot's model is fitted to the lot, so
+    // its footprint IS the rectangle — and its cell grid is on that rectangle,
+    // as positionCell puts it, and the wall chunks that fill the shell's gaps
+    // are on it too. Giving one a band would put the collision somewhere the
+    // cells are not: measured, a model with a setback upper storey moved the
+    // band inside the lot and sealed three of the twenty-three spine-wall
+    // doorways, which final.mjs section 9 catches.
+    if (shell && s.landmark) {
       b.floorSpan = shell.floorSpan.map((fs) => fs && {
         x0: fs.minX, x1: fs.maxX, z0: fs.minZ, z1: fs.maxZ,
       });

@@ -82,7 +82,10 @@ function destroyCellWithDebris(b, cell, sx, sy, sz, impulse, fragMult) {
       (dx / d) * kick + (rand() - 0.5) * 3, Math.abs(dy / d) * kick * 0.4 + 2 + rand() * 3, (dz / d) * kick + (rand() - 0.5) * 3,
       0.5 + rand() * 0.45 * fragMult, tint.getHex());
   }
-  if (cell.kind === 'window') {
+  // `cell.glass` rather than `cell.kind === 'window'`: a shelled lot's cells all
+  // carry the shell's own kind, and the flag is what carries the facade decision
+  // the seeded rolls made for that cell either way. See world/buildings.js.
+  if (cell.glass) {
     for (let i = 0; i < 3; i++) {
       spawnDebris('glass', cell.x, cell.y + rand(), cell.z, (rand() - 0.5) * 6, 2 + rand() * 3, (rand() - 0.5) * 6, 0.25 + rand() * 0.2, 0x9fc4ff);
     }

@@ -1,5 +1,83 @@
 # Changelog
 
+## 2026-08-28 — World cleanup, a new HUD, and a smaller game
+
+Ten fixes to the live game. The city is always daytime, the cars point the right
+way, the townspeople look before they cross, the buildings are real downloaded
+models, the HUD is rebuilt, and everything that made this a score attack is gone.
+
+### Changed
+
+- **It is always daytime.** The sky used to sample `game.timeOfDay`, which starts
+  at the authored dusk and advances a full day every 24 real minutes, so the city
+  drifted through sunset and night while you played it. There are two clocks now:
+  `timeOfDay` keeps advancing and keeps running the townspeople's daily needs,
+  and a new `skyTime` is pinned to noon. `?time=` and `?fastday=` therefore move
+  schedules only; `?skytime=` is a tooling-only flag that still moves the sky.
+- **Cars drive forwards.** `rotY: 180` was applied to all five car imports on the
+  assumption that the whole pack faces -Z. It does not: `car-kit` already points
+  +Z, which is this game's forward, so the blanket rotation turned every car in
+  the city around. Fixed at the import layer, because `car.yaw` feeds six other
+  systems and desynchronising it from the drawn orientation would be worse.
+- **The samosas lost their floors, their floating door and their invisible
+  wall.** Ten rectangular floor slabs per landmark speared out through a
+  lens-shaped crust; a door frame stood in mid-air beside the pastry because it
+  was placed on the flat lot-rectangle face plane a cone only touches at a
+  tangent; and the collider fenced off the whole 38 x 14 m lot around a shape
+  that reaches 32 x 10.5 m. The four collision bands now follow the crust's own
+  per-floor cross-section.
+- **The HUD is rebuilt as one surface language** — a translucent dark disc, one
+  thin bright rim, a soft inner glow that dies before it reaches the rim, and a
+  pale gold accent reserved for the two things that are live: the joystick nub
+  and the charge sweep. The four action controls moved from a 2x2 grid to a
+  quarter-arc around the primary, because a thumb pivots rather than travelling
+  in rows.
+- **The townspeople look before they cross.** A new `wait_kerb` state holds them
+  on the pavement until the light is red for the traffic they are crossing AND no
+  car is inside a speed-dependent horizon. Measured over thirty simulated
+  seconds: the closest a car came to a pedestrian in its own lane went from 0.03 m
+  (which is driving through them) to 2.41 m, and frames with somebody inside
+  three metres fell from 279 to 18.
+- **The nav lattice works.** It had 4 of its 8 crossings, three disconnected
+  components, and eight waypoints standing in a traffic lane. Now: 8 crossings,
+  one component, nothing on asphalt, seven more destinations reachable.
+- **Walking has a floor.** Any deflection past the dead zone used to map onto a
+  crawl no clip covers, where the feet planted and slid and the graph sat two
+  thirds on `idle` — small mincing steps with full hip sway. The stick now maps
+  onto 1.2 m/s and up. The pelvis also got its sway back: the Hips X/Z channels
+  were zeroed outright, and none of the looping clips has any root motion to
+  strip, so what that deleted was 7.8 cm of weight shift.
+- **Most of the ordinary lots wear real downloaded buildings**
+  (Kenney's CC0 city kits) — 17 of 26 on the capture seed, 21 of 24 on the e2e
+  suite's — fitted to their lot with an independent scale per axis so the
+  footprint is exactly the lot rectangle. The rest keep their
+  procedural facade, which is the intended outcome rather than a shortfall — see
+  ASSUMPTIONS.md 25. They are destructible on the same cell grid as everything
+  else, they carry an interior liner so a punched hole reads as a room rather
+  than as a view straight through, and they are on the world material so the
+  streetlamps light them.
+
+### Removed
+
+- **Monsters, health, guns, the shop, points, karma and reputation** — ten
+  modules, two monster models, six gun models, and the wiring through main.js,
+  the event bus, combat, the pose tables, the save file and the HUD. Precache
+  drops from 5.02 MB to 4.18 MB. Talking to people stays: the dialogue system
+  resolves on one fixed neutral band now, so the canned corpus still works with
+  no API key.
+
+### Fixed
+
+- `tools/capture/layout.mjs` compared overlap by bounding box, which is a false
+  positive for two circular controls on a diagonal — a browser hit-tests
+  `border-radius`. It compares circles by centre distance now, and still fails
+  when two circles genuinely intersect.
+- `tools/check-rig.mjs` compared bone names and order only, and printed MATCH for
+  rigs whose bind poses are 120 degrees apart. It compares bind rotations now.
+- `tools/test/final.mjs` section 15 re-picked the same first candidate on every
+  attempt and dereferenced a probe without a null check, so an unreachable first
+  NPC took the whole suite down with a TypeError that said nothing.
+
 ## 2026-08-26 — Overhaul
 
 A full pass over the game: every confirmed defect fixed at the root, a verified

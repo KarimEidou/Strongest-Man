@@ -74,14 +74,25 @@ locally, broken live". There is nothing to install; it is zero-dependency Node.
 | `?seed=N` | world seed (default 1337) |
 | `?autoplay=1` | skip the title screen |
 | `?capture=1` | deterministic: fixed render dt, frozen day cycle, no camera shake |
-| `?time=0..1` | start the clock at that time of day (0.5 = midday, 0.70 = the palette's home dusk) |
+| `?time=0..1` | start the SIMULATION clock — schedules and the hour a conversation reports. **Not the sky** |
+| `?skytime=0..1` | move the VISUAL clock. Tooling only: play is always daytime |
 | `?warp=museum` | spawn on the gallery forecourt |
 | `?quality=low\|medium\|high` | force a graphics tier |
-| `?nomonsters=1` | no monster spawns — for deterministic runs |
 | `?nogroq=1` | never call the dialogue API |
 | `?prof=1` | per-system timings via `window.__test.profile()` |
-| `?fastday=1` | 60-second day |
+| `?fastday=1` | 60-second day (schedules only, as above) |
+| `?noshells=1` | put every lot back on its procedural facade |
 | `?nogodrays=1` `?noshadows=1` `?nodetail=1` | isolate one render pass |
+
+**`?time=` no longer changes what you see.** The city is always daytime: the sky
+samples `game.skyTime`, pinned to noon, while `game.timeOfDay` keeps advancing so
+the townspeople still go to work and go home. `?time=0` renders midday. Use
+`?skytime=` to shoot a night frame — which is what the `hud-dark` capture scene
+does, and the only way to reach one.
+
+`?nomonsters=1` is gone with the monsters, and is accepted-and-ignored by nothing
+— it is simply an unknown parameter now. The capture scenes still pass it; it
+does nothing.
 
 `window.__READY__` (and `window.__ready`) go true after the first fully-rendered
 frame. `window.__perf` carries fps, frame time, draw calls and triangles at 1 Hz.

@@ -285,3 +285,159 @@ It is entered in Settings, stored under its own localStorage key, and sent only
 to `api.groq.com`. Nothing about it was changed except that a corrupt save can no
 longer delete it (see the note in `AUDIT.md`). No key is committed, and with no
 key the NPCs use their built-in lines.
+
+---
+
+# The 2026-08-28 cleanup
+
+## 21. The city is always daytime, and that needed TWO clocks rather than one
+
+Pinning `game.timeOfDay` would have frozen more than the sky: `ai/schedule.js`
+picks a goal from need curves that read it, so every pedestrian would have walked
+towards a diner forever and never gone home, and every conversation would have
+reported the same hour.
+
+So `game.timeOfDay` keeps advancing and keeps running daily life, and a second
+value, `game.skyTime`, is pinned to 0.50 — the one true-noon key in `SKY_KEYS`,
+where `night` is 0.00 and the sun sits about 64 degrees up. `engine/sky.js`
+samples that. `?time=` and `?fastday=` therefore move schedules only.
+
+`?skytime=` is a new tooling-only flag that still moves the sky, so the capture
+matrix can shoot a night frame; play never reaches it. `__test.setTimeOfDay`
+drives both clocks, because it is the only way `tools/test/final.mjs` section 10
+can sweep all 24 hours to assert the key light never dips below the horizon.
+
+## 22. The samosa collider follows the crust, not the lot
+
+`physics/collide.js` collides capsules against four bands. Those bands used to be
+the LOT RECTANGLE for every building, which is right for a facade that fills its
+lot and wrong for a cone inscribed in one: the fence ran the full 38 x 14 m lot
+around a shape that reaches 32 x 10.5 m and curves away from it.
+
+The bands now come from `shell.floorSpan`, the crust's own per-floor
+cross-section, which `world/shell.js` measures while binning triangles. Columns
+are mapped proportionally over the band's own span, which for a uniform taper is
+identical to `cellKeyAt`'s radial mapping — so the collider and the visible crust
+agree by construction rather than by a fudge factor.
+
+Two things this deliberately does not do. It does not register the bands as
+`addStaticBox()` solids, the way the museum's partition is: those have no removal
+API and `pointInSolid` makes them permanently opaque to the camera and to
+hitscan, and samosas are destructible. And it does not slow the ordinary path —
+`bandOf` early-outs on one property read for a lot without a shell, which is
+every building but two.
+
+## 23. Nobody keeps score of you, so dialogue resolves on one fixed band
+
+Karma and per-person reputation are gone, and `dialogue/talk.js` and
+`dialogue/conversation.js` chose their lines from both. Every lookup now comes in
+on `neutral`, which is the band `dialogue/lines.js` has an entry for in every
+situation that survived, so the canned corpus still resolves with no key and the
+Groq path still builds a prompt.
+
+The corpus loses the situations nothing can reach (`thank`, `monster_spot`,
+`insult`, `beg_mercy`, `talk_awe`, `talk_terror`, `monster_realize`,
+`shop_closed`) and `greet` collapses to the one band still asked for. Ambient
+chatter is chosen by proximity instead of by attitude: close enough and they
+greet you, far enough and they talk to each other. `whisper_awe` still fires
+occasionally, because watching a man lift a taxi is its own reason to whisper and
+does not need a score behind it.
+
+## 24. The rigs do not share a bind pose, and it is NOT corrected at load time
+
+`tools/check-rig.mjs` compared bone names and order and printed MATCH, which is
+how `anim/retarget.js`'s claim of an "IDENTICAL skeleton" survived being false.
+It compares bind rotations now and prints the table: against the player's rig,
+npc_a's Hips bind sits **120.4 degrees** away, its hands 46 and 38; npc_b is
+104.4 and 59 / 57.
+
+A clip carries absolute local rotations, so playing one on the wrong rig rotates
+those bones by exactly that. It is measurable in play: `__test.skinTwist()`
+reports the player's waist sitting 91 to 120 degrees from its own bind through
+the whole 1.4 to 3.4 m/s band, where the `walk` and `quick` clips (npc_a's and
+npc_b's) carry the weight, and under 20 degrees at a standstill and at a sprint,
+where the clips are the player's own.
+
+**A full bind-space retarget was built and measured, and not shipped.** It works
+on paper and in the probe — per bone, `q_dst = D(parent)^-1 q_src D(b)` with
+`D(b) = Bsrc(b)^-1 Btgt(b)` — and it collapses that 120 degrees to 9 across the
+whole band. It also makes the player visibly hunch. Both are true at once because
+the 120 degrees is very largely bone ROLL, which the clip's own downstream
+rotations already compensate for: the composed pose was already right, and
+re-basing it applies the correction twice. Isolating the halves confirmed it —
+with the rotation rewrite disabled and only the pelvic-sway change in, the frame
+is indistinguishable from the original.
+
+So the mismatch stands, the tool records it, and `final.mjs` section 29 asserts
+the two bands where clip and rig DO agree stay clean while recording the middle.
+A future fix shows up there as a number that fell.
+
+## 25. Which lots wear a downloaded building, and which keep their facade
+
+`world/shell.js`'s `pickShellModel` fits a model to a lot with an INDEPENDENT
+scale per axis, so the footprint comes out exactly the lot rectangle — which is
+why the four-band collider is already correct and there is no gap between model
+and lot for an invisible wall to live in. The cost is distortion, and two numbers
+bound it: at most 1.8 in footprint anisotropy after choosing between the two
+90-degree orientations, and at most 1.7x (or 1/1.7) of vertical stretch against
+the horizontal mean.
+
+A lot that no model fits inside those bounds keeps its procedural facade. How
+many depends on the seed, because the lots do: 17 of 26 wear models on the
+capture seed (42), 21 of 24 on the e2e suite's seed (7). **A mixed city is the
+intended outcome, not a compromise** — it is identical to a fully converted one
+except on the lots that fell back, and forcing a fit would mean either a uniform
+inscribe (which is the shape of the samosa's invisible wall) or a model squashed
+past what its windows survive. Four of the nine are 12 x 2 m slivers left behind
+when a landmark swallowed its neighbour; nothing sensible wears a 2 m lot.
+
+Where the shell has no geometry for a cell — a recess, a setback, or a parapet
+the radial binning sent to a neighbouring column, 0 to 20 percent of cells
+depending on the model — an ordinary lot gets a plain wall chunk instead. A patch
+of blank wall against a modelled facade is a compromise; the black rectangle that
+a hole in the facade produces is a bug.
+
+## 26. A shelled building has no lit windows after dark
+
+Lit windows come from `aSurface == SURF.WINDOW`, so a shell would need its
+glazing triangles picked out of the palette atlas. **They cannot be, on these
+models.** The atlas is a grid of gradient swatches, and measured across three of
+the eight, every blue-dominant texel the geometry samples is a desaturated
+blue-grey between saturation 0.19 and 0.23 — the walls and the windows are the
+same family, and the saturated blue swatch is never used. A first attempt at a
+luminance rule tagged 85% of the exterior and lit whole buildings like lanterns.
+
+The state is unreachable in play: the city is always daytime and only `?skytime=`
+gets there. The streetlamps still light these facades, because the shells are on
+the world material rather than the GLB's own plain Lambert.
+
+## 27. The window rolls are preserved byte for byte, and proven
+
+`world/buildings.js` takes two conditional draws per cell from the seeded stream
+it shares with props, traffic and the townspeople. The draw COUNT is load-bearing
+— change it and every prop, car and person moves, and every screenshot becomes
+unreviewable.
+
+An ordinary lot rolls whether or not it ends up wearing a model, and a landmark
+rolls not at all, which is exactly what happened before. Taking them on the
+samosa lots too, which an earlier cut did, shifted the props from 126 to 120 and
+moved everything else with them.
+
+Proven rather than asserted. Every prop's type, position and scale; every car's
+circuit and arc length; every townsperson's rig, archetype and walk speed; and
+every interior wall's position, hashed before and after: **all four identical**,
+and `propPlacement()` unchanged at 126 / 0 on road / 0 overlapping / 19 dropped.
+
+## 28. The nav lattice was rebuilt, and that DOES move the props
+
+Three defects, measured on the shipped seed: only 4 of 8 crossings existed (a
+`Math.round` half-toward-positive-infinity asymmetry meant one kerb merged with
+its neighbour and the other did not), the graph was in three disconnected
+components, and eight waypoints stood in a traffic lane.
+
+Fixing it changes the node SET, and `world/props.js` rejects any prop within
+`r + 0.3` of a nav node — so prop placement legitimately shifts (128 to 126 live,
+17 to 19 dropped). The seeded stream itself is untouched: the lattice is built
+after `applyLandmarks` and consumes no `rand()`. Nothing on the road, nothing
+overlapping, which is what the assertion actually protects.
+

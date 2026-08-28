@@ -55,14 +55,16 @@ re-encodes the palette atlas as WebP. Re-run it to reproduce every file below.
 | `assets/models/car_van.glb` | car-kit | `van.glb` | CC0 1.0 |
 | `assets/models/car_police.glb` | car-kit | `police.glb` | CC0 1.0 |
 | `assets/models/car_wreck.glb` | car-kit | `sedan-sports.glb` | CC0 1.0 |
-| `assets/models/gun_pistol.glb` | blaster-kit | `blaster-b.glb` | CC0 1.0 |
-| `assets/models/gun_smg.glb` | blaster-kit | `blaster-j.glb` | CC0 1.0 |
-| `assets/models/gun_rifle.glb` | blaster-kit | `blaster-d.glb` | CC0 1.0 |
-| `assets/models/gun_shotgun.glb` | blaster-kit | `blaster-o.glb` | CC0 1.0 |
-| `assets/models/gun_sniper.glb` | blaster-kit | `blaster-e.glb` | CC0 1.0 |
-| `assets/models/gun_cannon.glb` | blaster-kit | `blaster-p.glb` | CC0 1.0 |
+| `assets/models/bld_low_a.glb` | city-kit-commercial | `building-e.glb` | CC0 1.0 |
+| `assets/models/bld_low_b.glb` | city-kit-commercial | `building-c.glb` | CC0 1.0 |
+| `assets/models/bld_mid_a.glb` | city-kit-commercial | `building-a.glb` | CC0 1.0 |
+| `assets/models/bld_mid_b.glb` | city-kit-commercial | `building-j.glb` | CC0 1.0 |
+| `assets/models/bld_mid_c.glb` | city-kit-commercial | `building-i.glb` | CC0 1.0 |
+| `assets/models/bld_tall_a.glb` | city-kit-commercial | `building-l.glb` | CC0 1.0 |
+| `assets/models/bld_tall_b.glb` | city-kit-commercial | `building-n.glb` | CC0 1.0 |
+| `assets/models/bld_tower.glb` | city-kit-commercial | `building-skyscraper-a.glb` | CC0 1.0 |
 
-- **Author:** [Kenney](https://kenney.nl) · **Licence:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) · **Redistribute:** Yes · **Accessed:** 2026-08-26
+- **Author:** [Kenney](https://kenney.nl) · **Licence:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) · **Redistribute:** Yes · **Accessed:** 2026-08-26 (buildings 2026-08-28)
 
 ### The one asset that is not CC0
 

@@ -80,6 +80,48 @@ results.redLight = await page.evaluate(() => new Promise((res) => {
   }, 400);
 }));
 
+// 31) The shells. Seventeen of the twenty-six ordinary lots wear a downloaded
+// building; the rest keep their procedural facade, which is the intended outcome
+// (ASSUMPTIONS.md 25). Three things have to hold, and the first is the one that
+// would make the whole change unreviewable if it slipped.
+//
+// THE SEEDED STREAM. buildBuildings takes two conditional window draws per cell
+// from the stream it shares with props, traffic and the townspeople. An ordinary
+// lot must roll whether or not it ends up wearing a model, and a landmark must
+// not roll at all — which is exactly what happened before shells existed. An
+// earlier cut rolled on the samosa lots too and moved every prop in the city.
+// propPlacement is the cheap proxy the suite already has; the full proof is in
+// the commit, where the props, cars, people and interior walls were hashed
+// either side and came back identical.
+//
+// THE MUSEUM. It is not shelled, and its cells are exactly where they were.
+//
+// THE FACADE IS CLOSED. A shell that has no geometry for a cell gets a plain
+// wall chunk, so no lot has a hole in it that shows the interior from outside.
+results.shells = await page.evaluate(() => {
+  const reg = window.__buildingsReg;
+  const ordinary = reg.buildings.filter((b) => !b.spec.landmark);
+  const isShell = (b) => [...b.idx.values()].some((c) => String(c.kind).startsWith('crust:'));
+  const shelled = ordinary.filter(isShell);
+  const museum = reg.buildings.find((b) => b.spec.landmark === 'museum');
+  // every side x column x floor of every shelled lot must have a cell
+  let holes = 0;
+  for (const b of shelled) {
+    for (const side of ['north', 'east', 'south', 'west']) {
+      for (let c = 0; c < b.sideCols[side]; c++) {
+        for (let f = 0; f < b.spec.floors; f++) if (!b.idx.get(`${side}:${c}:${f}`)) holes++;
+      }
+    }
+  }
+  return {
+    shelled: shelled.length, ordinary: ordinary.length,
+    museumShelled: isShell(museum), museumCells: museum.idx.size,
+    holes,
+    ok: shelled.length >= 12 && shelled.length < ordinary.length
+      && !isShell(museum) && museum.idx.size === 76 && holes === 0,
+  };
+});
+
 // 28) The samosas. Three defects lived on these two lots: a stack of rectangular
 // floor slabs whose corners speared out through a lens-shaped crust, a door frame
 // placed on the flat lot-rectangle face plane that a cone only touches at a

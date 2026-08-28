@@ -20,6 +20,11 @@ const LIST = [
   'landmark_samosa',
   'prop_streetlamp', 'prop_trafficlight', 'prop_sign', 'prop_tree', 'prop_kiosk',
   'car_sedan', 'car_taxi', 'car_van', 'car_police', 'car_wreck',
+  // Facade shells. Eight shapes spanning the proportions the lot generator
+  // produces; world/shell.js fits one to a lot. See the note above JOBS in
+  // tools/import-models.mjs for how they were chosen.
+  'bld_low_a', 'bld_low_b', 'bld_mid_a', 'bld_mid_b',
+  'bld_mid_c', 'bld_tall_a', 'bld_tall_b', 'bld_tower',
 ];
 const CLIPS = ['clip_run', 'clip_punch', 'clip_die'];
 

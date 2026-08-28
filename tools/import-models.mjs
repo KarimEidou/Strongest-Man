@@ -32,7 +32,6 @@ const PACKS = {
   'car-kit': { slug: 'car-kit', dir: 'Models/GLB format' },
   'city-kit-suburban': { slug: 'city-kit-suburban', dir: 'Models/GLB format' },
   'city-kit-commercial': { slug: 'city-kit-commercial', dir: 'Models/GLB format' },
-  'blaster-kit': { slug: 'blaster-kit', dir: 'Models/GLB format' },
 };
 
 // axis: which bbox extent `size` refers to. ground: put min-Y at 0 (props and
@@ -45,10 +44,10 @@ const PACKS = {
 // hangs a lamp's pool of light off +z. One number here beats a correction
 // rotation at every use site.
 //
-// It is PER MODEL, not per pack. `city-kit-roads` and `blaster-kit` are authored
-// facing -Z (the Blender/glTF convention) and need the 180. `car-kit` is not:
-// its cars already point +Z, and applying the blanket 180 to them is what made
-// every car in the city drive tail-first. Rendering one settles it —
+// It is PER MODEL, not per pack. `city-kit-roads` and the two building kits are
+// authored facing -Z (the Blender/glTF convention) and need the 180. `car-kit` is
+// not: its cars already point +Z, and applying the blanket 180 to them is what
+// made every car in the city drive tail-first. Rendering one settles it —
 // `node tools/test/modelshot.mjs sedan car_sedan side` puts +Z on the left of
 // the frame, so the windscreen and headlight belong there.
 //
@@ -76,15 +75,37 @@ const JOBS = [
   ['car_van', 'car-kit', 'van.glb', { axis: 'z', size: 3.75, ground: 1, centerXZ: 1, tex: 256 }],
   ['car_police', 'car-kit', 'police.glb', { axis: 'z', size: 3.45, ground: 1, centerXZ: 1, tex: 256 }],
   ['car_wreck', 'car-kit', 'sedan-sports.glb', { axis: 'z', size: 3.35, ground: 1, centerXZ: 1, tex: 256 }],
-  // --- weapons. Origin stays where Kenney put it (inside the grip) so the hand
-  // bone has something meaningful to hold; player/weapons.js measures the muzzle
-  // off the mesh rather than assuming one.
-  ['gun_pistol', 'blaster-kit', 'blaster-b.glb', { axis: 'z', size: 0.32, ground: 0, centerXZ: 0, rotY: 180, tex: 256 }],
-  ['gun_smg', 'blaster-kit', 'blaster-j.glb', { axis: 'z', size: 0.46, ground: 0, centerXZ: 0, rotY: 180, tex: 256 }],
-  ['gun_rifle', 'blaster-kit', 'blaster-d.glb', { axis: 'z', size: 0.72, ground: 0, centerXZ: 0, rotY: 180, tex: 256 }],
-  ['gun_shotgun', 'blaster-kit', 'blaster-o.glb', { axis: 'z', size: 0.54, ground: 0, centerXZ: 0, rotY: 180, tex: 256 }],
-  ['gun_sniper', 'blaster-kit', 'blaster-e.glb', { axis: 'z', size: 1.05, ground: 0, centerXZ: 0, rotY: 180, tex: 256 }],
-  ['gun_cannon', 'blaster-kit', 'blaster-p.glb', { axis: 'z', size: 0.80, ground: 0, centerXZ: 0, rotY: 180, tex: 256 }],
+  // --- buildings. Eight shapes, chosen to span the proportions the generator
+  // actually produces rather than to be a catalogue. world/buildings.js fits each
+  // one to its lot with an INDEPENDENT scale per axis, so what matters about a
+  // model is not its size but its two ratios: how oblong its footprint is, and
+  // how tall it is against that footprint. Measured natively (h / min(w,d),
+  // then footprint aspect):
+  //   bld_low_a   0.88  1.63   two storeys, wide
+  //   bld_low_b   1.01  1.23   two to three
+  //   bld_mid_a   1.47  1.06   three, square
+  //   bld_mid_b   1.26  1.55   three to four, wide
+  //   bld_mid_c   1.35  1.05   four to five, square
+  //   bld_tall_a  1.66  1.02   five to six
+  //   bld_tall_b  1.36  1.27   six, oblong
+  //   bld_tower   2.12  1.00   seven to eight
+  // The lots run 0.50 to 2.10 on the first ratio and 1.00 to 2.00 on the second,
+  // so the set covers both without a model having to be stretched past what its
+  // fenestration survives. The low-detail-* variants are skipped: they have no
+  // window geometry, and windows are the whole point of a facade.
+  //
+  // All eight are from the COMMERCIAL kit. The suburban kit's low-rises fit the
+  // proportions of the two-storey lots better than anything commercial does, and
+  // they are detached houses with pitched green roofs — rendered beside a
+  // downtown grid they read as a mistake rather than as variety.
+  ['bld_low_a', 'city-kit-commercial', 'building-e.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  ['bld_low_b', 'city-kit-commercial', 'building-c.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  ['bld_mid_a', 'city-kit-commercial', 'building-a.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  ['bld_mid_b', 'city-kit-commercial', 'building-j.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  ['bld_mid_c', 'city-kit-commercial', 'building-i.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  ['bld_tall_a', 'city-kit-commercial', 'building-l.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  ['bld_tall_b', 'city-kit-commercial', 'building-n.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
+  ['bld_tower', 'city-kit-commercial', 'building-skyscraper-a.glb', { axis: 'y', size: 10, ground: 1, centerXZ: 1, rotY: 180, tex: 256 }],
 ];
 
 function sh(cmd, args) { return execFileSync(cmd, args, { encoding: 'utf8', maxBuffer: 1 << 28 }); }

@@ -22,12 +22,14 @@ file in the table.
 | `assets/models/car_van.glb` | car-kit | `van.glb` |
 | `assets/models/car_police.glb` | car-kit | `police.glb` |
 | `assets/models/car_wreck.glb` | car-kit | `sedan-sports.glb` |
-| `assets/models/gun_pistol.glb` | blaster-kit | `blaster-b.glb` |
-| `assets/models/gun_smg.glb` | blaster-kit | `blaster-j.glb` |
-| `assets/models/gun_rifle.glb` | blaster-kit | `blaster-d.glb` |
-| `assets/models/gun_shotgun.glb` | blaster-kit | `blaster-o.glb` |
-| `assets/models/gun_sniper.glb` | blaster-kit | `blaster-e.glb` |
-| `assets/models/gun_cannon.glb` | blaster-kit | `blaster-p.glb` |
+| `assets/models/bld_low_a.glb` | city-kit-commercial | `building-e.glb` |
+| `assets/models/bld_low_b.glb` | city-kit-commercial | `building-c.glb` |
+| `assets/models/bld_mid_a.glb` | city-kit-commercial | `building-a.glb` |
+| `assets/models/bld_mid_b.glb` | city-kit-commercial | `building-j.glb` |
+| `assets/models/bld_mid_c.glb` | city-kit-commercial | `building-i.glb` |
+| `assets/models/bld_tall_a.glb` | city-kit-commercial | `building-l.glb` |
+| `assets/models/bld_tall_b.glb` | city-kit-commercial | `building-n.glb` |
+| `assets/models/bld_tower.glb` | city-kit-commercial | `building-skyscraper-a.glb` |
 
 ## Not from Kenney, and not CC0
 

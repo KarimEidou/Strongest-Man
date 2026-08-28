@@ -1,26 +1,5 @@
 {
-  "failures": [
-    "hud se3 landscape-left: #btn-punch overlaps #btn-grab (569..657 x 273..361 vs 532..588 x 255..311)",
-    "hud se3 landscape-left: #btn-jump overlaps #btn-grab (499..555 x 283..339 vs 532..588 x 255..311)",
-    "hud se3 landscape-right: #btn-punch overlaps #btn-grab (569..657 x 273..361 vs 532..588 x 255..311)",
-    "hud se3 landscape-right: #btn-jump overlaps #btn-grab (499..555 x 283..339 vs 532..588 x 255..311)",
-    "hud ip14 landscape-left: #btn-punch overlaps #btn-grab (746..834 x 267..355 vs 709..765 x 249..305)",
-    "hud ip14 landscape-left: #btn-jump overlaps #btn-grab (676..732 x 277..333 vs 709..765 x 249..305)",
-    "hud ip14 landscape-right: #btn-punch overlaps #btn-grab (699..787 x 267..355 vs 662..718 x 249..305)",
-    "hud ip14 landscape-right: #btn-jump overlaps #btn-grab (629..685 x 277..333 vs 662..718 x 249..305)",
-    "hud ip16pro landscape-left: #btn-punch overlaps #btn-grab (754..842 x 270..358 vs 717..773 x 252..308)",
-    "hud ip16pro landscape-left: #btn-jump overlaps #btn-grab (684..740 x 280..336 vs 717..773 x 252..308)",
-    "hud ip16pro landscape-right: #btn-punch overlaps #btn-grab (695..783 x 270..358 vs 658..714 x 252..308)",
-    "hud ip16pro landscape-right: #btn-jump overlaps #btn-grab (625..681 x 280..336 vs 658..714 x 252..308)",
-    "hud ip16promax landscape-left: #btn-punch overlaps #btn-grab (834..922 x 307..395 vs 797..853 x 289..345)",
-    "hud ip16promax landscape-left: #btn-jump overlaps #btn-grab (764..820 x 317..373 vs 797..853 x 289..345)",
-    "hud ip16promax landscape-right: #btn-punch overlaps #btn-grab (775..863 x 307..395 vs 738..794 x 289..345)",
-    "hud ip16promax landscape-right: #btn-jump overlaps #btn-grab (705..761 x 317..373 vs 738..794 x 289..345)",
-    "hud desktop landscape-left: #btn-punch overlaps #btn-grab (1822..1910 x 978..1066 vs 1785..1841 x 960..1016)",
-    "hud desktop landscape-left: #btn-jump overlaps #btn-grab (1752..1808 x 988..1044 vs 1785..1841 x 960..1016)",
-    "hud desktop landscape-right: #btn-punch overlaps #btn-grab (1822..1910 x 978..1066 vs 1785..1841 x 960..1016)",
-    "hud desktop landscape-right: #btn-jump overlaps #btn-grab (1752..1808 x 988..1044 vs 1785..1841 x 960..1016)"
-  ],
+  "failures": [],
   "measured": [
     {
       "where": "hud se3 landscape-left",
