@@ -220,8 +220,7 @@ text node** as a direct child — the test reads it with a `Range`, and wrapping
 the label in a `<span>` throws.
 
 The `hud-stress` capture state photographs the worst case at 667x375: GRAB
-reading THROW, the charge ring full, the impact vignette up and the longest toast
-on screen at once.
+reading THROW, the charge ring full and the longest toast on screen at once.
 
 ---
 
@@ -301,7 +300,6 @@ reason.
 |---|---|
 | — | `#gl`, the canvas, full bleed |
 | 5 | `#bubbles` — full bleed |
-| 8 | `#vignette` |
 | 10 | `#hud` — safe-area inset |
 | 12 | `#chat` |
 | 20 | `#title-screen`, `#settings-screen`, `#pause-screen` |

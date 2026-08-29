@@ -934,6 +934,66 @@ results.roadRisk = await roadPage.evaluate(() => {
 });
 await roadPage.close();
 
+// 32) THE OVERLAY STACK. The HUD rewrite deleted the `#loading` and
+// `#rotate-overlay` style blocks along with the removed systems' rules, and
+// nothing caught it: layout.mjs measures elements that are on screen, preflight
+// sees no console error for a missing rule, and no scene photographs boot or
+// portrait. The boot screen shipped with no background and no progress bar, and
+// the portrait block shipped transparent — the live game and every HUD control
+// rendered straight through the one overlay whose entire job is to be opaque.
+//
+// So the stack is asserted rather than trusted. Each id must carry the z-index
+// docs/STYLE.md claims for it, and the two full-screen blocks must actually
+// paint: a transparent `#rotate-overlay` is the defect, not a style choice.
+results.overlays = await page.evaluate(() => {
+  const WANT = {
+    bubbles: 5, hud: 10, chat: 12, 'title-screen': 20, 'settings-screen': 20,
+    'pause-screen': 20, loading: 30, inspect: 35, 'update-banner': 38,
+    'update-dismiss': 39, 'rotate-overlay': 40,
+  };
+  const opaque = (s) => {
+    if (s.backgroundImage && s.backgroundImage !== 'none') return true;
+    const m = /rgba?\(([^)]+)\)/.exec(s.backgroundColor);
+    if (!m) return false;
+    const p = m[1].split(',').map((n) => parseFloat(n));
+    return p.length < 4 || p[3] > 0.5;
+  };
+  const wrong = [], missing = [];
+  for (const [id, z] of Object.entries(WANT)) {
+    const el = document.getElementById(id);
+    if (!el) { missing.push(id); continue; }
+    // Reading a computed z-index off a `hidden` element is fine, but the
+    // background of one is worth reading with it shown, so unhide and restore.
+    const was = el.hidden; el.hidden = false;
+    const cs = getComputedStyle(el);
+    if (cs.zIndex !== String(z)) wrong.push(`${id} z=${cs.zIndex} want ${z}`);
+    el.hidden = was;
+  }
+  const blockers = ['rotate-overlay', 'loading'].map((id) => {
+    const el = document.getElementById(id);
+    if (!el) return { id, missing: true, opaque: false };
+    const was = el.hidden; el.hidden = false;
+    const o = opaque(getComputedStyle(el));
+    el.hidden = was;
+    return { id, opaque: o };
+  });
+  // The boot screen without its bar is the regression that shipped, so name the
+  // bar specifically rather than trusting the block above to imply it.
+  const bar = document.getElementById('loading-bar');
+  const fill = document.getElementById('loading-fill');
+  const barOk = !!bar && !!fill
+    && parseFloat(getComputedStyle(bar).height) > 2
+    && getComputedStyle(fill).backgroundImage !== 'none';
+  const icon = document.getElementById('rotate-icon');
+  const iconOk = !!icon && getComputedStyle(icon).animationName === 'spin'
+    && parseFloat(getComputedStyle(icon).fontSize) > 32;
+  return {
+    checked: Object.keys(WANT).length, missing, wrong, blockers, barOk, iconOk,
+    ok: !missing.length && !wrong.length && barOk && iconOk
+      && blockers.every((b) => b.opaque),
+  };
+});
+
 // 12) perf snapshot. NOTE: `simMs` is meaningless after the stepped assertions
 // above — `__test.step()` runs hundreds of fixed steps inside a single frame and
 // core/debug.js accumulates all of them into that frame's window. `maxSimMs` is

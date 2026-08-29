@@ -480,7 +480,7 @@ function frame(dt, alpha) {
     for (const s of frameSystems) s(fdt, alpha);
     cam.frameUpdate(fdt);
     for (const s of lateFrameSystems) s(fdt, alpha);
-    hudFrame(fdt);
+    hudFrame();
     // Called from here, not from hud.js, which stays out of a static import of
     // overlays.js on purpose — see the note beside the dynamic import there.
     toastFrame(fdt);

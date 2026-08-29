@@ -1,5 +1,4 @@
-// HUD: the joystick, the four action controls, the charge ring, the impact
-// vignette.
+// HUD: the joystick, the four action controls and the charge ring.
 //
 // Geometry is fixed — nothing repositions or restyles between screens. The one
 // thing that genuinely changes every frame (the charge ring) is written in
@@ -18,10 +17,6 @@ export function initHUD() {
     interact: el('btn-interact'),
   });
 
-  const vig = document.createElement('div');
-  vig.id = 'vignette';
-  document.body.appendChild(vig);
-
   // Every exit from and return to 'playing' drops whatever a finger was doing.
   // Without this a PUNCH released behind the pause panel stayed queued in
   // core/input.js — pollInput does not run while paused — and fired an attack
@@ -37,11 +32,7 @@ export function initHUD() {
 // behind the panel and was gone when they came back. It is also the last clock
 // in the game a screenshot could not pin down.
 //
-// frame() hands this a zero dt while paused, so these hold.
-let vigT = 0;
-
-export function hudFrame(dt = 0) {
-  if (vigT > 0 && (vigT -= dt) <= 0) el('vignette').style.opacity = 0;
+export function hudFrame() {
   const c = Math.min(input.chargeTime / 1.1, 1);
   el('btn-punch').style.setProperty('--charge', input.punchDown ? c.toFixed(3) : 0);
 }
@@ -59,16 +50,12 @@ export function setGrabLabel(mode) {
   b.setAttribute('aria-label', mode === 'THROW' ? 'throw' : 'grab');
 }
 
-export function flashVignette(strength = 0.8) {
-  el('vignette').style.opacity = strength;
-  vigT = 0.18;
-}
-
 // The state the capture harness photographs to prove nothing overflows,
 // collides or clips at 667x375. It used to drive eight readouts at their worst
-// values; with the score, the health bar, the ammo and the weapon rail gone,
-// what is left to stress is the controls themselves — every one of them in its
-// widest label and its loudest state, plus the longest toast, all at once.
+// values; with the score, the health bar, the ammo, the weapon rail and the
+// damage vignette gone, what is left to stress is the controls themselves —
+// every one of them in its widest label and its loudest state, plus the longest
+// toast, all at once.
 // Driven through the same paths the game uses, not by writing the DOM, so what
 // the screenshot shows is what a player would actually see.
 if (typeof window !== 'undefined') {
@@ -78,8 +65,6 @@ if (typeof window !== 'undefined') {
       setGrabLabel('THROW');
       el('btn-punch').style.setProperty('--charge', '1');
       el('btn-punch').classList.add('held');
-      flashVignette(0.8);
-      vigT = 60;
       import('./overlays.js').then((m) => m.toast(
         'This is the longest line the toast ever carries, and it has to fit.', 60000,
       ));

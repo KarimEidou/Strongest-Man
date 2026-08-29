@@ -441,3 +441,44 @@ Fixing it changes the node SET, and `world/props.js` rejects any prop within
 after `applyLandmarks` and consumes no `rand()`. Nothing on the road, nothing
 overlapping, which is what the assertion actually protects.
 
+
+## 29. The title splash still shows a monster, and it stays
+
+`assets/img/splash.webp` is the key art behind the title screen: a horned beast
+over a collapsing skyline. Item 8 deleted the monsters, so the art now advertises
+something the game does not contain.
+
+It stays, because every way out of that is worse than the mismatch. The art is a
+single commissioned raster; there is no layered source in the repo to remove the
+beast from, nothing in the toolchain can generate a replacement at that quality,
+and cropping it to exclude the beast loses the skyline the wordmark is composed
+against. Shipping the title screen with no art at all, or with a flat colour,
+would be a visible downgrade to the first thing anyone sees in exchange for
+removing a detail nobody can act on.
+
+So this is recorded rather than fixed: the splash is decorative, it is the only
+place a monster survives, and replacing it is an art task, not a code one.
+
+## 30. Two overlay stylesheets were restored, not rewritten
+
+The item 7 HUD rewrite deleted more of `css/main.css` than it meant to. Alongside
+the score, health, ammo, karma, reputation, shop and weapon rules — all correctly
+gone with item 8 — it took two blocks that belonged to neither:
+
+- `#loading` and its children. The boot screen lost its background, its z-index
+  of 30, the orange wordmark and **the progress bar itself**; it rendered as
+  white text over the title art.
+- `#rotate-overlay` and its children. The portrait block lost its opaque
+  background, its z-index of 40 and its 64px spinning icon, so the live game and
+  every HUD control rendered through it — the exact opposite of the "hard input
+  block, and the only thing on screen" it exists to be.
+
+Neither had a test: `layout.mjs` asserts positions of elements that are on
+screen, `preflight.mjs` sees no console error for a missing rule, and the
+end-to-end suite never photographs boot or portrait. Both were found by opening
+the captures, which is what that pass is for.
+
+They are restored **verbatim** from `origin/main` rather than reworked, so the
+diff for them is a revert and nothing in the new HUD's visual language reaches
+them. The whole overlay stack is now measured against the table in
+`docs/STYLE.md`: 11 of 11 ids carry the z-index the table claims.

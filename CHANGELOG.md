@@ -78,6 +78,20 @@ models, the HUD is rebuilt, and everything that made this a score attack is gone
 - `tools/test/final.mjs` section 15 re-picked the same first candidate on every
   attempt and dereferenced a probe without a null check, so an unreachable first
   NPC took the whole suite down with a TypeError that said nothing.
+- **The boot screen and the portrait block got their stylesheets back.** The HUD
+  rewrite deleted two blocks of `css/main.css` that belonged to neither the old
+  HUD nor the removed systems. `#loading` lost its background, its z-index and
+  its progress bar, and rendered as white text over the title art. Worse,
+  `#rotate-overlay` lost its opaque background and its z-index of 40, so turning
+  the phone to portrait showed the live game and every HUD control through what
+  is supposed to be a hard input block. Both are restored verbatim, and the whole
+  overlay stack is now measured against the table in `docs/STYLE.md` — 11 of 11
+  ids carry the z-index it claims. Neither had a test; both were found by opening
+  the captures.
+- **The impact vignette is gone.** It was damage feedback, and with health
+  removed nothing in the game could raise it — the only caller left was the
+  capture harness, which was photographing an effect no player could ever see.
+  The element, its CSS, its frame-timer and its stress-state line are removed.
 
 ## 2026-08-26 — Overhaul
 

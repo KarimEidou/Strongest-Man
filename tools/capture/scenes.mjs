@@ -83,7 +83,7 @@ export const SCENES = [
     id: 'hud-stress',
     query: DUSK,
     note: 'Worst case for the controls: GRAB reading THROW, the charge ring '
-      + 'full, the impact vignette up and the longest toast on screen at once.',
+      + 'full and the longest toast on screen at once.',
     setup: () => window.__test.hudStress(),
     steps: 30,
   },

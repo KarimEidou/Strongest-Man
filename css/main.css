@@ -546,13 +546,6 @@ label.srow > input[type=range] { flex: 1 1 100%; }
 .btnrow { text-align: center; }
 #pause-panel .mbtn { display: block; margin: 12px auto; min-width: 220px; }
 
-/* damage/impact vignette */
-#vignette {
-  position: fixed; inset: 0; pointer-events: none; z-index: 8;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(240,80,32,0.55) 100%);
-  opacity: 0; transition: opacity 0.25s;
-}
-
 /* ---------- gallery prompt + artwork inspect mode ----------
    48px tall, which clears the 44pt HIG minimum with the border included. */
 #art-prompt {
@@ -757,6 +750,29 @@ label.srow > input[type=range] { flex: 1 1 100%; }
 #update-dismiss:active { background: rgba(48, 144, 240, 0.35); }
 /* While the banner is up the top-centre stack steps down out from under it. */
 body.has-update #toast { top: 60px; }
+
+/* ---------- rotate block and boot progress ----------
+   Both were dropped with the old HUD's stylesheet when the action controls were
+   rebuilt; the markup never changed, so they lost their backgrounds, their
+   z-indices and, for the boot screen, the progress bar itself. Restored verbatim.
+   #rotate-overlay MUST keep its own background and z-index 40: it is a hard
+   input block, and without them the live game and every HUD control render
+   through it while the phone is the wrong way round. */
+#rotate-overlay { background: var(--navy-bg); z-index: 40; }
+#rotate-inner { text-align: center; font-size: 18px; font-weight: 700; }
+#rotate-icon { font-size: 64px; color: var(--orange-bright); animation: spin 2.4s linear infinite; margin-bottom: 12px; }
+@keyframes spin { from { rotate: 0deg; } to { rotate: 360deg; } }
+
+#loading { background: radial-gradient(ellipse at 50% 120%, #1848c0 0%, var(--navy-bg) 70%); z-index: 30; }
+#loading-inner { text-align: center; width: min(420px, 70vw); }
+#loading-title {
+  font-size: 40px; font-weight: 900; letter-spacing: 3px;
+  color: var(--orange-bright);
+  text-shadow: 0 3px 0 var(--orange-shadow), 0 6px 24px #00113a;
+}
+#loading-bar { margin: 18px auto 8px; height: 10px; border-radius: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--blue-mid); overflow: hidden; }
+#loading-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue-bright), var(--orange-bright)); transition: width 0.2s; }
+#loading-msg { font-size: 12px; opacity: 0.75; }
 
 /* Boot failed: the progress panel becomes an error panel with a way out. */
 #loading-error { margin-top: 18px; }
