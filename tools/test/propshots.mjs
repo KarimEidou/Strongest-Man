@@ -29,7 +29,7 @@ const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
 
-await page.goto('http://127.0.0.1:8080/Strongest-Man/?autoplay=1&seed=42&nogroq=1&nomonsters=1', { waitUntil: 'load' });
+await page.goto('http://127.0.0.1:8080/Strongest-Man/?autoplay=1&seed=42&nogroq=1', { waitUntil: 'load' });
 await page.waitForFunction('window.__ready === true', null, { timeout: 30000 });
 await page.waitForTimeout(1500);
 

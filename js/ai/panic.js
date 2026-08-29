@@ -74,7 +74,6 @@ export function installPanic(npcSys, buildingsReg, city) {
     for (const b of buildingsReg.buildings) {
       if (b.collapsed || b.falling) continue;
       const s = b.spec;
-      if (s.closed) continue;
       const d = s.door;
       const dx = d.outX - n.x, dz = d.outZ - n.z;
       const dist = Math.hypot(dx, dz);
@@ -229,11 +228,6 @@ export function installPanic(npcSys, buildingsReg, city) {
   };
 
   // other systems (reputation terror, monsters) can panic someone directly
-  sys.forcePanic = (n, x, z) => {
-    if (n.state === 'dead' || n.state === 'carried' || n.state === 'hide' || n.state === 'panic') return;
-    n.threatX = x; n.threatZ = z;
-    toPanic(n);
-  };
 
   // panicked direct movement must respect walls (they leave the lattice)
   // NPC collision is unconditional now (see ai/npc.js move()), so panic no

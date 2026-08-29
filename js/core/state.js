@@ -1,4 +1,4 @@
-// Persistent settings + save data (localStorage), and the coarse game state.
+// Persistent settings (localStorage) and the coarse game state.
 import { emit, EV } from './events.js';
 
 const KEY = 'sm_save_v1';
@@ -14,10 +14,13 @@ export const settings = {
 };
 
 // Nothing is scored and nothing is bought any more, so there is nothing left to
-// save but settings. The key stays `sm_save_v1` and loadState() still strips the
-// fields an older save carries (see the migration below), so a returning player
-// keeps their settings rather than getting a fresh install.
-export const save = {};
+// save but settings — and `save` is therefore gone rather than kept as an empty
+// object nobody imports. It was still being read out of localStorage, stripped
+// of five legacy keys and written straight back on every settings change, which
+// round-tripped whatever an old blob happened to carry, forever. The key stays
+// `sm_save_v1` so a returning player keeps their settings rather than getting a
+// fresh install; the old `save` sub-object is simply not read and not rewritten,
+// so it disappears the first time anything is persisted.
 
 export const game = {
   state: 'title',         // title | playing | paused | settings
@@ -51,7 +54,6 @@ export function loadState() {
   try {
     const d = JSON.parse(raw);
     Object.assign(settings, d.settings || {});
-    Object.assign(save, d.save || {});
   } catch {
     // Keep the bad blob under a different name rather than throwing it away or
     // leaving it in place to fail again on every launch. It costs a few hundred
@@ -62,11 +64,9 @@ export function loadState() {
     } catch { /* nothing more to do */ }
   }
   // Migration. A save written before points, karma, guns and the shop came out
-  // carries karma/points/earned/owned/equipped, and settings.seenArmoury. They
-  // are dropped rather than kept: nothing reads them, and leaving them in means
-  // persist() writes them back forever. Delete rather than ignore, so the blob
-  // shrinks once and stays that way.
-  for (const k of ['karma', 'points', 'earned', 'owned', 'equipped']) delete save[k];
+  // carries settings.seenArmoury; its `save` sub-object carried karma, points,
+  // earned, owned and equipped. The sub-object is no longer read at all, so it
+  // needs no per-key deletion — it is dropped wholesale by the next persist().
   delete settings.seenArmoury;
 
   // A corrupted save can have the wrong types, and nothing downstream may start
@@ -84,7 +84,7 @@ export function loadState() {
 export function persist() {
   try {
     const { groqKey, ...rest } = settings;
-    localStorage.setItem(KEY, JSON.stringify({ settings: rest, save }));
+    localStorage.setItem(KEY, JSON.stringify({ settings: rest }));
     if (groqKey) localStorage.setItem('sm_groq_key', groqKey);
     else localStorage.removeItem('sm_groq_key');
   } catch { /* storage may be unavailable; the game keeps running */ }

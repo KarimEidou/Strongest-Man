@@ -406,7 +406,12 @@ button { font: inherit; color: inherit; }
    two changes later and the toast has been painting over the ammo readout and
    the rail ever since. */
 #toast {
-  position: absolute; top: 86px; left: 50%; transform: translateX(-50%);
+  /* 60 = the top-right button row's 8..52 band, plus 8. docs/STYLE.md states
+     this number; the CSS said 86 and then an override pulled it UP to 60
+     whenever the update banner appeared — backwards, and 26px low the rest
+     of the time. The banner is also 8..52 (measured), so one value clears
+     both and the override is gone. */
+  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
   max-width: calc(100% - 32px);
   padding: 6px 14px; border-radius: 8px;
   background: rgba(9, 18, 44, 0.92); border: 1px solid var(--blue-bright);
@@ -556,11 +561,9 @@ label.srow > input[type=range] { flex: 1 1 100%; }
      and this can sit where it reads best.
      Both numbers below used to be derived from the ammo readout and the weapon
      rail, and both of those are gone. They are re-derived from the one thing
-     still down here, the button cluster: #btns is a 2x2 grid of 54/64/86 circles
-     with a 12px gap, inset right 10 and bottom 14, so its columns are
-     max(54,64)=64 and max(54,86)=86 — 64 + 12 + 86 = 162 wide, running right
-     10..172 — and its rows are 54 and 86, 54 + 12 + 86 = 152 tall, running
-     bottom 14..166.
+     still down here, the button cluster: #btns is the quarter-arc derived at the
+     top of this file — 162 x 157, inset right 10 and bottom 14, so it runs right
+     10..172 and bottom 14..171.
      bottom: aligned with the cluster's own bottom edge, so the prompt and the
      controls read as one row rather than two stacked bands.
      max-width: this is centred, so a width W spans (100% - W)/2 .. (100% + W)/2.
@@ -748,8 +751,6 @@ label.srow > input[type=range] { flex: 1 1 100%; }
 }
 #update-dismiss[hidden] { display: none; }
 #update-dismiss:active { background: rgba(48, 144, 240, 0.35); }
-/* While the banner is up the top-centre stack steps down out from under it. */
-body.has-update #toast { top: 60px; }
 
 /* ---------- rotate block and boot progress ----------
    Both were dropped with the old HUD's stylesheet when the action controls were

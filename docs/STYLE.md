@@ -275,16 +275,16 @@ is the replacement for the thing that was removed.
 --sa-t: env(safe-area-inset-top, 0px);   /* and -r, -b, -l */
 ```
 
-`#hud` and every overlay panel are inset by all four. **Two layers deliberately
-are not**, and the exception matters:
+`#hud` and every overlay panel are inset by all four. **One layer deliberately
+is not**, and the exception matters:
 
 - `#bubbles` — speech balloons are projected from world space with the layer's
   own `clientWidth`/`clientHeight`, so insetting the layer detaches every bubble
   from the head it belongs to.
-- `#aim-layer` — the crosshair marks the centre of the **canvas**, because that
-  is what the shot is built from. 50% of the safe box is not 50% of the canvas:
-  inset, the mark sat 29.5px from where the round went on a notched iPhone, and
-  flipped sides when the phone was turned.
+
+There used to be a second, `#aim-layer`, on the same argument: the crosshair
+marked the centre of the CANVAS because that is what a shot was built from, and
+inset it sat 29.5px from where the round went. The guns are gone and so is it.
 
 In landscape the notch inset is on the **left or the right depending on which
 way the phone is turned**, and the bottom inset is the home indicator. Nothing
@@ -334,8 +334,8 @@ Every screen has all three; none is a blank rectangle.
   `unhandledrejection` handlers registered before the first `await`. An opaque
   overlay with no way out is the worst failure this app can have, and on an
   installed PWA there is not even a URL bar to reload from.
-- **Empty** — the armoury with nothing affordable shows every gun with its price
-  and a disabled button, never an empty list.
-- **Error** — the Groq key test prints whatever the server said, verbatim. A
-  failed purchase marks that row UNAVAILABLE rather than silently doing nothing.
+- **Empty** — nothing in the game now shows a list that can be empty; the
+  armoury, which was the rule's one example, is gone. If one is added: show the
+  rows with their state on them, never an empty box.
+- **Error** — the Groq key test prints whatever the server said, verbatim.
 - **Offline** — the whole game is precached, so offline is not an error state.

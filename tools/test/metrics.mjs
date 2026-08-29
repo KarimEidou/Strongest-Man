@@ -127,7 +127,7 @@ page.on('pageerror', (e) => problems.push(String(e)));
 page.on('requestfailed', (r) => problems.push(`${r.url()} ${r.failure()?.errorText}`));
 
 const t0 = Date.now();
-await page.goto(`${ORIGIN}?autoplay=1&seed=42&nomonsters=1&prof=1&time=0.70`, { waitUntil: 'load' });
+await page.goto(`${ORIGIN}?autoplay=1&seed=42&prof=1&time=0.70`, { waitUntil: 'load' });
 await page.waitForFunction('window.__READY__ === true || window.__ready === true', null, { timeout: 300000 });
 const tti = Date.now() - t0;
 

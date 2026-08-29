@@ -43,6 +43,9 @@ const KERB_LOOK = 1.6;
 // cycle is 9s green + 2s amber each way, so 22s; 14 is longer than any single
 // red and shorter than a wait anyone would notice as broken.
 const KERB_GIVE_UP = 14;
+// Once they have given up, hold move()'s kerb test off long enough to get
+// clear of the kerb it fires on. Shorter than the crossing itself.
+const KERB_GRACE = 2.5;
 // The closest two people may END a step. Two 0.3 m capsules plus a couple of
 // centimetres. The velocity term in move() is a PREFERENCE and it is not enough
 // on its own: in a crowd pressed at a kerb the pushes from opposite sides cancel
@@ -106,6 +109,7 @@ export function createNPCs(scene, city, player) {
       state: 'commute',        // commute | wait_kerb | at_poi | chat | talking |
                                // alert | panic | hide | carried | tumbled | dead
       stateT: rand() * 6,
+      kerbGrace: 0,           // see KERB_GRACE: a give-up that move() must not undo
       path: [], pathI: 0,
       goal: null,
       home: null,
@@ -187,7 +191,6 @@ export function createNPCs(scene, city, player) {
             return;
           }
           n.goal = pickGoal(n, city.pois, t);
-          if (n.goal?.closed) { n.goal = null; return; }
           n.path = routeTo(city.nav, n.x, n.z, n.goal.x, n.goal.z);
           n.pathI = 0;
         }
@@ -218,9 +221,19 @@ export function createNPCs(scene, city, player) {
           n.yaw = Math.atan2(nd.x - n.x, nd.z - n.z);
         }
         const ax = n.x + Math.sin(n.yaw) * KERB_LOOK, az = n.z + Math.cos(n.yaw) * KERB_LOOK;
-        if (crossingClear(ax, az) || n.stateT < -KERB_GIVE_UP) {
+        if (crossingClear(ax, az)) {
           n.state = 'commute';
           n.targetSpeed = n.walkSpeed;
+        } else if (n.stateT < -KERB_GIVE_UP) {
+          // Giving up has to STICK. move() runs immediately after think() in the
+          // same fixed step and re-tests the identical condition against the
+          // identical car positions, so it put them straight back into
+          // wait_kerb with stateT = 0 — the timer restarted itself every time it
+          // expired and the escape hatch could never fire. The grace window is
+          // what move() checks instead of re-deriving the answer.
+          n.state = 'commute';
+          n.targetSpeed = n.walkSpeed;
+          n.kerbGrace = KERB_GRACE;
         }
         break;
       }
@@ -264,7 +277,8 @@ export function createNPCs(scene, city, player) {
     // The `!onRoad(n.x, n.z)` guard is what stops this parking someone in a
     // lane: it only ever fires on a pedestrian who is still on the pavement and
     // about to step off. Once they are committed they finish the crossing.
-    if (n.state === 'commute' && n.targetSpeed > 0) {
+    if (n.kerbGrace > 0) n.kerbGrace -= dt;
+    if (n.state === 'commute' && n.targetSpeed > 0 && !(n.kerbGrace > 0)) {
       const ax = n.x + Math.sin(n.yaw) * KERB_LOOK, az = n.z + Math.cos(n.yaw) * KERB_LOOK;
       if (onRoad(ax, az) && !onRoad(n.x, n.z) && !crossingClear(ax, az)) {
         n.state = 'wait_kerb'; n.stateT = 0; n.targetSpeed = 0;
@@ -376,7 +390,13 @@ export function createNPCs(scene, city, player) {
       if (theirGreen && !t.lightState.amber) return false;
     }
     for (const c of t.list) {
-      if (!c.alive || c.mode === 'held' || c.mode === 'flying') continue;
+      // `wreck` belongs on this list with `held` and `flying`. A car is never
+      // marked dead — `alive` is written once at construction — and an exploded
+      // one keeps mode 'wreck' with speed 0 forever, because the rejoin path
+      // needs `!car.exploded`. It was then scored as oncoming traffic needing
+      // 6 m of clearance, in perpetuity: one wreck near a crossing shut it for
+      // the session. It is still solid, and steering still walks around it.
+      if (!c.alive || c.mode === 'held' || c.mode === 'flying' || c.mode === 'wreck') continue;
       const dx = px - c.x, dz = pz - c.z;
       const along = c.sin * dx + c.cos * dz;   // metres in front of that car
       const side = c.cos * dx - c.sin * dz;    // metres to its side

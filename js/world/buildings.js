@@ -234,6 +234,13 @@ export function buildBuildings(scene, specs) {
             // What breaks when this cell does. It used to be inferred from
             // `kind === 'window'`, which a shelled cell never is.
             glass: procKind === 'window',
+            // The WALKABLE doorway, which is not the same thing as the door
+            // frame. A shelled lot draws no frame (the model has its own), but
+            // physics/collide.js used to find the gap by `cell.kind === 'door'`
+            // — so dropping the archetype also sealed the building. Measured:
+            // 0 of 17 shelled lots had a way in, against 9 of 9 unshelled.
+            // Carried as a flag for the same reason `glass` is.
+            door: procKind === 'door',
             alive: true,
             idx: placements[kind].length,
             x: 0, y: floor * CELL_H + CELL_H / 2, z: 0, yaw: 0,
@@ -282,7 +289,16 @@ export function buildBuildings(scene, specs) {
       // roof. world/museum.js lays its own stone floor over the ground plane.
       if (s.landmark === 'museum' && f < s.floors) continue;
       let px = (s.x0 + s.x1) / 2, pz = (s.z0 + s.z1) / 2, sx = w - 0.5, sz = d - 0.5;
-      if (shell) {
+      // LANDMARKS ONLY, for the same reason `b.floorSpan` above is. Everything
+      // in this branch is a rule about a shape INSCRIBED in its lot, and it was
+      // dead code until ordinary lots started wearing models — at which point it
+      // silently took over the whole city. Measured on the shipped seed: all 17
+      // shelled lots lost their roof slab, because `floorSpan` is only ever
+      // indexed 0..floors-1 (cellKeyAt clamps) so `floorSpan[s.floors]` is always
+      // undefined and the `!hi` guard below fired on every roof; and their floors
+      // came out at 62% of the lot — 7.44 m on a 12 m lot — from a pull-in whose
+      // whole justification is a cross-section a fitted model does not have.
+      if (shell && s.landmark) {
         // A slab sits on the boundary between bands f-1 and f. Below the samosa's
         // waist the shape widens with height and below-band is the tighter fit; above
         // it narrows and above-band is. Taking the narrower of the two is exactly the

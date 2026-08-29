@@ -1,7 +1,7 @@
 // Test/diagnostics surface consumed by the Playwright suite.
 //   window.__ready  — true once the first frame rendered
 //   window.__perf   — fps / frame + sim cost / draw calls / triangles / bodies (1 Hz)
-//   window.__test   — scripted hooks (teleport, punchAt, spawnMonster, ...)
+//   window.__test   — scripted hooks (teleport, punchAt, collapseBuilding, ...)
 // URL params: ?seed=N (world seed), ?nogroq=1, ?fastday=1, ?time=0..1, ?autoplay=1
 //
 // `ms` is the average frame interval; `maxMs`/`p99Ms` are the WORST frames in
@@ -18,7 +18,6 @@ export const flags = {
   time: -1,               // ?time=0..1 starts the SIMULATION clock (schedules only)
   skytime: -1,            // ?skytime=0..1 moves the VISUAL clock — tooling only
   autoplay: false,
-  nomonsters: false,
   prof: false,
   quality: '',            // ?quality=low|medium|high forces a tier at boot
   nogodrays: false,       // ?nogodrays=1 isolates the sun-shaft pass
@@ -44,7 +43,6 @@ export function initDebug() {
   // lit windows and lamp pools survived a change.
   flags.skytime = q.has('skytime') ? Math.min(1, Math.max(0, parseFloat(q.get('skytime')) || 0)) : -1;
   flags.autoplay = q.has('autoplay');
-  flags.nomonsters = q.has('nomonsters');
   flags.prof = q.has('prof');
   flags.quality = q.get('quality') || '';
   flags.nogodrays = q.has('nogodrays');

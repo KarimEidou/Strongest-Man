@@ -139,7 +139,7 @@ for (const engineName of engines) {
 
   // the artwork list drives part of the matrix, so read it from the game once
   const probe = await browser.newPage({ viewport: { width: 852, height: 393 } });
-  await probe.goto(`${ORIGIN}?autoplay=1&seed=42&capture=1&nomonsters=1`, { waitUntil: 'load' });
+  await probe.goto(`${ORIGIN}?autoplay=1&seed=42&capture=1`, { waitUntil: 'load' });
   await probe.waitForFunction('window.__READY__ === true', null, { timeout: 180000 });
   const works = await probe.evaluate('window.__test.museum().works');
   await probe.close();

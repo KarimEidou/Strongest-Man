@@ -5,12 +5,10 @@ export const EV = {
   FEAT: 'feat',                     // {type, x, z, magnitude}
   SCREAM: 'scream',                 // {x, z, radius}
   NPC_DIED: 'npcDied',              // {npc, cause:'player'|'debris'|'thrown', x, z}
-  WITNESS: 'witness',               // {npc, featType, magnitude}
   CHUNK_DESTROYED: 'chunkDestroyed',// {building, count, x, y, z}
   BUILDING_COLLAPSED: 'buildingCollapsed', // {building, byPlayer, occupied}
   CAR_EXPLODED: 'carExploded',      // {x, z, byPlayer}
   HYDRANT_BURST: 'hydrantBurst',    // {x, z}
-  PROP_DESTROYED: 'propDestroyed',  // {type}
   PLAYER_THREW: 'playerThrew',      // {what:'car'|'npc'|'prop'|'debris'}
   GAME_STATE: 'gameState',          // {state:'title'|'playing'|'paused'|'settings'}
   SETTINGS_CHANGED: 'settingsChanged', // {settings}

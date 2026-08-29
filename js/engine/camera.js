@@ -31,7 +31,6 @@ export function createCamera() {
     dist: DIST, curDist: DIST,
     // occlusionQuery(from, to) -> allowed distance; installed by world in P3+
     occlusionQuery: null,
-    pushIn: 0, // monster-realization dolly (0..1)
     // two-shot framing during a conversation: {a, b} live objects with x/z
     framing: null,
     framingW: 0,
@@ -77,7 +76,7 @@ export function createCamera() {
     st.smoothed.y = damp(st.smoothed.y, st.target.y, 10, dt);
     st.smoothed.z = damp(st.smoothed.z, st.target.z, 14, dt);
 
-    const wanted = st.dist * (1 - 0.35 * st.pushIn);
+    const wanted = st.dist;
     const cp = Math.cos(st.curPitch), sp = Math.sin(st.curPitch);
     const cy = Math.cos(st.curYaw), sy = Math.sin(st.curYaw);
 
@@ -125,7 +124,6 @@ export function createCamera() {
 
     camera.position.copy(eye);
     camera.lookAt(look);
-    st.pushIn = Math.max(0, st.pushIn - dt * 1.2);
   }
 
   return {
@@ -142,7 +140,6 @@ export function createCamera() {
       if (st.framing) st.dist = st.framingPrevDist ?? DIST;
       st.framing = null;
     },
-    realizePushIn() { st.pushIn = 1; },
     get yaw() { return st.curYaw; },
   };
 }

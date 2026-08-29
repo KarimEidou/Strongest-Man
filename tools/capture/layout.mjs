@@ -193,7 +193,7 @@ for (const device of DEVICES) {
     const page = await ctx.newPage();
     let booted = false;
     try {
-      await page.goto(`${ORIGIN}?autoplay=1&seed=42&capture=1&nomonsters=1&nogroq=1&warp=museum`,
+      await page.goto(`${ORIGIN}?autoplay=1&seed=42&capture=1&nogroq=1&warp=museum`,
         { waitUntil: 'load' });
       await page.waitForFunction('window.__READY__ === true', null, { timeout: 300000 });
       booted = true;

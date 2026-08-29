@@ -99,11 +99,6 @@ await page.evaluate(`window.__test.press('grab')`);
 await page.waitForTimeout(3500);
 out.carThrow = await page.evaluate('window.__stats()');
 
-// monster spawn + realization (sprite material compiles here)
-await page.evaluate('window.__mark()');
-await page.evaluate('window.__test.spawnMonster(0, 4, 26)');
-await page.waitForTimeout(9000);
-out.monster = await page.evaluate('window.__stats()');
 
 out.perf = await page.evaluate('window.__perf');
 out.errors = errors;

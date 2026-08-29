@@ -32,9 +32,21 @@ export function initHUD() {
 // behind the panel and was gone when they came back. It is also the last clock
 // in the game a screenshot could not pin down.
 //
+// `posed` is the capture harness holding the ring at a value the game is not
+// currently producing. Without it hudFrame — which runs every rendered frame,
+// including while paused, because only the fixed clock is gated — wrote the ring
+// straight back to 0 on the frame after hudStress() set it, and the scene that
+// exists to photograph a FULL charge ring photographed an empty one for 30
+// frames. The `held` class survived, so the button still looked lit.
+let posed = false;
+let punchBtn = null;
+let lastCharge = -1;
 export function hudFrame() {
-  const c = Math.min(input.chargeTime / 1.1, 1);
-  el('btn-punch').style.setProperty('--charge', input.punchDown ? c.toFixed(3) : 0);
+  if (posed) return;
+  const c = input.punchDown ? +Math.min(input.chargeTime / 1.1, 1).toFixed(3) : 0;
+  if (c === lastCharge) return;   // the ring is a conic-gradient; only write on a change
+  lastCharge = c;
+  (punchBtn || (punchBtn = el('btn-punch'))).style.setProperty('--charge', c);
 }
 
 // The grab button is a toggle in disguise: it throws whatever you are holding.
@@ -65,6 +77,7 @@ if (typeof window !== 'undefined') {
       setGrabLabel('THROW');
       el('btn-punch').style.setProperty('--charge', '1');
       el('btn-punch').classList.add('held');
+      posed = true;
       import('./overlays.js').then((m) => m.toast(
         'This is the longest line the toast ever carries, and it has to fit.', 60000,
       ));

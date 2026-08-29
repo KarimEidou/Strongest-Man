@@ -59,21 +59,7 @@ export function addBlob(src, r) {
   return f;
 }
 
-export function removeBlob(f) {
-  if (!f) return;
-  const i = followers.indexOf(f);
-  if (i < 0) return;
-  followers.splice(i, 1);
-  freeSlots.push(f.idx);
-  if (mesh) {
-    mesh.setMatrixAt(f.idx, ZERO);
-    mesh.instanceMatrix.needsUpdate = true;
-  }
-}
 
-export function blobStats() {
-  return { active: followers.length, used: nextSlot, free: freeSlots.length, cap: CAP };
-}
 
 export function blobFrame() {
   Q.identity();

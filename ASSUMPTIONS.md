@@ -482,3 +482,54 @@ They are restored **verbatim** from `origin/main` rather than reworked, so the
 diff for them is a revert and nothing in the new HUD's visual language reaches
 them. The whole overlay stack is now measured against the table in
 `docs/STYLE.md`: 11 of 11 ids carry the z-index the table claims.
+
+## 31. A shell's proportions are measured, not tabulated
+
+`pickShellModel` needs two numbers per model — how tall it is against its
+narrower footprint side, and how oblong that footprint is. These were a hand-
+written table, copied from a comment block in `tools/import-models.mjs`.
+
+Half of it was wrong, in a way nothing could catch. `ar` is consumed as a
+**signed** width:depth, because the fit maps the model's x onto the lot's width
+and its z onto the lot's depth. It had been recorded as the **unsigned**
+max/min. Four of the eight models are deeper than they are wide, so their stored
+ratio was the reciprocal of the real one: `bld_low_b` is 9.90 x 12.20, a true
+0.81, written down as 1.23. That inverts the 90-degree rotation choice and makes
+`MAX_ANISO` — the guard that decides when a model is too distorted to use and
+the lot should keep its procedural facade — test a quantity that is not the
+distortion.
+
+The fix is not a corrected table. `buildModelShell` already measures the real
+bounding box ten lines later, so the table restated something the geometry
+already knew, and a table like that cannot be kept true by discipline: re-run
+the importer with a different `size`, swap a source GLB, or drop a `rotY`, and
+it becomes fiction with no error and no test. The ratios are read off the
+bounding box once per model and cached.
+
+The cache matters for more than tidiness — `staticGeometry` was being re-walked
+and re-cloned per lot, and this is on the boot path.
+
+## 32. What the by-eye pass and the review pass each caught
+
+Worth recording together, because they caught disjoint sets and neither would
+have found the other's.
+
+**Opening the captures** found two dead stylesheets — the boot screen and the
+portrait block (see §30). Both are invisible to every automated check the repo
+has: `layout.mjs` measures elements that are on screen, `preflight.mjs` sees no
+console error for a missing rule, and no scene photographed boot or portrait.
+
+**Reading the diff** found five defects that no screenshot would ever show,
+because they are all either off-camera or only visible in a state the captures
+do not reach: shelled buildings with no roof slab, floors at 62% and no way in
+(all three are inside a building, or on top of one); a car collision box mirrored
+for any yaw that is not a multiple of 90 (grid traffic hides it; only a spun
+wreck shows it); a kerb give-up undone in the same fixed step that fired it; and
+a model-fit table half of which was the reciprocal of the truth.
+
+The lesson is not that one pass is better. It is that "seven of the ten items can
+only be judged by eye" was true, and so was its converse: the items that CAN be
+judged by eye were, and the ones that could not needed the diff read against the
+code. The measurements that settled the building defects — roofs 0 of 17, doors
+0 of 17, a 7.44 m slab on a 12 m lot — came from probing the live registry, not
+from either reading or looking.

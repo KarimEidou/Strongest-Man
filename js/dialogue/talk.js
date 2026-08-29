@@ -59,8 +59,17 @@ Line:`;
   }
 
   // ---- event barks
-  on(EV.WITNESS, ({ npc, magnitude }) => {
-    if (magnitude >= 30 && rand() < 0.65) bark(npc, 'witness_feat', { force: true });
+  // Somebody who SAW it remarks on it. This used to hang off EV.WITNESS, which
+  // ai/reputation.js emitted after deciding who had seen what — and when that
+  // file went, the listener, the six-line corpus and the Groq situation line all
+  // survived with nothing left to fire them. The knowledge model was the part
+  // that died with reputation; proximity is the part that mattered, and it is
+  // the same shape the scream bark below already uses.
+  on(EV.FEAT, ({ x, z, magnitude }) => {
+    if (magnitude < 30) return;
+    neighbors(x, z, 18, scratch);
+    const n = scratch.find((o) => o.state !== 'dead' && o.state !== 'carried');
+    if (n && rand() < 0.65) bark(n, 'witness_feat', { force: true });
   });
   on(EV.SCREAM, ({ x, z }) => {
     neighbors(x, z, 12, scratch);

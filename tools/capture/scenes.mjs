@@ -9,7 +9,7 @@
 // `portraitOnly` scenes are captured in portrait only; everything else is
 // captured in both landscape orientations on every device.
 
-const BASE = 'autoplay=1&seed=42&capture=1&nomonsters=1&nogroq=1';
+const BASE = 'autoplay=1&seed=42&capture=1&nogroq=1';
 // The city is always daytime now, so `?time=` moves the townspeople's schedules
 // and nothing else — every one of these renders the same noon sky. They are kept
 // distinct because they still put DIFFERENT PEOPLE on the street: the morning

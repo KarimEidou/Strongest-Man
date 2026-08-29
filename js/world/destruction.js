@@ -311,7 +311,6 @@ export function hitProp(p, dirX, dirZ, power) {
   // by each of the five callers instead, on top of the emit the lamp branch did
   // for itself, so a streetlamp, a traffic light or a sign paid AWARDS.prop
   // twice and cost 1.0 karma instead of 0.5 while the other five types paid once.
-  emit(EV.PROP_DESTROYED, { type: p.type });
   return true;
 }
 

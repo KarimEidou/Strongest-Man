@@ -113,7 +113,7 @@ function wallSolid(b, band, side, along, y, forWalking) {
   }
   const cell = b.idx.get(`${side}:${col}:${floor}`);
   if (!cell || !cell.alive) return false;
-  if (forWalking && cell.kind === 'door' && floor === 0) {
+  if (forWalking && cell.door && floor === 0) {
     const center = col * 2 + 1;
     if (Math.abs(along - center) < DOOR_HALF) return false; // doorway gap
   }
@@ -211,15 +211,25 @@ export function capsuleVsWorld(x, z, y, r, opts) {
       if (!c.alive || c.mode === 'held' || c.mode === 'flying') continue;
       // oriented box → transform into car space (yaw only)
       const dx = x - c.x, dz = z - c.z;
-      const cos = Math.cos(-c.yaw), sin = Math.sin(-c.yaw);
-      const lx = dx * cos - dz * sin, lz = dx * sin + dz * cos;
+      // Cars carry `yaw = atan2(dx, dz)`, so FORWARD is (sin, cos) and lateral
+      // is (cos, -sin) — the convention traffic.js, crossingClear and roadRisk
+      // all use. Rotating by -yaw with the textbook matrix instead mirrors the
+      // frame and swaps the box's two half-extents: at yaw 45 a point 1.5 m dead
+      // ahead came out as 1.5 m ABEAM (reported clear, inside the car) and a
+      // point 1.5 m abeam came out as 1.5 m ahead (reported blocked, on empty
+      // ground). Exact at multiples of 90, which is why grid traffic hid it and
+      // only spun wrecks showed it. c.cos/c.sin are cached per step.
+      const lx = dx * c.cos - dz * c.sin;      // abeam
+      const lz = dx * c.sin + dz * c.cos;      // ahead
       const hw = c.hw + r, hl = c.hl + r;
       if (Math.abs(lx) < hw && Math.abs(lz) < hl) {
         const pushX = hw - Math.abs(lx), pushZ = hl - Math.abs(lz);
         let nlx = lx, nlz = lz;
         if (pushX < pushZ) nlx = Math.sign(lx || 1) * hw; else nlz = Math.sign(lz || 1) * hl;
-        const wx = nlx * Math.cos(c.yaw) - nlz * Math.sin(c.yaw);
-        const wz = nlx * Math.sin(c.yaw) + nlz * Math.cos(c.yaw);
+        // Back to world along the same two axes: lateral (cos, -sin), forward
+        // (sin, cos).
+        const wx = nlx * c.cos + nlz * c.sin;
+        const wz = -nlx * c.sin + nlz * c.cos;
         x = c.x + wx; z = c.z + wz;
       }
     }
@@ -281,8 +291,9 @@ export function blockedAt(x, z, y, r) {
     for (const c of CARS.list) {
       if (!c.alive || c.mode === 'held' || c.mode === 'flying') continue;
       const dx = x - c.x, dz = z - c.z;
-      const cos = Math.cos(-c.yaw), sin = Math.sin(-c.yaw);
-      const lx = dx * cos - dz * sin, lz = dx * sin + dz * cos;
+      // Same axes as capsuleVsWorld above, and for the same reason.
+      const lx = dx * c.cos - dz * c.sin;      // abeam
+      const lz = dx * c.sin + dz * c.cos;      // ahead
       if (Math.abs(lx) < c.hw + r && Math.abs(lz) < c.hl + r) return true;
     }
   }

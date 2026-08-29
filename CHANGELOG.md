@@ -92,6 +92,64 @@ models, the HUD is rebuilt, and everything that made this a score attack is gone
   removed nothing in the game could raise it — the only caller left was the
   capture harness, which was photographing an effect no player could ever see.
   The element, its CSS, its frame-timer and its stress-state line are removed.
+- **Shelled buildings got their roofs, their floors and their doors back.** The
+  slab loop's `if (shell)` branch is a set of rules about a shape INSCRIBED in
+  its lot — a samosa. It was unreachable dead code until ordinary lots started
+  wearing models, at which point it silently took over most of the city. Two
+  sibling branches in the same function had been narrowed to landmarks; this one
+  had not. Measured on the shipped seed, before and after: buildings with a roof
+  slab **0 of 17 → 17 of 17**, floor slab on a 12 m lot **7.44 m → 11.5 m**. And
+  because `physics/collide.js` found the walkable doorway by `cell.kind ===
+  'door'` — an archetype a shell never emits — every shelled building was sealed:
+  a way in **0 of 17 → 17 of 17**, now carried as `cell.door` the way `cell.glass`
+  already was.
+- **Cars are no longer boxes rotated the wrong way.** `yaw = atan2(dx, dz)` makes
+  forward `(sin, cos)`, which is what `traffic.js`, `crossingClear` and
+  `roadRisk` all use — but the oriented-box test rotated by `-yaw` with the
+  textbook matrix, which mirrors the frame and swaps the box's two half-extents.
+  At 45° a point 1.5 m dead ahead read as 1.5 m abeam and reported CLEAR from
+  inside the car, while a point 1.5 m abeam reported blocked on empty ground.
+  Exact at multiples of 90°, so grid traffic never showed it and only spun wrecks
+  did. Both copies now use the cached `c.cos`/`c.sin`, which also takes ~114,000
+  `Math.sin`/`Math.cos` calls a second out of the fixed step.
+- **The kerb give-up actually gives up.** `think()` released a waiting pedestrian
+  and `move()`, in the same fixed step, re-tested the identical condition against
+  the identical car positions and put them straight back with `stateT = 0` — the
+  14-second timer restarted itself every time it expired. It sets a short grace
+  window now, which `move()` honours. And a wreck is no longer scored as oncoming
+  traffic: `alive` is never cleared and an exploded car keeps `speed 0` forever,
+  so one wreck near a crossing used to shut it for the rest of the session.
+- **The building fit measures the models instead of quoting a table.** `ar` was
+  consumed as a signed width:depth but recorded as the unsigned max/min, so the
+  four models that are deeper than wide carried the reciprocal — inverting the
+  rotation choice and making `MAX_ANISO` gate on a number that is not the
+  distortion. The ratios are read off the bounding box once per model now.
+- **The charge ring is photographed full, as its scene note claims.** `hudFrame`
+  runs on every rendered frame, including while paused, and wrote `--charge`
+  back to 0 the frame after `hudStress()` posed it — so the one capture that
+  exists to prove the worst case showed an empty ring for 30 frames while the
+  `held` class kept the button looking lit.
+- **`witness_feat` barks can fire again.** Their emitter was `ai/reputation.js`,
+  and when that went the listener, the six-line corpus and the Groq situation
+  line all survived with nothing left to trigger them — so nobody ever reacted to
+  seeing a feat. The knowledge model died with reputation; the proximity is what
+  mattered, so the bark hangs off `EV.FEAT` now, the same shape the scream bark
+  uses.
+- **The rest of the removal's residue is gone**: `EV.PROP_DESTROYED` (emitted to
+  nobody), `closed` (read in two hot paths, written by nothing since
+  `reputation.js`), `flags.nomonsters` (parsed, never read, still appended to five
+  harness URLs), `camera.realizePushIn` and its per-frame arithmetic,
+  `blobshadows.removeBlob`/`blobStats`, `panic.forcePanic`, the exported-but-
+  unimported `save` object that was still round-tripped through localStorage on
+  every settings change, and `bench.mjs`'s call to the deleted `spawnMonster`
+  hook, which threw before the benchmark printed anything.
+- **Documentation caught up with the code**: `#toast` sat at 86px where
+  `docs/STYLE.md` says 60, with an override that pulled it UP when the update
+  banner appeared rather than down; `#aim-layer` was still listed as a live
+  safe-area exception; the empty-state rule still described the armoury; a
+  derivation comment still worked out the 2×2 grid the arc replaced; and
+  `VERSION` was still `0.6.0`, so a player taking the UPDATE READY banner saw the
+  same string either side of the reload. Now `0.7.0`.
 
 ## 2026-08-26 — Overhaul
 

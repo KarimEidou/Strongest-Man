@@ -162,19 +162,35 @@ export function sliceIntoCells(geo, material, spec, floors, name) {
 // ---------------------------------------------------------------------------
 // A downloaded building worn by an ordinary lot.
 
-// The eight shapes, with the two ratios that decide which lot each suits:
-// `hr` is native height over the smaller footprint side, `ar` is how oblong the
-// footprint is. Measured off the imported GLBs; see tools/import-models.mjs.
-const SHELLS = [
-  { name: 'bld_low_a', hr: 0.88, ar: 1.63 },
-  { name: 'bld_low_b', hr: 1.01, ar: 1.23 },
-  { name: 'bld_mid_a', hr: 1.47, ar: 1.06 },
-  { name: 'bld_mid_b', hr: 1.26, ar: 1.55 },
-  { name: 'bld_mid_c', hr: 1.35, ar: 1.05 },
-  { name: 'bld_tall_a', hr: 1.66, ar: 1.02 },
-  { name: 'bld_tall_b', hr: 1.36, ar: 1.27 },
-  { name: 'bld_tower', hr: 2.12, ar: 1.00 },
-];
+// The eight shapes. The two ratios that decide which lot each suits are
+// MEASURED, not written down.
+//
+// They used to be a hand-copied table, and half of it was wrong: `ar` is
+// consumed below as a SIGNED width:depth, but the numbers had been recorded as
+// the unsigned max/min. Four of the eight models are deeper than they are wide,
+// so their stored ratio was the reciprocal of the real one — which inverts the
+// rot90 choice and makes MAX_ANISO gate on a number that is not the distortion.
+// Measured: bld_low_b is 9.90 x 12.20, a true 0.81, recorded as 1.23.
+//
+// A table that restates what the geometry already says cannot be kept true by
+// discipline — re-run the importer with a different `size` or swap a source GLB
+// and it silently becomes fiction. So it is read off the bounding box once per
+// model and cached.
+const SHELLS = ['bld_low_a', 'bld_low_b', 'bld_mid_a', 'bld_mid_b',
+  'bld_mid_c', 'bld_tall_a', 'bld_tall_b', 'bld_tower'];
+
+const dimCache = new Map();
+function shellDims(name) {
+  let d = dimCache.get(name);
+  if (d) return d;
+  const geo = staticGeometry(name).geometry;
+  if (!geo.boundingBox) geo.computeBoundingBox();
+  const size = new THREE.Vector3();
+  geo.boundingBox.getSize(size);
+  d = { name, hr: size.y / Math.min(size.x, size.z), ar: size.x / size.z };
+  dimCache.set(name, d);
+  return d;
+}
 
 // How far a model may be distorted before its fenestration stops reading.
 //
@@ -198,10 +214,10 @@ const MIN_STRETCH = 1 / MAX_STRETCH;
 // past what its windows survive.
 export function pickShellModel(spec) {
   const lotW = spec.x1 - spec.x0, lotD = spec.z1 - spec.z0;
-  const lotAr = Math.max(lotW, lotD) / Math.min(lotW, lotD);
   const lotHr = (spec.floors * FLOOR_H) / Math.min(lotW, lotD);
   let best = null, bestCost = Infinity;
-  for (const m of SHELLS) {
+  for (const name of SHELLS) {
+    const m = shellDims(name);
     // Either way round: a 90-degree pre-rotation is free and doubles the aspect
     // ratios each model can serve.
     for (const rot90 of [false, true]) {
