@@ -18,7 +18,7 @@ re-shot. The numbers that WERE re-measured on this tree:
 
 | | overhaul | cleanup | |
 |---|---:|---:|---|
-| End-to-end suite | 30/30 | **20/20**, 0 console errors | ten sections deleted with the systems they tested, four rewritten, four added |
+| End-to-end suite | 30/30 | **22/22**, 0 console errors | ten sections deleted with the systems they tested, four rewritten, five added |
 | Layout assertions | 74 checks, 0 failures | **0 failures**, five devices x two orientations | |
 | Preflight | 6/6 | **6/6** | |
 | Draw calls | 71 | **72** | +1 |
