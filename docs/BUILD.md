@@ -162,6 +162,28 @@ side it is flips with the orientation. That flip is why both orientations are
 captured; a HUD that clears the island in one and hides under it in the other is
 the most commonly missed iOS landscape bug.
 
+### The WebKit half
+
+`--engine both` and `--engine webkit` need Playwright's WebKit, which is a
+separate download from Chromium and needs system libraries Chromium does not.
+A container that has only ever run Chromium will fail the WebKit half with a
+`Host system is missing dependencies` wall of missing `.so` names — the browser
+downloads fine, it just cannot start.
+
+```sh
+node tools/node_modules/playwright-core/cli.js install webkit
+node tools/node_modules/playwright-core/cli.js install-deps webkit   # needs root
+```
+
+`install-deps` runs apt-get and pulls in GStreamer, GTK, libsoup, libsecret and
+the rest of the list. Do NOT run a bare `playwright install`: `PLAYWRIGHT_BROWSERS_PATH`
+already points at a provisioned Chromium and re-fetching it wastes the image's
+disk for nothing. Ask for `webkit` by name.
+
+WebKit files are written with a `wk_` prefix, so both engines share one output
+directory without colliding. It is Playwright's WebKit, not Mobile Safari — the
+closest automatable engine, and a proxy rather than the device.
+
 `?capture=1` is what makes two runs comparable: the frame loop steps a fixed dt
 instead of the wall clock, the day does not advance, and the camera does not
 shake.
